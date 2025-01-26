@@ -25,6 +25,7 @@
           statix
           pre-commit
           detect-secrets
+          gitleaks
         ];
         shellHook = ''
           pre-commit install

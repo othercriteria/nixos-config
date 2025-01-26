@@ -1,0 +1,47 @@
+[allowlist]
+description = "Allowlist"
+paths = [
+    '''\.secrets\.baseline$''',
+    '''\.git/''',
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|secret)[_-]?(key)?['\"]?\s*[:=]\s*['"]?([a-zA-Z0-9-_=]{8,64})['"]?'''
+secretGroup = 3
+
+[[rules]]
+id = "stripe-key"
+description = "Stripe Key"
+regex = '''(?i)(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}'''
+
+[[rules]]
+id = "database-connection"
+description = "Database Connection String"
+regex = '''(?i)(mongodb|postgresql|mysql|redis):\/\/[^:\s]+:[^@\s]+@[^:\s]+'''
+
+[[rules]]
+id = "basic-auth"
+description = "Basic Authentication Header/Credentials"
+regex = '''(?i)([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+@|basic\s+[a-zA-Z0-9=:_-]+)'''
+
+[[rules]]
+id = "npm-token"
+description = "NPM Token"
+regex = '''(?i)(npm_[a-zA-Z0-9]{36})'''
+
+[[rules]]
+id = "github-token"
+description = "GitHub Token"
+regex = '''(?i)(ghp_[a-zA-Z0-9]{36})'''
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws[_-]?(secret[_-]?)?key[_-]?(id)?['\"]?\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?'''
