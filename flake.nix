@@ -26,6 +26,7 @@
           pre-commit
           detect-secrets
           gitleaks
+          nodePackages.markdownlint-cli
         ];
         shellHook = ''
           pre-commit install

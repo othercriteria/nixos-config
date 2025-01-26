@@ -20,8 +20,9 @@ apply: copy-to-system ## Apply the configuration from local directory
 dry-run: copy-to-system ## Test the configuration without applying changes
 	sudo nixos-rebuild dry-run --flake $(NIXOS_DIR)
 
-check: ## Lint the configuration files using nix fmt
-	nix fmt .
+check: ## Lint the configuration files using nix fmt and markdownlint
+	nixpkgs-fmt .
+	markdownlint "**/*.md"
 
 init-security: ## Initialize security tools
 	git secret init

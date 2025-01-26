@@ -18,12 +18,7 @@ Personal NixOS configuration managed with flakes.
 
 ## Setup Steps
 
-1. Initialize Repository
-   - [ ] Create new git repository
-   - [ ] Set up `.gitignore` for sensitive files
-   - [ ] Initialize pre-commit hooks
-
-2. Security Setup
+1. Security Setup
    - [ ] Install git-secret
    - [ ] Initialize git-secret with GPG key
    - [ ] Add sensitive files to `.gitsecret/paths/mapping.cfg`
@@ -33,7 +28,7 @@ Personal NixOS configuration managed with flakes.
      - deadnix
      - statix
 
-3. Migration Plan
+1. Migration Plan
    - [ ] Move current configuration from `/etc/nixos`
    - [ ] Reorganize into logical modules
    - [ ] Encrypt sensitive files (ddclient-password.txt, etc.)
@@ -48,14 +43,14 @@ Personal NixOS configuration managed with flakes.
    git clone https://github.com/username/nixos-config.git ~/workspace/nixos-config
    ```
 
-2. Set up git-secret:
+1. Set up git-secret:
 
    ```bash
    git secret init
    git secret tell your@email.com
    ```
 
-3. Install pre-commit hooks:
+1. Install pre-commit hooks:
 
    ```bash
    pre-commit install
@@ -71,8 +66,8 @@ Personal NixOS configuration managed with flakes.
 ## Usage
 
 1. Make changes to configuration
-2. Test locally: `nixos-rebuild test --flake .#hostname`
-3. Apply changes: `sudo nixos-rebuild switch --flake .#hostname`
+1. Test locally: `nixos-rebuild test --flake .#hostname`
+1. Apply changes: `sudo nixos-rebuild switch --flake .#hostname`
 
 ## Maintenance
 
