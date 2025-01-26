@@ -3,15 +3,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    # Add other necessary inputs here
-    #pre-commit-hooks.url = "github:pre-commit/pre-commit-hooks";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
   outputs =
     { self
     , nixpkgs
     , flake-utils
-    , #pre-commit-hooks, 
-      ...
+    , pre-commit-hooks
+    , ...
     }:
     flake-utils.lib.eachDefaultSystem (system:
     let
@@ -20,10 +19,16 @@
         buildInputs = with pkgs; [
           gnumake
           git
-          # Add other development tools here
+          git-secret
           nixpkgs-fmt
-          #pre-commit
+          deadnix
+          statix
+          pre-commit
+          detect-secrets
         ];
+        shellHook = ''
+          pre-commit install
+        '';
       };
     in
     {

@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+
+  - repo: local
+    hooks:
+      - id: nixpkgs-fmt
+        name: nixpkgs-fmt
+        description: Format nix code
+        entry: nixpkgs-fmt
+        language: system
+        files: \.nix$
+
+      - id: deadnix
+        name: deadnix
+        description: Scan for dead code in .nix files
+        entry: deadnix
+        language: system
+        files: \.nix$
+
+      - id: statix
+        name: statix
+        description: Lint Nix code
+        entry: statix check
+        language: system
+        files: \.nix$
