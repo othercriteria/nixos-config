@@ -18,16 +18,6 @@ Personal NixOS configuration managed with flakes.
 
 ## Setup Steps
 
-1. Security Setup
-   - [ ] Install git-secret
-   - [ ] Initialize git-secret with GPG key
-   - [ ] Add sensitive files to `.gitsecret/paths/mapping.cfg`
-   - [ ] Set up pre-commit hooks with:
-     - detect-secrets
-     - nixfmt
-     - deadnix
-     - statix
-
 1. Migration Plan
    - [ ] Move current configuration from `/etc/nixos`
    - [ ] Reorganize into logical modules

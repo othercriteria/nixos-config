@@ -1,50 +1,61 @@
 {
   description = "NixOS configuration with development environment and secret detection";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
-  outputs =
-    { self
-    , nixpkgs
-    , flake-utils
-    , pre-commit-hooks
-    , ...
-    }:
-    flake-utils.lib.eachDefaultSystem (system:
+
+  outputs = { self, nixpkgs, home-manager, flake-utils, pre-commit-hooks, ... }:
     let
-      pkgs = nixpkgs.legacyPackages.${system};
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          gnumake
-          git
-          git-secret
-          nixpkgs-fmt
-          deadnix
-          statix
-          pre-commit
-          detect-secrets
-          gitleaks
-          nodePackages.markdownlint-cli
-        ];
-        shellHook = ''
-          pre-commit install
-        '';
-      };
+      supportedSystems = [ "x86_64-linux" ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
     in
     {
-      devShells.default = devShell;
-      packages.default = pkgs.stdenv.mkDerivation {
-        pname = "nixos-config";
-        version = "1.0";
-        src = ./.;
-        buildInputs = with pkgs; [
-          # Add necessary build inputs
-        ];
-        # Define build phases if necessary
+      # NixOS configurations
+      nixosConfigurations = {
+        hostname = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./hosts/default
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.yourusername = import ./home/default;
+              };
+            }
+          ];
+        };
       };
-      # You can add more outputs like apps, overlays, etc.
-    }
-    );
+    } // (flake-utils.lib.eachSystem supportedSystems (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        # Development environment
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            gnumake
+            git
+            git-secret
+            nixpkgs-fmt
+            deadnix
+            statix
+            pre-commit
+            detect-secrets
+            gitleaks
+            nodePackages.markdownlint-cli
+          ];
+          shellHook = ''
+            pre-commit install
+          '';
+        };
+      }));
 }
