@@ -14,4 +14,5 @@ secrets/*.secret
 !*.secret
 
 # git-secret will add its managed secrets at the end of the file
-secrets/foo
+
+secrets/ddclient-password
