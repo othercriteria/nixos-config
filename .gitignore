@@ -1,2 +1,17 @@
 # direnv
 .direnv
+
+# git-secret keys
+.gitsecret/keys/
+
+# Original secret files
+secrets/*.secret
+!secrets/*.secret.asc
+
+# detect-secrets cache
+.secrets.baseline.tmp
+.gitsecret/keys/random_seed
+!*.secret
+
+# git-secret will add its managed secrets at the end of the file
+secrets/foo
