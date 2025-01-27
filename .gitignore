@@ -1,18 +1,16 @@
 # direnv
 .direnv
 
-# git-secret keys
-.gitsecret/keys/
+# git-secret random seed (see https://sobolevn.me/git-secret/)
+.gitsecret/keys/random_seed
 
 # Original secret files
-secrets/*.secret
-!secrets/*.secret.asc
+!secrets/*.secret
 
 # detect-secrets cache
 .secrets.baseline.tmp
-.gitsecret/keys/random_seed
-!*.secret
 
 # git-secret will add its managed secrets at the end of the file
 
 secrets/ddclient-password
+!*.secret
