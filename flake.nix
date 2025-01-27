@@ -28,7 +28,7 @@
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                users.yourusername = import ./home/default;
+                users.dlk = import ./home/default;
               };
             }
           ];
@@ -44,6 +44,7 @@
           buildInputs = with pkgs; [
             gnumake
             git
+            git-lfs
             git-secret
             nixpkgs-fmt
             deadnix

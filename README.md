@@ -1,4 +1,3 @@
-
 # NixOS Configuration
 
 Personal NixOS configuration managed with flakes.
@@ -13,7 +12,7 @@ Personal NixOS configuration managed with flakes.
 ├── modules/ # Reusable NixOS modules
 ├── home/ # Home-manager configurations
 ├── secrets/ # Encrypted secrets (using git-secret)
-└── assets/ # Static assets (fonts, images, etc.)
+└── assets/ # Static assets (fonts, images, etc.) - managed with Git LFS
 ```
 
 ## Setup Steps
@@ -26,6 +25,13 @@ Personal NixOS configuration managed with flakes.
    - [ ] Create deployment script
 
 ## Quick Start
+
+1. Install Git LFS and verify installation:
+
+   ```bash
+   git lfs install
+   git lfs status
+   ```
 
 1. Clone the repository:
 
@@ -61,9 +67,24 @@ Personal NixOS configuration managed with flakes.
 
 ## Maintenance
 
-- Regularly update flake inputs
+- Regularly update flake inputs (`make flake-update`)
 - Keep secrets list in `.gitsecret/paths/mapping.cfg` up to date
 - Review pre-commit hook outputs carefully
+
+## Asset Management
+
+Large files in the `assets/` directory are managed using Git LFS. The following
+file types are automatically tracked:
+
+- Font files (`*.ttf`, `*.otf`)
+- Images (`*.png`, `*.jpg`)
+- Archives (`*.zip`)
+
+When adding new large files:
+
+1. Ensure they are in the `assets/` directory
+1. Verify they match the patterns in `.gitattributes`
+1. Run `git lfs status` to confirm tracking
 
 ## License
 
