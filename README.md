@@ -6,23 +6,20 @@ Personal NixOS configuration managed with flakes.
 
 ```console
 .
-├── flake.nix
-├── hosts/ # Host-specific configurations
-│ └── default/ # Current machine configuration
-├── modules/ # Reusable NixOS modules
-├── home/ # Home-manager configurations
-├── secrets/ # Encrypted secrets (using git-secret)
-└── assets/ # Static assets (fonts, images, etc.) - managed with Git LFS
+├── flake.nix             # Flake configuration
+├── hosts/                # Host-specific configurations
+│   ├── common/           # Shared configuration
+│   │   └── default.nix   # Base configuration
+│   ├── laptop/           # Host-specific configs
+│   │   └── default.nix
+│   ├── desktop/          # Host-specific configs
+│   │   └── default.nix
+│   └── default.nix       # Host selector
+├── modules/              # Reusable NixOS modules
+├── home/                 # Home-manager configurations
+├── secrets/              # Encrypted secrets (using git-secret)
+└── assets/               # Static assets (fonts, images, etc.) - managed with Git LFS
 ```
-
-## Setup Steps
-
-1. Migration Plan
-   - [ ] Move current configuration from `/etc/nixos`
-   - [ ] Reorganize into logical modules
-   - [ ] Encrypt sensitive files (ddclient-password.txt, etc.)
-   - [ ] Test configuration locally
-   - [ ] Create deployment script
 
 ## Quick Start
 
@@ -39,17 +36,16 @@ Personal NixOS configuration managed with flakes.
    git clone https://github.com/username/nixos-config.git ~/workspace/nixos-config
    ```
 
-1. Set up git-secret:
+1. Initialize security tools:
 
    ```bash
-   git secret init
-   git secret tell your@email.com
+   make init-security
    ```
 
-1. Install pre-commit hooks:
+1. Set up your email for git-secret:
 
    ```bash
-   pre-commit install
+   git secret tell your@email.com
    ```
 
 ## Security Notes
@@ -58,18 +54,28 @@ Personal NixOS configuration managed with flakes.
 - Use `.gitignore` for temporary files and local overrides
 - All secrets must be encrypted using git-secret before committing
 - Pre-commit hooks will scan for accidental secret exposure
+- Run `make scan-secrets` to check for exposed secrets
 
 ## Usage
 
 1. Make changes to configuration
-1. Test locally: `nixos-rebuild test --flake .#hostname`
-1. Apply changes: `sudo nixos-rebuild switch --flake .#hostname`
+1. Sync changes to system:
+   - Preview changes: `make sync-to-system`
+   - Apply changes: `make force-sync-to-system`
+1. Test and apply configuration:
+   - Test: `make dry-run-host HOST=hostname`
+   - Apply: `make apply-host HOST=hostname`
 
 ## Maintenance
 
-- Regularly update flake inputs (`make flake-update`)
-- Keep secrets list in `.gitsecret/paths/mapping.cfg` up to date
-- Review pre-commit hook outputs carefully
+- Update flake inputs: `make flake-update` (use `make flake-restore` to undo)
+- Run all checks: `make check-all`
+- Manage secrets:
+  - Reveal encrypted files: `make reveal-secrets`
+  - Keep secrets list in `.gitsecret/paths/mapping.cfg` up to date
+- System management:
+  - List recent generations: `make list-generations`
+  - Rollback to previous state: `make rollback`
 
 ## Asset Management
 
