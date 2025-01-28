@@ -10,6 +10,9 @@
 # detect-secrets cache
 .secrets.baseline.tmp
 
+# private-assets (would defeat the point to track it in this repo!)
+private-assets/
+
 # git-secret will add its managed secrets at the end of the file
 
 secrets/ddclient-password

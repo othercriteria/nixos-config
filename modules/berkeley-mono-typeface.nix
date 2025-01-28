@@ -2,7 +2,7 @@
 
 pkgs.stdenv.mkDerivation {
   pname = "berkeley-mono-typeface";
-  version = "1.009";
+  version = "2.002";
 
   buildInputs = [ pkgs.unzip ];
 
@@ -19,7 +19,7 @@ pkgs.stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    install -Dm644 **/*.ttf -t $out/share/fonts/truetype
+    install -Dm644 250128P42JQ77JNP/TX-02-7WQPNNQY/*.ttf -t $out/share/fonts/truetype
 
     runHook postInstall
   '';

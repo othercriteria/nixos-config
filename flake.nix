@@ -69,6 +69,10 @@
             nodePackages.markdownlint-cli
           ];
           shellHook = ''
+            if [ ! -d private-assets ]; then
+              echo "Warning: private-assets submodule not found."
+              echo "Run 'make add-private-assets' to add it."
+            fi
             pre-commit install
           '';
         };

@@ -18,25 +18,30 @@ Personal NixOS configuration managed with flakes.
 ├── modules/              # Reusable NixOS modules
 ├── home/                 # Home-manager configurations
 ├── secrets/              # Encrypted secrets (using git-secret)
-└── assets/               # Static assets (fonts, images, etc.) - managed with Git LFS
+├── assets/               # Static assets (fonts, images, etc.) - managed with Git LFS
+└── private-assets/       # Private assets (fonts, images, etc.) - managed with Git LFS
 ```
 
 ## Quick Start
 
-1. Install Git LFS and verify installation:
-
-   ```bash
-   git lfs install
-   git lfs status
-   ```
-
 1. Clone the repository:
 
    ```bash
-   git clone --recursive https://github.com/othercriteria/nixos-config.git
+   git clone https://github.com/othercriteria/nixos-config.git
+   cd nixos-config
+   ```
 
-   # If already cloned, initialize and update submodules:
-   git submodule update --init --recursive
+1. Add the private assets submodule:
+
+   ```bash
+   git submodule add git@github.com:othercriteria/private-assets.git private-assets
+   ```
+
+1. Initialize Git LFS:
+
+   ```bash
+   git lfs install
+   git lfs pull
    ```
 
 1. Initialize security tools:
@@ -63,8 +68,7 @@ Personal NixOS configuration managed with flakes.
 
 1. Make changes to configuration
 1. Sync changes to system:
-   - Preview changes: `make sync-to-system`
-   - Apply changes: `make force-sync-to-system`
+   - Apply changes: `make sync-to-system`
 1. Test and apply configuration:
    - Test: `make dry-run-host HOST=hostname`
    - Apply: `make apply-host HOST=hostname`
@@ -76,6 +80,7 @@ Personal NixOS configuration managed with flakes.
 - Manage secrets:
   - Reveal encrypted files: `make reveal-secrets`
   - Keep secrets list in `.gitsecret/paths/mapping.cfg` up to date
+  - Easy to do this with `git secret add <file>`
 - System management:
   - List recent generations: `make list-generations`
   - Rollback to previous state: `make rollback`
@@ -94,6 +99,11 @@ When adding new large files:
 1. Ensure they are in the `assets/` directory
 1. Verify they match the patterns in `.gitattributes`
 1. Run `git lfs status` to confirm tracking
+
+### Private Assets
+
+For assets you don't want to share with the world, use the `private-assets`
+submodule.
 
 ## License
 
