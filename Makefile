@@ -15,7 +15,7 @@ SYNC_PATHS := \
 # Default Target
 .DEFAULT_GOAL := help
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host dry-run-host sync-to-system force-sync-to-system reveal-secrets
+.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host dry-run-host sync-to-system force-sync-to-system reveal-secrets init update
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -143,3 +143,12 @@ apply-host: force-sync-to-system ## Apply configuration for specific host
 		exit 1; \
 	fi
 	sudo nixos-rebuild switch --flake $(NIXOS_DIR)#$(HOST)
+
+init: init-security ## Initialize repository
+	git submodule update --init --recursive
+	git lfs install
+	git lfs pull
+
+update: ## Update submodules to latest
+	git submodule update --remote
+	git lfs pull

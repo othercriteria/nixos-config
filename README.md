@@ -33,7 +33,10 @@ Personal NixOS configuration managed with flakes.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/username/nixos-config.git ~/workspace/nixos-config
+   git clone --recursive https://github.com/othercriteria/nixos-config.git
+
+   # If already cloned, initialize and update submodules:
+   git submodule update --init --recursive
    ```
 
 1. Initialize security tools:

@@ -13,6 +13,4 @@
 # git-secret will add its managed secrets at the end of the file
 
 secrets/ddclient-password
-!*.secret
-secrets/dlk-protonmail-user
 secrets/dlk-protonmail-password
