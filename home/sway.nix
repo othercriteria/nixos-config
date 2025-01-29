@@ -28,7 +28,7 @@
 
     # TODO: the display settings should be host-specific
     extraConfig = ''
-      output DP-1 mode 3840x2160@119.998Hz
+      output DP-1 mode 3840x2160@144Hz
       output DP-1 adaptive_sync on
       output DP-1 subpixel rgb
 

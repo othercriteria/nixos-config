@@ -140,8 +140,9 @@
     MOZ_ENABLE_WAYLAND = "1";
     EGL_STREAM = "1";
     WLR_RENDERER = "vulkan";
-    # XWAYLAND_NO_GLAMOR = "1";
     NIXOS_OZONE_WL = "1";
+
+    CHROME_EXTRA_ARGS = "--enable-features=UseOzonePlatform --ozone-platform=wayland --enable-gpu-rasterization --enable-zero-copy";
 
     XDG_CURRENT_DESKTOP = "sway";
   };
