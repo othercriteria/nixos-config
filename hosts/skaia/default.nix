@@ -10,6 +10,7 @@
     ./minidlna.nix
     ./observability.nix
     ./samba.nix
+    ./thermal.nix
     ./virtualisation.nix
   ];
 
@@ -106,6 +107,7 @@
 
   hardware = {
     bluetooth.enable = true;
+
     graphics = {
       enable = true;
       enable32Bit = true;
