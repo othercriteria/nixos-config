@@ -3,10 +3,11 @@
 {
   home.packages = with pkgs; [
     grim # screenshots
+    playerctl # media control
     slurp # screenshots
+    waybar
     wlroots
     wl-clipboard
-    playerctl # media control
   ];
 
   wayland.windowManager.sway = {
@@ -24,6 +25,12 @@
       terminal = "alacritty";
 
       menu = "wofi --allow-images --allow-markup --show run";
+
+      bars = [
+        {
+          command = "waybar";
+        }
+      ];
     };
 
     # TODO: the display settings should be host-specific
@@ -50,9 +57,37 @@
     '';
   };
 
-  programs.wofi = {
-    enable = true;
-    style = builtins.readFile ../assets/wofi-styles.css;
+  programs = {
+    waybar = {
+      enable = true;
+      settings = {
+        mainBar = {
+          layer = "top";
+          position = "top";
+          height = 40;
+
+          modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" ];
+          modules-center = [ "sway/window" ];
+          modules-right = [ "mpd" "custom/vpn-status" "temperature" "clock" ];
+
+          "sway/workspaces" = {
+            disable-scroll = true;
+            all-outputs = true;
+          };
+
+          "custom/vpn-status" = {
+            "exec" = "/etc/nixos/assets/vpn-status.sh";
+            "interval" = 5;
+            "return-type" = "json";
+          };
+        };
+      };
+    };
+
+    wofi = {
+      enable = true;
+      style = builtins.readFile ../assets/wofi-styles.css;
+    };
   };
 
   services.mako = {
