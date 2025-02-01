@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, pkgs-stable, config, ... }:
 
 {
   home = {
@@ -81,7 +81,6 @@
     maestral
     slack
     spotify
-    veracrypt
     vlc
     warp-terminal
     zoom-us

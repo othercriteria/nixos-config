@@ -166,6 +166,8 @@
     runc
 
     k3s
+
+    pkgs-stable.veracrypt # XXX: unstable veracrypt is broken
   ];
 
   programs = {
