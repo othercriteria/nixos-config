@@ -8,6 +8,11 @@
     waybar
     wlroots
     wl-clipboard
+
+    # For UI elements
+    font-awesome
+    noto-fonts
+    noto-fonts-emoji
   ];
 
   wayland.windowManager.sway = {
