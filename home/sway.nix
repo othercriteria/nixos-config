@@ -13,6 +13,8 @@
   wayland.windowManager.sway = {
     enable = true;
 
+    systemd.enable = true;
+
     wrapperFeatures.gtk = true;
 
     extraOptions = [
@@ -25,12 +27,6 @@
       terminal = "alacritty";
 
       menu = "wofi --allow-images --allow-markup --show run";
-
-      bars = [
-        {
-          command = "waybar";
-        }
-      ];
     };
 
     # TODO: the display settings should be host-specific
@@ -60,15 +56,19 @@
   programs = {
     waybar = {
       enable = true;
+      systemd = {
+        enable = true;
+        target = "sway-session.target";
+      };
       settings = {
         mainBar = {
           layer = "top";
           position = "top";
-          height = 40;
+          height = 36;
 
           modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" ];
           modules-center = [ "sway/window" ];
-          modules-right = [ "mpd" "custom/vpn-status" "temperature" "clock" ];
+          modules-right = [ "custom/vpn-status" "memory" "cpu" "temperature" "clock" ];
 
           "sway/workspaces" = {
             disable-scroll = true;
@@ -76,9 +76,19 @@
           };
 
           "custom/vpn-status" = {
-            "exec" = "/etc/nixos/assets/vpn-status.sh";
+            "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/vpn-status.zsh'";
             "interval" = 5;
             "return-type" = "json";
+          };
+
+          "cpu" = {
+            "format" = "{usage}% ";
+            "interval" = 5;
+          };
+
+          "memory" = {
+            "format" = "{used}/{total} GiB ";
+            "interval" = 5;
           };
         };
       };
