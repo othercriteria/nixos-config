@@ -1,0 +1,24 @@
+* {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+window#waybar {
+  background: #282828;
+  color: #ebdbb2;
+}
+
+#workspaces button {
+  padding: 0 5px;
+  color: #ebdbb2;
+}
+
+#workspaces button.focused {
+  background: #458588;
+  color: #282828;
+}
+
+#mode, #clock, #memory, #cpu, #temperature, #custom-vpn-status {
+  padding: 0 10px;
+}

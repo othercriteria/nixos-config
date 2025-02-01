@@ -60,11 +60,12 @@
         enable = true;
         target = "sway-session.target";
       };
+      style = builtins.readFile ../assets/waybar.css;
       settings = {
         mainBar = {
           layer = "top";
           position = "top";
-          height = 36;
+          height = 34;
 
           modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" ];
           modules-center = [ "sway/window" ];
@@ -96,7 +97,7 @@
 
     wofi = {
       enable = true;
-      style = builtins.readFile ../assets/wofi-styles.css;
+      style = builtins.readFile ../assets/wofi.css;
     };
   };
 
