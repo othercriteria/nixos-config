@@ -2,12 +2,14 @@
 
 {
   home.packages = with pkgs; [
+    blueman # Bluetooth manager
     grim # screenshots
     playerctl # media control
+    pavucontrol # audio control
     slurp # screenshots
-    waybar
-    wlroots
-    wl-clipboard
+    waybar # status bar
+    wlroots # Wayland compositor
+    wl-clipboard # clipboard manager
 
     # For UI elements
     font-awesome
@@ -72,13 +74,31 @@
           position = "top";
           height = 34;
 
-          modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" ];
+          modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" "tray" ];
           modules-center = [ "sway/window" ];
-          modules-right = [ "custom/vpn-status" "memory" "cpu" "temperature" "clock" ];
+          modules-right = [ "custom/vpn-status" "pulseaudio" "memory" "cpu" "temperature" "clock" ];
 
           "sway/workspaces" = {
             disable-scroll = true;
             all-outputs = true;
+          };
+
+          "pulseaudio" = {
+            "interval" = 5;
+            "format" = "{volume}% {icon}";
+            "format-bluetooth" = "{volume}% {icon}";
+            "format-muted" = "";
+            "format-icons" = {
+              "headphone" = "";
+              "default" = [ "" "" ];
+            };
+            "scroll-step" = 1;
+            "on-click" = "${pkgs.pavucontrol}/bin/pavucontrol";
+          };
+
+          "tray" = {
+            "icon-size" = 16;
+            "spacing" = 10;
           };
 
           "custom/vpn-status" = {

@@ -5,6 +5,7 @@
     ../common
     ./hardware-configuration.nix # Generated hardware config
 
+    ./audio.nix
     ./ddclient.nix
     ./email-alerts.nix
     ./minidlna.nix
@@ -82,15 +83,6 @@
       ];
     };
 
-    pipewire = {
-      enable = true;
-      #alsa.enable = true;
-      #alsa.support32Bit = true;
-      pulse.enable = true;
-      # If you want to use JACK applications, uncomment this
-      #jack.enable = true;
-    };
-
     xserver = {
       enable = true;
       videoDrivers = [ "nvidia" ];
@@ -106,8 +98,6 @@
   };
 
   hardware = {
-    bluetooth.enable = true;
-
     graphics = {
       enable = true;
       enable32Bit = true;
