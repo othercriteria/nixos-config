@@ -52,7 +52,7 @@
     # Creative
     asunder
     blender
-    # gimp-with-plugins # XXX: commenting out due to broken build
+    gimp-with-plugins
 
     kubectl
     (wrapHelm kubernetes-helm {
