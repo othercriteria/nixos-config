@@ -68,9 +68,8 @@ Personal NixOS configuration managed with flakes.
 
 1. Make changes to configuration
 1. Sync changes to system:
-   - Apply changes: `make sync-to-system`
-1. Test and apply configuration:
-   - Test: `make dry-run-host HOST=hostname`
+   - Sync changes: `make sync-to-system`
+1. Apply configuration:
    - Apply: `make apply-host HOST=hostname`
 
 ## Maintenance

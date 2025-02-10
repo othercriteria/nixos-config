@@ -17,7 +17,7 @@ SYNC_PATHS := \
 # Default Target
 .DEFAULT_GOAL := help
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host dry-run-host sync-to-system reveal-secrets init update add-private-assets
+.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -97,13 +97,6 @@ sync-to-system: reveal-secrets ## Sync changes to /etc/nixos
 		echo "Error: Sync failed. No changes were applied."; \
 		exit 1; \
 	fi
-
-dry-run-host: reveal-secrets ## Test configuration for specific host
-	@if [ -z "$(HOST)" ]; then \
-		echo "Error: HOST variable not set. Usage: make dry-run-host HOST=laptop"; \
-		exit 1; \
-	fi
-	sudo nixos-rebuild dry-run --flake $(NIXOS_DIR)#$(HOST)
 
 apply-host: sync-to-system ## Apply configuration for specific host
 	@if [ -z "$(HOST)" ]; then \
