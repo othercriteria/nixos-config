@@ -28,10 +28,10 @@
       DEVNAME=hwmon14=nct6798 hwmon2=k10temp
       FCTEMPS=hwmon14/pwm7=hwmon14/temp2_input hwmon14/pwm5=hwmon14/temp2_input hwmon14/pwm3=hwmon14/temp2_input hwmon14/pwm2=hwmon14/temp2_input
       FCFANS=hwmon14/pwm7=hwmon14/fan7_input hwmon14/pwm5=hwmon14/fan5_input hwmon14/pwm3=hwmon14/fan3_input hwmon14/pwm2=hwmon14/fan2_input
-      MINTEMP=hwmon14/pwm7=30 hwmon14/pwm5=40 hwmon14/pwm3=30 hwmon14/pwm2=45
-      MAXTEMP=hwmon14/pwm7=50 hwmon14/pwm5=75 hwmon14/pwm3=60 hwmon14/pwm2=80
+      MINTEMP=hwmon14/pwm7=30 hwmon14/pwm5=35 hwmon14/pwm3=30 hwmon14/pwm2=40
+      MAXTEMP=hwmon14/pwm7=50 hwmon14/pwm5=65 hwmon14/pwm3=60 hwmon14/pwm2=70
       MINSTART=hwmon14/pwm7=135 hwmon14/pwm5=135 hwmon14/pwm3=135 hwmon14/pwm2=120
-      MINSTOP=hwmon14/pwm7=40 hwmon14/pwm5=40 hwmon14/pwm3=40 hwmon14/pwm2=25
+      MINSTOP=hwmon14/pwm7=40 hwmon14/pwm5=40 hwmon14/pwm3=40 hwmon14/pwm2=40
     '';
   };
 }
