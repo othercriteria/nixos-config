@@ -15,6 +15,9 @@
     font-awesome
     noto-fonts
     noto-fonts-emoji
+
+    # Used by interactive workspace renaming script
+    jq
   ];
 
   wayland.windowManager.sway = {
@@ -57,6 +60,9 @@
       bindsym XF86AudioPlay exec playerctl play-pause
       bindsym XF86AudioNext exec playerctl next
       bindsym XF86AudioPrev exec playerctl previous
+
+      # Interactive workspace renaming
+      bindsym Mod4+Shift+R exec /etc/nixos/assets/rename-workspace.sh
     '';
   };
 
@@ -102,7 +108,7 @@
           };
 
           "custom/vpn-status" = {
-            "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/vpn-status.zsh'";
+            "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/vpn-status.sh'";
             "interval" = 5;
             "return-type" = "json";
           };
