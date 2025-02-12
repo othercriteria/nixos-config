@@ -63,6 +63,9 @@
 
       # Interactive workspace renaming
       bindsym Mod4+Shift+R exec /etc/nixos/assets/rename-workspace.sh
+
+      # Dismiss all notifications
+      bindsym Mod4+Period exec makoctl dismiss -a
     '';
   };
 
