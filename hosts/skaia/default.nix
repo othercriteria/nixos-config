@@ -8,6 +8,7 @@
     ./audio.nix
     ./ddclient.nix
     ./email-alerts.nix
+    ./k3s.nix
     ./minidlna.nix
     ./observability.nix
     ./samba.nix
@@ -75,14 +76,6 @@
       };
     };
 
-    k3s = {
-      enable = true;
-      role = "server";
-      extraFlags = toString [
-        ''--write-kubeconfig-mode "0644"''
-      ];
-    };
-
     xserver = {
       enable = true;
       videoDrivers = [ "nvidia" ];
@@ -119,7 +112,6 @@
 
       package = config.boot.kernelPackages.nvidiaPackages.latest;
     };
-    nvidia-container-toolkit.enable = true;
   };
 
   # Generally, Wayland-related...
@@ -152,10 +144,6 @@
     # nvidia-docker
     # nvidia-podman
     docker
-    nvidia-container-toolkit
-    runc
-
-    k3s
 
     pkgs-stable.veracrypt # XXX: unstable veracrypt is broken
   ];

@@ -8,6 +8,7 @@
   };
 
   imports = [
+    ./helm.nix
     ./sway.nix
     ./tmux.nix
     ./zsh.nix
@@ -55,14 +56,6 @@
     gimp-with-plugins
 
     kubectl
-    (wrapHelm kubernetes-helm {
-      plugins = with pkgs.kubernetes-helmPlugins; [
-        helm-secrets
-        helm-diff
-        helm-s3
-        helm-git
-      ];
-    })
 
     links2
     pandoc
