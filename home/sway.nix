@@ -37,6 +37,8 @@
       terminal = "alacritty";
 
       menu = "wofi --allow-images --allow-markup --show run";
+
+      bars = [ ];
     };
 
     # TODO: the display settings should be host-specific
