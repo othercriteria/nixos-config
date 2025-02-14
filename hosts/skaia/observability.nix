@@ -10,6 +10,9 @@
       enable = true;
       port = 9001;
 
+      # Can't do build-time validation, since k3s token is generated at runtime
+      checkConfig = false;
+
       exporters = {
         node = {
           enable = true;
@@ -30,6 +33,52 @@
           static_configs = [{
             targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ];
           }];
+        }
+        {
+          job_name = "k3s";
+          scrape_interval = "30s";
+          metrics_path = "/metrics";
+          scheme = "https";
+          tls_config = {
+            insecure_skip_verify = true;
+          };
+          bearer_token_file = "/var/lib/prometheus-k3s/k3s.token";
+          static_configs = [{
+            targets = [ "127.0.0.1:6443" ];
+            labels = {
+              k3s_component = "k3s";
+            };
+          }];
+        }
+        {
+          job_name = "kubelet";
+          scrape_interval = "30s";
+          metrics_path = "/metrics";
+          scheme = "https";
+          tls_config = {
+            insecure_skip_verify = true;
+          };
+          bearer_token_file = "/var/lib/prometheus-k3s/k3s.token";
+          static_configs = [{
+            targets = [ "127.0.0.1:10250" ];
+            labels = {
+              k3s_component = "kubelet";
+            };
+          }];
+        }
+        {
+          job_name = "dcgm";
+          scrape_interval = "30s";
+          metrics_path = "/metrics";
+          static_configs = [
+            {
+              targets = [ "127.0.0.1:30400" ];
+              labels = {
+                instance = "nvidia-dcgm-exporter";
+              };
+            }
+          ];
+          scheme = "http";
         }
       ];
 

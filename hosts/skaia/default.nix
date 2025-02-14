@@ -8,6 +8,7 @@
     ./audio.nix
     ./ddclient.nix
     ./email-alerts.nix
+    ./firewall.nix
     ./k3s.nix
     ./minidlna.nix
     ./observability.nix
@@ -35,31 +36,6 @@
     hostName = "skaia"; # XXX: this is used in email-alerts.nix
     hostId = "68ae467c";
     networkmanager.enable = true;
-
-    firewall = {
-      allowedTCPPorts = [
-        22
-        80
-        139
-        443
-        445
-        6443 # k3s: required so pods can reach API server
-        6881 # Bittorrent
-        8200
-        9999
-      ];
-      allowedUDPPorts = [
-        137
-        138
-        1900
-        6881 # Bittorrent
-        7881 # KTorrent: DHT
-        8881 # KTorrent
-      ];
-      # TODO: narrow the range of allowed UDP ports
-      allowedUDPPortRanges = [{ from = 13337; to = 65535; }];
-      allowPing = true;
-    };
   };
 
   services = {
