@@ -5,7 +5,7 @@
     description = "Create k3s token file for Prometheus";
     wantedBy = [ "multi-user.target" ];
     after = [ "k3s.service" ];
-    path = [ pkgs.k3s ];
+    path = [ pkgs.k3s pkgs.coreutils ];
     script = ''
       echo "Starting k3s token extraction..."
 
@@ -51,7 +51,12 @@
       # Create token secret if it doesn't exist
       if ! k3s kubectl -n kube-system get secret prometheus-token &>/dev/null; then
         echo "Creating new token secret..."
-        k3s kubectl -n kube-system create token prometheus > /var/lib/prometheus-k3s/k3s.token
+        k3s kubectl apply -f - <<< '{"apiVersion":"v1","kind":"Secret","metadata":{"name":"prometheus-token","namespace":"kube-system","annotations":{"kubernetes.io/service-account.name":"prometheus"}},"type":"kubernetes.io/service-account-token"}'
+
+        # Wait briefly for the token to be created
+        sleep 2
+        # Extract the token
+        k3s kubectl -n kube-system get secret prometheus-token -o jsonpath='{.data.token}' | base64 -d > /var/lib/prometheus-k3s/k3s.token
       fi
 
       echo "Setting permissions..."
