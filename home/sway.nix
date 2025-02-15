@@ -85,9 +85,9 @@
           position = "top";
           height = 34;
 
-          modules-left = [ "sway/workspaces" "sway/mode" "wlr/taskbar" "tray" ];
+          modules-left = [ "sway/workspaces" "wlr/taskbar" "tray" ];
           modules-center = [ "sway/window" ];
-          modules-right = [ "custom/vpn-status" "pulseaudio" "memory" "cpu" "temperature" "clock" ];
+          modules-right = [ "pulseaudio" "custom/vpn-status" "network" "memory" "cpu" "temperature" "clock" ];
 
           "sway/workspaces" = {
             disable-scroll = true;
@@ -118,13 +118,20 @@
             "return-type" = "json";
           };
 
+          "network" = {
+            "format" = "{bandwidthUpBytes}↑{ifname}↓{bandwidthDownBytes}";
+            "interface" = "enp67s0";
+            "interval" = 5;
+          };
+
           "cpu" = {
             "format" = "{usage}% ";
+            "hwmon-path" = "/sys/devices/platform/nct6775.656/hwmon/hwmon14/temp2_input";
             "interval" = 5;
           };
 
           "memory" = {
-            "format" = "{used}/{total} GiB ";
+            "format" = "{avail:0.1f} GiB ";
             "interval" = 5;
           };
         };

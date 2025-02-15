@@ -155,7 +155,15 @@
   xdg.portal = {
     enable = true;
     wlr.enable = true;
-    config.common.default = "*";
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config = {
+      common = {
+        default = [ "gtk" ];
+      };
+      browsers = {
+        default = [ "google-chrome-stable" ];
+      };
+    };
   };
 
   # Copy the NixOS configuration file and link it from the resulting system
