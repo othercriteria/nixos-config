@@ -5,6 +5,11 @@
     User = "dlk";
   };
 
+  systemd.services.prometheus.serviceConfig = {
+    User = "prometheus";
+    Group = "prometheus";
+  };
+
   services = {
     prometheus = {
       enable = true;
@@ -26,61 +31,147 @@
         };
       };
 
-      scrapeConfigs = [
-        {
-          job_name = "skaia";
-          scrape_interval = "30s";
-          static_configs = [{
-            targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ];
-          }];
-        }
-        {
-          job_name = "k3s";
-          scrape_interval = "30s";
-          metrics_path = "/metrics";
-          scheme = "https";
-          tls_config = {
+      scrapeConfigs =
+        let
+          # Common TLS config
+          baseTlsConfig = {
             insecure_skip_verify = true;
+            cert_file = "/var/lib/prometheus-k3s/client.crt";
+            key_file = "/var/lib/prometheus-k3s/client.key";
           };
-          bearer_token_file = "/var/lib/prometheus-k3s/k3s.token";
-          static_configs = [{
-            targets = [ "127.0.0.1:6443" ];
-            labels = {
-              k3s_component = "k3s";
-            };
-          }];
-        }
-        {
-          job_name = "kubelet";
-          scrape_interval = "30s";
-          metrics_path = "/metrics";
-          scheme = "https";
-          tls_config = {
-            insecure_skip_verify = true;
+
+          # Common k8s SD config
+          baseK8sSdConfig = {
+            api_server = "https://localhost:6443";
+            tls_config = baseTlsConfig;
           };
-          bearer_token_file = "/var/lib/prometheus-k3s/k3s.token";
-          static_configs = [{
-            targets = [ "127.0.0.1:10250" ];
-            labels = {
-              k3s_component = "kubelet";
-            };
-          }];
-        }
-        {
-          job_name = "dcgm";
-          scrape_interval = "30s";
-          metrics_path = "/metrics";
-          static_configs = [
+
+          # Common node relabeling
+          nodeRelabelConfigs = [
             {
-              targets = [ "127.0.0.1:30400" ];
-              labels = {
-                instance = "nvidia-dcgm-exporter";
-              };
+              action = "labelmap";
+              regex = "__meta_kubernetes_node_label_(.+)";
+            }
+            {
+              target_label = "__address__";
+              replacement = "localhost:10250";
+            }
+            {
+              target_label = "cluster";
+              replacement = "frog";
             }
           ];
-          scheme = "http";
-        }
-      ];
+
+          # Common service endpoint relabeling
+          serviceRelabelConfigs = [
+            {
+              source_labels = [ "__meta_kubernetes_service_annotation_prometheus_io_scrape" ];
+              action = "keep";
+              regex = "true";
+            }
+            {
+              source_labels = [ "__meta_kubernetes_service_annotation_prometheus_io_scheme" ];
+              action = "replace";
+              target_label = "__scheme__";
+              regex = "(https?)";
+              replacement = "$1";
+            }
+            {
+              source_labels = [ "__meta_kubernetes_service_annotation_prometheus_io_path" ];
+              action = "replace";
+              target_label = "__metrics_path__";
+              regex = "(.+)";
+            }
+            {
+              source_labels = [ "__address__" "__meta_kubernetes_service_annotation_prometheus_io_port" ];
+              action = "replace";
+              target_label = "__address__";
+              regex = "([^:]+)(?::\\d+)?;(\\d+)";
+              replacement = "$1:$2";
+            }
+            {
+              action = "labelmap";
+              regex = "__meta_kubernetes_service_label_(.+)";
+            }
+            {
+              source_labels = [ "__meta_kubernetes_namespace" ];
+              action = "replace";
+              target_label = "kubernetes_namespace";
+            }
+            {
+              source_labels = [ "__meta_kubernetes_service_name" ];
+              action = "replace";
+              target_label = "kubernetes_name";
+            }
+            {
+              target_label = "cluster";
+              replacement = "frog";
+            }
+          ];
+        in
+        [
+          {
+            job_name = "skaia";
+            scrape_interval = "30s";
+            static_configs = [{
+              targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ];
+              labels = {
+                cluster = "frog";
+              };
+            }];
+          }
+          {
+            job_name = "kubernetes-apiservers";
+            scheme = "https";
+            tls_config = baseTlsConfig;
+            kubernetes_sd_configs = [{
+              role = "endpoints";
+              inherit (baseK8sSdConfig) api_server tls_config;
+            }];
+            relabel_configs = [
+              {
+                source_labels = [ "__meta_kubernetes_namespace" "__meta_kubernetes_service_name" "__meta_kubernetes_endpoint_port_name" ];
+                action = "keep";
+                regex = "default;kubernetes;https";
+              }
+              {
+                target_label = "cluster";
+                replacement = "frog";
+              }
+            ];
+          }
+          {
+            job_name = "kubernetes-nodes";
+            scheme = "https";
+            tls_config = baseTlsConfig;
+            kubernetes_sd_configs = [{
+              role = "node";
+              inherit (baseK8sSdConfig) api_server tls_config;
+            }];
+            relabel_configs = nodeRelabelConfigs;
+          }
+          {
+            job_name = "kubernetes-cadvisor";
+            scheme = "https";
+            metrics_path = "/metrics/cadvisor";
+            tls_config = baseTlsConfig;
+            kubernetes_sd_configs = [{
+              role = "node";
+              inherit (baseK8sSdConfig) api_server tls_config;
+            }];
+            relabel_configs = nodeRelabelConfigs;
+          }
+          {
+            job_name = "kubernetes-service-endpoints";
+            scheme = "http";
+            tls_config = baseTlsConfig;
+            kubernetes_sd_configs = [{
+              role = "endpoints";
+              inherit (baseK8sSdConfig) api_server tls_config;
+            }];
+            relabel_configs = serviceRelabelConfigs;
+          }
+        ];
 
       # Define alerting rules as a JSON string by forcing evaluation
       rules =

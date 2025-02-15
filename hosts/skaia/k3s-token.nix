@@ -27,43 +27,16 @@
       # Create directory
       mkdir -p /var/lib/prometheus-k3s
 
-      # Create a service account for Prometheus if it doesn't exist
-      if ! k3s kubectl get serviceaccount prometheus -n kube-system &>/dev/null; then
-        echo "Creating prometheus service account..."
-        k3s kubectl create serviceaccount prometheus -n kube-system
-      fi
-
-      # Create ClusterRole if it doesn't exist
-      if ! k3s kubectl get clusterrole prometheus-k8s &>/dev/null; then
-        echo "Creating prometheus cluster role..."
-        k3s kubectl create clusterrole prometheus-k8s --verb=get,list,watch \
-          --resource=nodes,nodes/metrics,services,endpoints,pods,namespaces,serviceaccounts
-      fi
-
-      # Create ClusterRoleBinding if it doesn't exist
-      if ! k3s kubectl get clusterrolebinding prometheus-k8s &>/dev/null; then
-        echo "Creating prometheus cluster role binding..."
-        k3s kubectl create clusterrolebinding prometheus-k8s \
-          --clusterrole=prometheus-k8s \
-          --serviceaccount=kube-system:prometheus
-      fi
-
-      # Create token secret if it doesn't exist
-      if ! k3s kubectl -n kube-system get secret prometheus-token &>/dev/null; then
-        echo "Creating new token secret..."
-        k3s kubectl apply -f - <<< '{"apiVersion":"v1","kind":"Secret","metadata":{"name":"prometheus-token","namespace":"kube-system","annotations":{"kubernetes.io/service-account.name":"prometheus"}},"type":"kubernetes.io/service-account-token"}'
-
-        # Wait briefly for the token to be created
-        sleep 2
-        # Extract the token
-        k3s kubectl -n kube-system get secret prometheus-token -o jsonpath='{.data.token}' | base64 -d > /var/lib/prometheus-k3s/k3s.token
-      fi
+      # Extract client certificate and key from k3s config
+      echo "Extracting k3s credentials..."
+      k3s kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}' | base64 -d > /var/lib/prometheus-k3s/client.crt
+      k3s kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}' | base64 -d > /var/lib/prometheus-k3s/client.key
 
       echo "Setting permissions..."
       chown -R prometheus:prometheus /var/lib/prometheus-k3s
-      chmod 640 /var/lib/prometheus-k3s/k3s.token
+      chmod 640 /var/lib/prometheus-k3s/client.{crt,key}
 
-      echo "Token extraction completed successfully"
+      echo "Credential extraction completed successfully"
     '';
     serviceConfig = {
       Type = "oneshot";
