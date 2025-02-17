@@ -9,7 +9,7 @@
     ./ddclient.nix
     ./email-alerts.nix
     ./firewall.nix
-    ./k3s.nix
+    ./k3s
     ./minidlna.nix
     ./observability.nix
     ./samba.nix

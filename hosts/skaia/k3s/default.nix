@@ -3,6 +3,7 @@
 {
   imports = [
     ./k3s-token.nix
+    ./openebs-zfs-localpv.nix
   ];
 
   environment.systemPackages = with pkgs; [
@@ -51,6 +52,9 @@
     enable = true;
     role = "server";
     extraFlags = toString [
+      # Provide etcd and other services
+      "--cluster-init"
+
       # Security
       ''--write-kubeconfig-mode "0644"''
       "--kubelet-arg=authentication-token-webhook=true"
@@ -60,6 +64,13 @@
       "--kube-controller-manager-arg=bind-address=0.0.0.0"
       "--kube-proxy-arg=metrics-bind-address=0.0.0.0"
       "--kube-scheduler-arg=bind-address=0.0.0.0"
+
+      # Disable default local storage provider since we'll use ZFS-LocalPV
+      "--disable local-storage"
+
+      # TODO: replace these with more production-ready alternatives
+      # "--disable servicelb"
+      # "--disable traefik"
     ];
 
     containerdConfigTemplate = ''
@@ -74,20 +85,5 @@
       BinaryName = "/run/current-system/sw/bin/nvidia-container-runtime"
       SystemdCgroup = false
     '';
-  };
-
-  systemd.services.kube-state-metrics = {
-    description = "Deploy kube-state-metrics after k3s";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "k3s.service" ];
-    path = [ pkgs.k3s ];
-    script = ''
-      echo "Deploying kube-state-metrics..."
-      k3s kubectl apply -f /etc/nixos/assets/kube-state-metrics.yaml
-    '';
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
   };
 }
