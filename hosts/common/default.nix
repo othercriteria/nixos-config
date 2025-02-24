@@ -25,8 +25,6 @@
     settings = {
       download-buffer-size = 1000000000; # 1GB instead of default 1MB
       auto-optimise-store = true;
-      # Maximum number of parallel downloads
-      max-substituters-per-download = 8;
     };
 
     gc = {
