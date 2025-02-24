@@ -12,7 +12,22 @@
 
     extraOptions = ''
       experimental-features = nix-command flakes
+      # Keep builds for 30 days
+      keep-outputs = true
+      keep-derivations = true
+      # Maximum number of parallel jobs during builds
+      max-jobs = auto
+      # Allow up to 8 concurrent tasks during builds
+      system-features = [ "big-parallel" ]
     '';
+
+    # Optimize store by hard linking identical files
+    settings = {
+      download-buffer-size = 1000000000; # 1GB instead of default 1MB
+      auto-optimise-store = true;
+      # Maximum number of parallel downloads
+      max-substituters-per-download = 8;
+    };
 
     gc = {
       automatic = true;
