@@ -70,10 +70,17 @@
     graphics = {
       enable = true;
       enable32Bit = true;
+      extraPackages = with pkgs; [
+        nvidia-vaapi-driver
+        libva-vdpau-driver
+        libvdpau
+      ];
     };
     nvidia = {
-      powerManagement.enable = false;
-      powerManagement.finegrained = false;
+      powerManagement = {
+        enable = false;
+        finegrained = false;
+      };
 
       modesetting.enable = true;
 
@@ -133,6 +140,20 @@
     mtr.enable = true;
 
     steam.enable = true;
+
+    # Configure OBS Studio with plugins
+    obs-studio = {
+      enable = true;
+      enableVirtualCamera = true;
+      plugins = with pkgs.obs-studio-plugins; [
+        wlrobs
+        obs-pipewire-audio-capture
+        obs-vkcapture
+      ];
+      package = pkgs.obs-studio.override {
+        cudaSupport = true;
+      };
+    };
   };
 
   # programs.gnupg.agent = {

@@ -17,6 +17,11 @@ SYNC_PATHS := \
 # Default Target
 .DEFAULT_GOAL := help
 
+# Check if TMPDIR exists and is accessible
+ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
+  export TMPDIR := /tmp
+endif
+
 .PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets
 
 help: ## Show this help message
