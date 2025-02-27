@@ -116,6 +116,7 @@
             "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/vpn-status.sh'";
             "interval" = 5;
             "return-type" = "json";
+            "on-click" = "systemctl --user start protonvpn-toggle.service";
           };
 
           "network" = {
@@ -151,5 +152,35 @@
     width = 450;
     height = 200;
     margin = "20";
+  };
+
+  systemd.user.services.protonvpn-toggle = {
+    Unit = {
+      Description = "Toggle ProtonVPN connection";
+    };
+    Service = {
+      Type = "oneshot";
+      Environment = "PATH=${pkgs.protonvpn-cli_2}/bin:/run/wrappers/bin:/run/current-system/sw/bin:$PATH";
+      ExecStart = "${pkgs.writeShellScript "toggle-vpn" ''
+        # Create directory for VPN status
+        mkdir -p ~/.cache/protonvpn
+
+        if protonvpn s 2>/dev/null | grep -q "Disconnected"; then
+          # Connect
+          output=$(sudo protonvpn c -f 2>&1)
+          echo "$output" > ~/.cache/protonvpn/last_connection
+
+          # Extract server name from connection output
+          server=$(echo "$output" | grep "Connecting to" | awk '{print $3}')
+          if [[ -n "$server" ]]; then
+            echo "$server" > ~/.cache/protonvpn/current_server
+          fi
+        else
+          # Disconnect
+          sudo protonvpn d
+          rm -f ~/.cache/protonvpn/current_server
+        fi
+      ''}";
+    };
   };
 }
