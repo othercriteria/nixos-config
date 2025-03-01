@@ -123,9 +123,6 @@
     sshfs-fuse
     vulkan-tools
 
-    # podman-compose
-    # nvidia-docker
-    # nvidia-podman
     docker
 
     pkgs-stable.veracrypt # XXX: unstable veracrypt is broken
@@ -176,7 +173,11 @@
   xdg.portal = {
     enable = true;
     wlr.enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    extraPortals = [
+      pkgs.xdg-desktop-portal-gtk
+      pkgs.kdePackages.xdg-desktop-portal-kde
+      pkgs.xdg-desktop-portal-gnome
+    ];
     config = {
       common = {
         default = [ "gtk" ];
