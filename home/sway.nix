@@ -1,32 +1,58 @@
 { config, pkgs, ... }:
 
 {
-  home.packages = with pkgs; [
-    blueman # Bluetooth manager
-    grim # screenshots
-    playerctl # media control
-    pavucontrol # audio control
-    slurp # screenshots
-    waybar # status bar
-    wlroots # Wayland compositor
-    wl-clipboard # clipboard manager
-    wofi-emoji # emoji picker
+  home = {
+    packages = with pkgs; [
+      blueman # Bluetooth manager
+      grim # screenshots
+      playerctl # media control
+      pavucontrol # audio control
+      slurp # screenshots
+      waybar # status bar
+      wlroots # Wayland compositor
+      wl-clipboard # clipboard manager
+      wofi-emoji # emoji picker
 
-    # For UI elements
-    font-awesome
-    noto-fonts
-    noto-fonts-emoji
+      # For UI elements
+      font-awesome
+      noto-fonts
+      noto-fonts-emoji
 
-    # Used by interactive workspace renaming script
-    jq
-  ];
+      jq
+    ];
 
-  home.pointerCursor = {
-    gtk.enable = true;
-    sway.enable = true;
-    name = "Adwaita";
-    package = pkgs.adwaita-icon-theme;
-    size = 32;
+    pointerCursor = {
+      gtk.enable = true;
+      sway.enable = true;
+      name = "Adwaita";
+      package = pkgs.adwaita-icon-theme;
+      size = 32;
+    };
+
+    file.".config/fcitx5/profile".text = ''
+      [Groups/0]
+      # Group Name
+      Name=Default
+      # Layout
+      Default Layout=us
+      # Default Input Method
+      DefaultIM=pinyin
+
+      [Groups/0/Items/0]
+      # Name
+      Name=keyboard-us
+      # Layout
+      Layout=
+
+      [Groups/0/Items/1]
+      # Name
+      Name=pinyin
+      # Layout
+      Layout=
+
+      [GroupOrder]
+      0=Default
+    '';
   };
 
   wayland.windowManager.sway = {
@@ -39,6 +65,14 @@
     extraOptions = [
       "--unsupported-gpu"
     ];
+
+    extraSessionCommands = ''
+      export GTK_IM_MODULE=fcitx
+      export QT_IM_MODULE=fcitx
+      export XMODIFIERS=@im=fcitx
+      export SDL_IM_MODULE=fcitx
+      export GLFW_IM_MODULE=ibus
+    '';
 
     config = rec {
       modifier = "Mod4"; # command
@@ -80,6 +114,9 @@
 
       # Emoji picker (overrides existing shortcut for exiting sway)
       bindsym --no-warn Mod4+Shift+E exec wofi-emoji
+
+      # Auto-start Fcitx5
+      exec --no-startup-id fcitx5 -d
     '';
   };
 
@@ -203,5 +240,12 @@
         fi
       ''}";
     };
+  };
+
+  i18n.inputMethod = {
+    enabled = "fcitx5";
+    fcitx5.addons = with pkgs; [
+      fcitx5-chinese-addons
+    ];
   };
 }
