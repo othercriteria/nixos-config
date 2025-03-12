@@ -10,6 +10,7 @@
     waybar # status bar
     wlroots # Wayland compositor
     wl-clipboard # clipboard manager
+    wofi-emoji # emoji picker
 
     # For UI elements
     font-awesome
@@ -68,6 +69,9 @@
 
       # Dismiss all notifications
       bindsym Mod4+Period exec makoctl dismiss -a
+
+      # Emoji picker (overrides existing shortcut for exiting sway)
+      bindsym --no-warn Mod4+Shift+E exec wofi-emoji
     '';
   };
 
