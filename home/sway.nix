@@ -21,6 +21,14 @@
     jq
   ];
 
+  home.pointerCursor = {
+    gtk.enable = true;
+    sway.enable = true;
+    name = "Adwaita";
+    package = pkgs.adwaita-icon-theme;
+    size = 32;
+  };
+
   wayland.windowManager.sway = {
     enable = true;
 
@@ -96,6 +104,15 @@
           "sway/workspaces" = {
             disable-scroll = true;
             all-outputs = true;
+          };
+
+          "wlr/taskbar" = {
+            "format" = "{icon}";
+            "icon-size" = 16;
+            "icon-theme" = "hicolor";
+            "tooltip-format" = "{title}";
+            "on-click" = "activate";
+            "on-click-middle" = "close";
           };
 
           "pulseaudio" = {
