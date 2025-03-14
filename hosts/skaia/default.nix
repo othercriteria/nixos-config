@@ -79,8 +79,6 @@
     WLR_RENDERER = "vulkan";
     NIXOS_OZONE_WL = "1";
 
-    CHROME_EXTRA_ARGS = "--enable-features=UseOzonePlatform --ozone-platform=wayland --enable-gpu-rasterization --enable-zero-copy";
-
     XDG_CURRENT_DESKTOP = "sway";
   };
 

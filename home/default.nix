@@ -65,7 +65,9 @@
     discord
     firefox-wayland
     flightgear
-    google-chrome
+    (google-chrome.override {
+      commandLineArgs = "--enable-wayland-ime --wayland-text-input-version=3";
+    })
     keepassxc
     keybase-gui
     kdePackages.ktorrent
