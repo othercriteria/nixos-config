@@ -62,7 +62,6 @@
     texlive.combined.scheme-full
     yt-dlp
 
-    code-cursor
     discord
     firefox-wayland
     flightgear
@@ -76,6 +75,7 @@
     spotify
     vlc
     warp-terminal
+    windsurf
     zoom-us
   ];
 

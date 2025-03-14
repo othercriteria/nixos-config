@@ -7,7 +7,7 @@
     # This should be the latest stable release, used to
     # rollback broken versions in unstable
     # TODO: bump this!
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     home-manager = {
       url = "github:nix-community/home-manager";
