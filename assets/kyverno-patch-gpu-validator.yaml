@@ -1,0 +1,52 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: patch-nvidia-validator-noop
+spec:
+  rules:
+    - name: noop-driver-validation
+      match:
+        resources:
+          kinds:
+            - Pod
+          namespaces:
+            - gpu-operator
+          selector:
+            matchLabels:
+              app: nvidia-operator-validator
+      mutate:
+        patchStrategicMerge:
+          spec:
+            initContainers:
+              - name: driver-validation
+                command: ["/bin/sh"]
+                args:
+                  - "-c"
+                  - |
+                    echo "GPU Operator Validator Dummy";
+                    touch /run/nvidia/validations/driver-ready;
+                    sleep 5;
+                    exit 0
+    - name: noop-toolkit-validation
+      match:
+        resources:
+          kinds:
+            - Pod
+          namespaces:
+            - gpu-operator
+          selector:
+            matchLabels:
+              app: nvidia-operator-validator
+      mutate:
+        patchStrategicMerge:
+          spec:
+            initContainers:
+              - name: toolkit-validation
+                command: ["/bin/sh"]
+                args:
+                  - "-c"
+                  - |
+                    echo "GPU Operator Validator Dummy";
+                    touch /run/nvidia/validations/toolkit-ready;
+                    sleep 5;
+                    exit 0

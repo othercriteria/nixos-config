@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./gpu-operator.nix
     ./k3s-token.nix
     ./openebs-zfs-localpv.nix
   ];
@@ -13,40 +14,6 @@
   ];
 
   hardware.nvidia-container-toolkit.enable = true;
-
-  # GPU Operator expects nvidia-smi to be in (/host/)/usr/bin, and to
-  # not crash even when it's called with old library versions that
-  # don't match the version of the driver. :thinking:
-  #
-  # Additionally, modify clusterpolicy/cluster-policy, setting:
-  #   validator:
-  #     driver:
-  #       env:
-  #       - name: DISABLE_DEV_CHAR_SYMLINK_CREATION
-  #         value: "true"
-  system.activationScripts = {
-    nvidia-smi-wrapper = {
-      text = ''
-        # Create directories
-        mkdir -p /run/nvidia-smi-dummy /usr/bin
-
-        # Create dummy script
-        cat > /run/nvidia-smi-dummy/nvidia-smi << 'EOF'
-        #!/bin/sh
-        echo "GPU Operator Validator Dummy"
-        exit 0
-        EOF
-        chmod +x /run/nvidia-smi-dummy/nvidia-smi
-
-        # Remove any existing symlink or file
-        rm -f /usr/bin/nvidia-smi
-
-        # Create symlink to dummy script for GPU Operator
-        ln -sf /run/nvidia-smi-dummy/nvidia-smi /usr/bin/nvidia-smi
-      '';
-      deps = [ ];
-    };
-  };
 
   services.k3s = {
     enable = true;
