@@ -9,6 +9,7 @@
 
   imports = [
     ./helm.nix
+    ./keyboard.nix
     ./sway.nix
     ./tmux.nix
     ./zsh.nix
