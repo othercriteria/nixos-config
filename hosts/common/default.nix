@@ -5,6 +5,7 @@
   imports = [
     ../../modules/fonts.nix
     ../../modules/greetd.nix
+    ../../modules/printing.nix
   ];
 
   nix = {
