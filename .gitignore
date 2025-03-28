@@ -17,3 +17,4 @@ private-assets/
 
 secrets/ddclient-password
 secrets/dlk-protonmail-password
+secrets/anthropic-2025-03-28-local-dev

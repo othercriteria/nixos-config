@@ -58,6 +58,8 @@
 
     kubectl
 
+    claude-code
+
     links2
     pandoc
     texlive.combined.scheme-full

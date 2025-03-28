@@ -35,6 +35,9 @@
       (builtins.readFile ../assets/p10k.zsh)
       (builtins.readFile ../assets/nix-direnv.zsh)
       "export EDITOR=\"emacs -nw\""
+      "if [ -f /etc/nixos/secrets/anthropic-2025-03-28-local-dev ]; then"
+      "  export ANTHROPIC_API_KEY=\"$(cat /etc/nixos/secrets/anthropic-2025-03-28-local-dev)\""
+      "fi"
     ];
 
     zplug = {
