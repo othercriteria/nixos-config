@@ -10,7 +10,7 @@
     ];
   };
 
-  xdg.configFile.".config/fcitx5/profile".text = ''
+  xdg.configFile."fcitx5/profile".text = ''
     [Groups/0]
     # Group Name
     Name=Default
@@ -35,7 +35,7 @@
     0=Default
   '';
 
-  xdg.configFile.".config/fcitx5/config".text = ''
+  xdg.configFile."fcitx5/config".text = ''
     [Hotkey]
     # Enumerate when press trigger key repeatedly
     EnumerateWithTriggerKeys=True
