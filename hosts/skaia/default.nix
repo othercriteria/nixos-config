@@ -93,7 +93,6 @@
 
     docker
 
-    pkgs-stable.code-cursor
     pkgs-stable.veracrypt # XXX: unstable veracrypt is broken
   ];
 

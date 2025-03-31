@@ -29,7 +29,7 @@
     # Name
     Name=pinyin
     # Layout
-    Layout=
+    Layout=us
 
     [GroupOrder]
     0=Default

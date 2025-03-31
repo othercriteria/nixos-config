@@ -65,6 +65,7 @@
     texlive.combined.scheme-full
     yt-dlp
 
+    code-cursor
     discord
     firefox-wayland
     flightgear
