@@ -40,6 +40,19 @@ Contains Home Manager configurations for user environments.
 Contains shared NixOS and Home Manager modules that can be imported by various
 configurations.
 
+Current modules include:
+
+- `printing.nix`: Printer configuration
+- `berkeley-mono-typeface.nix`: Font configuration for Berkeley Mono
+- `fonts.nix`: General font configuration
+- `greetd.nix`: Login manager configuration
+- `vibectl.nix`: NixOS module for the vibectl CLI tool (vibes-based kubectl alt)
+  - Uses a Python environment with dependencies and wraps the executable for
+    proper integration
+  - Leverages the llm package and llm-anthropic plugin from nixpkgs
+  - Provides optional Anthropic API key configuration for Claude model access
+  - Feature-complete implementation with proper Python module path handling
+
 ### `assets/` and `private-assets/`
 
 Contains non-code assets for the system such as wallpapers, icons, or other

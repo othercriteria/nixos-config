@@ -6,7 +6,11 @@
     ../../modules/fonts.nix
     ../../modules/greetd.nix
     ../../modules/printing.nix
+    ../../modules/vibectl.nix
   ];
+
+  # Enable vibectl for any host with kubectl
+  custom.vibectl.enable = true;
 
   nix = {
     package = pkgs.nixVersions.stable;
