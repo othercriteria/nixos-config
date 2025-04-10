@@ -11,6 +11,7 @@
 
   # Enable vibectl for any host with kubectl
   custom.vibectl.enable = true;
+  custom.vibectl.anthropicApiKeyFile = "/etc/nixos/secrets/anthropic-2025-04-10-vibectl-personal-usage";
 
   nix = {
     package = pkgs.nixVersions.stable;
