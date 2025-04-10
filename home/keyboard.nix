@@ -33,6 +33,7 @@
 
     [GroupOrder]
     0=Default
+
   '';
 
   xdg.configFile."fcitx5/config".text = ''

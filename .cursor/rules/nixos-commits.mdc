@@ -1,0 +1,162 @@
+---
+description: Defines criteria and behavior for NixOS configuration commits
+globs: ["flake.nix", "**/*.nix", "Makefile", ".pre-commit-config.yaml"]
+alwaysApply: true
+---
+# NixOS Configuration Commits
+
+Rules for committing changes to NixOS configuration files.
+
+<rule>
+name: nixos_commits
+description: Defines criteria and behavior for NixOS configuration commits
+filters:
+  - type: intent
+    pattern: "code_change_complete"
+  - type: content
+    pattern: "(?i)\\b(commit|save|checkpoint|approved|lgtm|looks good)\\b"
+  - type: content
+    pattern: "(?i)\\b(skip|disable|bypass|no|ignore)[-_]?(pre[-_]?commit|hooks?)\\b"
+
+actions:
+  - type: commit
+    command: |
+      # Check for untracked .mdc files in .cursor/rules
+      UNTRACKED_RULES=$(git ls-files --others --exclude-standard .cursor/rules/*.mdc)
+      if [ -n "$UNTRACKED_RULES" ]; then
+        echo "Error: Found untracked rule files. Please add them to git first."
+        exit 1
+      fi
+
+      # Check if STRUCTURE.md needs updating
+      CHANGED_FILES=$(git diff --cached --name-only)
+      NEEDS_STRUCTURE_UPDATE=false
+      echo "$CHANGED_FILES" | grep -qE '^(\.cursor/rules/.*\.mdc|.*\.nix|Makefile|hosts/|modules/|home/)' && NEEDS_STRUCTURE_UPDATE=true
+
+      if [ "$NEEDS_STRUCTURE_UPDATE" = true ] && ! echo "$CHANGED_FILES" | grep -q '^STRUCTURE\.md$'; then
+        echo "Warning: Structural changes detected but STRUCTURE.md not updated."
+        echo "Consider updating STRUCTURE.md if the changes affect project structure."
+      fi
+
+      # Check consistency between pre-commit config and this rule
+      if echo "$CHANGED_FILES" | grep -q '\.pre-commit-config\.yaml$'; then
+        echo "Note: Changes detected in .pre-commit-config.yaml."
+        echo "Remember to ensure consistency between pre-commit hooks and the nixos-commits rule."
+        echo "Consider reviewing .cursor/rules/nixos-commits.mdc if you've modified checks."
+      fi
+
+      # Process commit message parts preserving actual newlines
+      # Split multiline inputs into separate -m arguments
+      create_m_args() {
+        local input="$1"
+        local args=""
+
+        # Skip if empty or "None"
+        if [[ -z "$input" || "$input" == "None" ]]; then
+          echo ""
+          return
+        fi
+
+        # Create a temporary file for line-by-line processing
+        local tmpfile=$(mktemp)
+        echo "$input" > "$tmpfile"
+
+        # Read line by line and create -m arguments
+        while IFS= read -r line; do
+          args="$args -m \"$line\""
+        done < "$tmpfile"
+
+        rm "$tmpfile"
+        echo "$args"
+      }
+
+      # Create -m arguments for each section
+      CONCISE_ARG="-m \"{type}: {concise description}\""
+      DESCRIPTION_ARGS=$(create_m_args "{detailed description if needed}")
+
+      # Add empty line before breaking changes if they exist
+      if [[ -n "{breaking changes if any}" && "{breaking changes if any}" != "None" ]]; then
+        BREAKING_HEADER="-m \"\" -m \"Breaking Changes:\""
+        BREAKING_ARGS=$(create_m_args "{breaking changes if any}")
+      else
+        BREAKING_HEADER=""
+        BREAKING_ARGS=""
+      fi
+
+      # Add empty line before affected hosts if they exist
+      if [[ -n "{affected hosts}" && "{affected hosts}" != "None" ]]; then
+        HOSTS_HEADER="-m \"\" -m \"Affected Hosts:\""
+        HOSTS_ARGS=$(create_m_args "{affected hosts}")
+      else
+        HOSTS_HEADER=""
+        HOSTS_ARGS=""
+      fi
+
+      # Construct the final git commit command with all arguments
+      eval git commit $CONCISE_ARG $DESCRIPTION_ARGS $BREAKING_HEADER $BREAKING_ARGS $HOSTS_HEADER $HOSTS_ARGS
+
+  - type: reject
+    conditions:
+      - pattern: "(?i)\\b(skip|disable|bypass|no|ignore)[-_]?(pre[-_]?commit|hooks?)\\b"
+        message: |
+          Disabling pre-commit hooks is not allowed. Fix reported issues or ask for guidance.
+
+criteria:
+  required:
+    - Pre-commit checks pass
+    - Documentation updated if needed
+    - STRUCTURE.md up-to-date with structural changes
+    - All .mdc files tracked in git
+    - No debug code remains
+    - Consistency maintained between pre-commit hooks and commit rules
+    - All linting issues resolved
+
+commit_message_format: |
+  {type}: {concise description}
+
+  {detailed description if needed}
+
+  Breaking Changes:
+  {breaking changes if any}
+
+  Affected Hosts: {affected hosts}
+
+types:
+  - feat: New feature or functionality
+  - fix: Bug fix or issue resolution
+  - refactor: System reorganization without functional changes
+  - config: Configuration updates
+  - docs: Documentation updates
+  - chore: Maintenance tasks
+
+examples:
+  - input: "Updated Plymouth theme configuration for laptop"
+    output: |
+      git commit \
+        -m "config: update Plymouth theme configuration" \
+        -m "Add custom theme for boot splash
+      Adjust resolution settings
+      Improve loading animation" \
+        -m "" \
+        -m "Affected Hosts:" \
+        -m "- laptop"
+
+  - input: "Updated display manager configuration with breaking changes"
+    output: |
+      git commit \
+        -m "config: update display manager configuration" \
+        -m "Switch from SDDM to GDM
+      Add custom theme configuration
+      Update user session management" \
+        -m "" \
+        -m "Breaking Changes:" \
+        -m "- Requires manual migration of user sessions from SDDM to GDM" \
+        -m "" \
+        -m "Affected Hosts:" \
+        -m "- skaia"
+        -m "- laptop"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

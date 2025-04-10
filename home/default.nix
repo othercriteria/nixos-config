@@ -77,6 +77,7 @@
     kdePackages.ktorrent
     lutris
     maestral
+    signal-desktop
     slack
     spotify
     vlc

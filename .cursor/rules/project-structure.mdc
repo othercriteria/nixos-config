@@ -1,0 +1,52 @@
+---
+description: Standards for maintaining project structure documentation
+globs: ["STRUCTURE.md"]
+alwaysApply: true
+---
+# Project Structure Documentation
+
+Document project structure in STRUCTURE.md.
+
+<rule>
+name: project_structure
+description: Standards for maintaining project structure documentation
+filters:
+  # Match STRUCTURE.md file
+  - type: file
+    pattern: "STRUCTURE\\.md$"
+  # Match queries about project structure
+  - type: intent
+    pattern: "(?i)\\b(structure|organization|layout|architecture)\\b"
+
+actions:
+  - type: suggest
+    message: |
+      STRUCTURE.md should include:
+      1. Project organization overview
+      2. Key directories and purposes
+      3. Important file locations
+      4. Component dependencies
+      5. Configuration file locations
+
+      Update when adding directories, moving files, or changing structure.
+
+  - type: reject
+    conditions:
+      - pattern: "^(?!.*STRUCTURE\\.md$)"
+        message: "Project structure documentation must be in STRUCTURE.md"
+
+criteria:
+  required:
+    - STRUCTURE.md exists in project root
+    - File is up-to-date with current structure
+    - All major components documented
+    - Directory purposes explained
+    - Key file locations listed
+
+examples:
+  - input: "Where should I put my new service component?"
+    output: "Check STRUCTURE.md for guidelines on component placement. Update STRUCTURE.md after adding your new service."
+
+metadata:
+  priority: high
+  version: 1.1
