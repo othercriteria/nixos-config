@@ -34,6 +34,41 @@
       enable = true;
       extraPackages = epkgs: [ epkgs.nix-mode ];
     };
+
+    git = {
+      enable = true;
+      userName = "Daniel Klein";
+      userEmail = "othercriteria@gmail.com";
+      lfs.enable = true;
+      extraConfig = {
+        credential.helper = "store";
+      };
+    };
+
+    vscode = {
+      enable = true;
+      profiles.default.extensions = with pkgs.vscode-extensions; [
+        dracula-theme.theme-dracula
+        yzhang.markdown-all-in-one
+      ];
+    };
+
+    alacritty = {
+      enable = true;
+      settings = {
+        env = {
+          # XXX: can we be using wayland-0?
+          WAYLAND_DISPLAY = "wayland-1";
+        };
+        font = {
+          normal = {
+            family = "Berkeley Mono";
+            style = "Regular";
+          };
+          size = 16;
+        };
+      };
+    };
   };
 
   home.packages = with pkgs; [
@@ -72,12 +107,14 @@
     (google-chrome.override {
       commandLineArgs = "--enable-wayland-ime --wayland-text-input-version=3";
     })
+    gnome-keyring # For ProtonVPN
     keepassxc
     keybase-gui
     kdePackages.ktorrent
     lutris
     maestral
-    signal-desktop
+    protonvpn-gui
+    signal-desktop-bin
     slack
     spotify
     vlc
@@ -85,39 +122,4 @@
     windsurf
     zoom-us
   ];
-
-  programs.git = {
-    enable = true;
-    userName = "Daniel Klein";
-    userEmail = "othercriteria@gmail.com";
-    lfs.enable = true;
-    extraConfig = {
-      credential.helper = "store";
-    };
-  };
-
-  programs.vscode = {
-    enable = true;
-    profiles.default.extensions = with pkgs.vscode-extensions; [
-      dracula-theme.theme-dracula
-      yzhang.markdown-all-in-one
-    ];
-  };
-
-  programs.alacritty = {
-    enable = true;
-    settings = {
-      env = {
-        # XXX: can we be using wayland-0?
-        WAYLAND_DISPLAY = "wayland-1";
-      };
-      font = {
-        normal = {
-          family = "Berkeley Mono";
-          style = "Regular";
-        };
-        size = 16;
-      };
-    };
-  };
 }

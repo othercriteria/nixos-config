@@ -16,10 +16,6 @@
       "tmux-make" = "tmux new -s";
       "tmux-swap" = "tmux switch -t";
 
-      "pvc" = "sudo protonvpn c -f";
-      "pvd" = "sudo protonvpn d";
-      "pvs" = "protonvpn s";
-
       # These are only relevant on hosts that have k3s installed
       # TODO: refactor!
       h = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml helm";

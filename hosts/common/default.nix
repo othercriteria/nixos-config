@@ -6,7 +6,9 @@
     ../../modules/fonts.nix
     ../../modules/greetd.nix
     ../../modules/printing.nix
+    ../../modules/protonvpn.nix
     ../../modules/vibectl.nix
+
   ];
 
   # Enable vibectl for any host with kubectl
@@ -67,9 +69,6 @@
     usbutils
     wget
 
-    # VPN
-    protonvpn-cli_2
-
     # Text editor
     emacs
   ];
@@ -78,7 +77,7 @@
 
   users.users.dlk = {
     isNormalUser = true;
-    extraGroups = [ "docker" "vboxusers" "wheel" ];
+    extraGroups = [ "docker" "vboxusers" "wheel" "networkmanager" ];
     shell = pkgs.zsh;
   };
 
@@ -102,21 +101,5 @@
 
   security.sudo = {
     enable = true;
-    extraRules = [{
-      groups = [ "wheel" ];
-      commands = [
-        {
-          command = "${pkgs.protonvpn-cli_2}/bin/protonvpn c *";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${pkgs.protonvpn-cli_2}/bin/protonvpn d";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }];
-    extraConfig = ''
-      Defaults secure_path="${lib.makeBinPath [ pkgs.protonvpn-cli_2 ]}:/run/current-system/sw/bin"
-    '';
   };
 }
