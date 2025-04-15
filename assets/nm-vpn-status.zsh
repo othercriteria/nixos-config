@@ -14,7 +14,7 @@ if [[ -n "$vpn_info" ]]; then
   # Capitalize connection type for display
   display_type=$(echo "$connection_type" | sed 's/^vpn$/OpenVPN/' | sed 's/^./\U&/g')
 
-  echo '{"text": "VPN:  '"$server_name"'", "tooltip": "Connection Type: '"$display_type"'", "class": "connected"}'
+  echo '{"text": "VPN:  '"$server_name"'", "tooltip": "Connection Type: '"$display_type"'", "class": "connected"}'
 else
-  echo '{"text": "VPN: ", "tooltip": "Not Connected", "class": "disconnected"}'
+  echo '{"text": "VPN: ", "tooltip": "Not Connected", "class": "disconnected"}'
 fi

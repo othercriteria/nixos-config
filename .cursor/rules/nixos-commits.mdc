@@ -110,6 +110,14 @@ criteria:
     - No debug code remains
     - Consistency maintained between pre-commit hooks and commit rules
     - All linting issues resolved
+    - User verification of changes (see verification_rules)
+
+verification_rules:
+  - The user, not the Agent, must verify that changes are functional and don't break the system
+  - Agents should NOT commit changes if there's any uncertainty about their impact
+  - If unsure about changes, Agents must ask for user verification before committing
+  - Agents should describe risks and potential impact for users to evaluate before committing
+  - For significant system changes, Agents should suggest testing before committing
 
 commit_message_format: |
   {type}: {concise description}
@@ -156,7 +164,17 @@ examples:
         -m "- skaia"
         -m "- laptop"
 
+  - input: "Agent is uncertain if a change will affect system stability"
+    output: |
+      "I've made the requested changes, but I'm uncertain if this will affect system stability.
+      Before committing, can you verify these changes won't cause issues?
+      Specifically, I'm concerned about:
+      - The changes to network configuration
+      - How this might affect the existing VPN setup
+
+      Would you like to test these changes first, or should I make any adjustments before committing?"
+
 metadata:
   priority: high
-  version: 1.0
+  version: 1.1
 </rule>

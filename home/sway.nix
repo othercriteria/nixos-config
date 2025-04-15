@@ -150,7 +150,6 @@
             "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/nm-vpn-status.zsh'";
             "interval" = 5;
             "return-type" = "json";
-            "tooltip" = false;
           };
 
           "network" = {
