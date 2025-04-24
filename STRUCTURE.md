@@ -1,100 +1,56 @@
 # Project Structure
 
-This document outlines the structure and organization of this NixOS configuration
-project.
-
-## Overview
-
-This project is organized as a NixOS configuration repository using the Nix Flakes
-system. It contains configuration for different hosts, home-manager setups, and
-shared modules.
+This document outlines the structure and organization of this NixOS
+configuration.
 
 ## Key Directories and Their Purposes
 
-### `.cursor/rules/`
+- `modules/`: Contains shared NixOS and Home Manager modules that can be
+  imported by various hosts or user profiles.
+- `hosts/`: Contains per-host NixOS configuration files and subdirectories.
+- `home/`: Contains Home Manager user configuration modules.
+- `docs/`: Project documentation, including cold start and observability
+  guides.
+- `assets/`: Fonts, images, and other static assets.
+- `private-assets/`: Private, non-public assets (not tracked in git).
+- `secrets/`: Encrypted secrets managed by git-secret.
+- `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
 
-Contains Cursor rule files (`.mdc`) that provide guidance and enforcement for
-various aspects of the project.
+## NixOS Entrypoint
 
-Rules include:
-
-- `cursor-rules-location.mdc`: Standards for organizing Cursor rule files
-- `project-structure.mdc`: Standards for maintaining project structure documentation
-- `nixos-commits.mdc`: Guidelines for NixOS configuration commits, including
-  standardized commit messages, tracking of affected hosts, and ensuring
-  documentation stays up-to-date
-- `markdown-standards.mdc`: Standards for authoring Markdown files that conform to
-  the project's linting requirements
-
-### `hosts/`
-
-Contains host-specific NixOS configurations. Each subdirectory represents a
-different machine with its own specific configuration.
-
-### `home/`
-
-Contains Home Manager configurations for user environments.
-
-### `modules/`
-
-Contains shared NixOS and Home Manager modules that can be imported by various
-configurations.
-
-Current modules include:
-
-- `printing.nix`: Printer configuration
-- `berkeley-mono-typeface.nix`: Font configuration for Berkeley Mono
-- `fonts.nix`: General font configuration
-- `greetd.nix`: Login manager configuration
-- `vibectl.nix`: NixOS module for the vibectl CLI tool (vibes-based kubectl alt)
-  - Uses a Python environment with dependencies and wraps the executable for
-    proper integration
-  - Leverages the llm package and llm-anthropic plugin from nixpkgs
-  - Provides optional Anthropic API key configuration for Claude model access
-  - Feature-complete implementation with proper Python module path handling
-
-### `assets/` and `private-assets/`
-
-Contains non-code assets for the system such as wallpapers, icons, or other
-resources. The private-assets directory likely contains assets that shouldn't be
-publicly shared.
-
-### `secrets/`
-
-Contains encrypted secrets managed by git-secret, based on the presence of
-`.gitsecret/` directory and `.secrets.baseline` file.
+- `flake.nix`: The main Nix flake entrypoint for the system.
+- `flake.lock`: Flake lock file for reproducible builds.
+- `Makefile`: Automation for common tasks (build, switch, check, etc).
 
 ## Important File Locations
 
-- `flake.nix`: The main entry point for the NixOS flake configuration
-- `flake.lock`: Lock file that pins dependencies to specific versions
-- `Makefile`: Contains helpful commands and automation for managing the system
 - `README.md`: Project documentation and usage instructions
-- `.envrc`: Environment configuration for direnv
-- `.pre-commit-config.yaml`: Configuration for pre-commit hooks
 - `.gitleaks.toml`: Configuration for secret scanning with gitleaks
-- `.markdownlint.json`: Configuration for markdown linting
+- `.pre-commit-config.yaml`: Pre-commit hook configuration
+- `.gitignore`: Files and directories to ignore in git
+- `.secrets.baseline`: Baseline for secret scanning
 
-## Component Dependencies
+## Directory Purposes
 
-- The system uses Nix Flakes for dependency management
-- Git and git-secret for version control and secrets management
-- Pre-commit hooks for code quality and security checks
-- Possibly home-manager for user environment management
+- `modules/`: Shared modules for NixOS and Home Manager
+- `hosts/`: Per-host configuration (e.g., `skaia/`, `common/`)
+- `home/`: User-level configuration
+- `docs/`: Documentation for setup, cold start, and observability
+- `assets/`: Static assets (fonts, images)
+- `private-assets/`: Private assets (not tracked in git)
+- `secrets/`: Encrypted secrets (git-secret)
 
-## Configuration File Locations
-
-- `flake.nix`: Main configuration entry point
-- `hosts/*/`: Host-specific configurations
-- `home/*/`: User-specific home configurations
-- `modules/*/`: Shared module configurations
-- `.cursor/rules/`: Configuration for Cursor AI assistance
-
-## Update Guidelines
+## Updating Structure
 
 This document should be updated whenever:
 
-- New directories are added
-- Files are moved
-- The overall project structure changes
-- New components or hosts are introduced
+- Adding, removing, or renaming directories
+- Moving files between directories
+- Changing the purpose of a directory
+- Adding new major components
+
+## Documentation
+
+- [Observability Stack](docs/OBSERVABILITY.md): Details on the observability
+  setup, including metrics, logs, dashboards, storage, retention, backup, and
+  DR.

@@ -1,0 +1,226 @@
+---
+description: Standards for placing Cursor rule files in the correct directory
+globs: ["**/*"]
+alwaysApply: true
+---
+# Cursor Rules Location
+
+Place Cursor rule files in .cursor/rules/ directory. Keep rules generic for reuse.
+
+<rule>
+name: cursor_rules_location
+description: Standards for placing Cursor rule files in the correct directory
+filters:
+  # Match any .mdc files
+  - type: file_extension
+    pattern: "\\.mdc$"
+  # Match files that look like Cursor rules
+  - type: content
+    pattern: "(?s)<rule>.*?</rule>"
+  # Match file creation events
+  - type: event
+    pattern: "file_create"
+  # Match rules discussions
+  - type: content
+    pattern: "(?i)\\b(rule|rules|consistency|standards|guidelines)\\b"
+
+actions:
+  - type: reject
+    conditions:
+      - pattern: "^(?!\\.\\/\\.cursor\\/rules\\/.*\\.mdc$)"
+        message: "Cursor rule files (.mdc) must be placed in the .cursor/rules directory"
+      - pattern: "^(?!---\\s*\\n.*?\\n---\\s*\\n)"
+        message: "Cursor rule files must include YAML frontmatter with description, globs, and alwaysApply fields"
+      - pattern: "(?i)\\b(new|add|create|modify|update|edit|change)\\s+(rule|.mdc)\\b(?!.*\\bRULES\\.md\\b)"
+        message: "When adding or updating rules, make sure to update RULES.md to maintain documentation synchronization"
+
+  - type: suggest
+    message: |
+      ## Cursor Rules Standards
+
+      1. **File Organization**:
+         - YAML frontmatter (description, globs, alwaysApply)
+         - Located in .cursor/rules/ directory
+         - Use kebab-case filenames with .mdc extension
+
+      2. **Rule Content**:
+         - Avoid project-specific references for reusability
+         - Use generic patterns that work across different codebases
+         - Include clear examples with both input and expected output
+
+      3. **Consistency Across Rules**:
+         - Cross-reference related rules explicitly
+         - Maintain consistent structure (filters, actions, criteria, examples)
+         - Use similar terminology for similar concepts
+         - Balance rejection conditions with helpful suggestions
+
+      4. **Versioning**:
+         - Increment patch version (x.y.Z) for minor fixes or clarifications
+         - Increment minor version (x.Y.z) for new features or non-breaking changes
+         - Increment major version (X.y.z) for breaking changes or significant rewrites
+         - Include version update in commit message when changing rules
+
+      5. **Integration**:
+         - Ensure rules work together without contradictions
+         - Prevent overlapping responsibilities between rules
+         - Reference other rules when dependencies exist
+         - Maintain RULES.md to document overall rule organization and keep it in sync with changes
+         - Keep documentation in sync when adding or modifying rules
+
+      6. **Editing Rule Files**:
+         - **IMPORTANT**: Creating or editing rule files in .cursor/rules/ can be challenging for AI assistants
+         - When making extensive changes to a rule file, prefer this workflow:
+           1. Create the .cursor/rules/ directory if it doesn't exist: `mkdir -p .cursor/rules/`
+           2. For YAML frontmatter, add it as separate incremental edits
+           3. Always verify frontmatter was properly included with `head -10 .cursor/rules/file.mdc`
+           4. If edits fail, use a step-by-step approach with shell commands:
+              ```bash
+              # Create frontmatter separately
+              echo '---' > /tmp/frontmatter
+              echo 'description: Your description here' >> /tmp/frontmatter
+              echo 'globs: ["**/*"]' >> /tmp/frontmatter
+              echo 'alwaysApply: true' >> /tmp/frontmatter
+              echo '---' >> /tmp/frontmatter
+
+              # Then combine with the rule content
+              cat /tmp/frontmatter .cursor/rules/your-rule.mdc > /tmp/combined
+              mv /tmp/combined .cursor/rules/your-rule.mdc
+              ```
+           5. For incremental changes, make small edits rather than replacing the entire file
+           6. Always check trailing whitespace and formatting before committing
+
+examples:
+  - input: "How should I create a new rule file?"
+    output: |
+      Create a new rule file following these standards:
+
+      ```
+      ---
+      description: Clear description of the rule's purpose
+      globs: ["**/*.py"]  # Files the rule applies to
+      alwaysApply: true   # Whether to always apply this rule
+      ---
+      # Rule Title
+
+      Brief description of the rule and its purpose.
+
+      <rule>
+      name: kebab_case_rule_name
+      description: Detailed description of what the rule enforces
+
+      filters:
+        - type: file_pattern
+          pattern: "^path/to/files/.*\\.py$"
+        - type: content
+          pattern: "(?i)\\b(relevant|terms|to|match)\\b"
+
+      actions:
+        - type: suggest
+          message: |
+            Clear, helpful guidance on following the rule
+
+        - type: reject
+          conditions:
+            - pattern: "(?i)\\b(pattern|to|reject)\\b"
+              message: "Helpful error message with guidance for fixing"
+
+      criteria:
+        required:
+          - List of specific requirements enforced by this rule
+          - Each item should be clear and specific
+
+      examples:
+        - input: "Example query or scenario"
+          output: |
+            Example response or guidance
+
+      metadata:
+        priority: high  # critical, high, medium, or low
+        version: 1.0    # Semantic versioning
+      </rule>
+      ```
+
+      Save the file as `.cursor/rules/kebab-case-name.mdc`
+
+      Don't forget to update RULES.md with a description of your new rule:
+
+      ```markdown
+      - **kebab-case-name.mdc**: Brief description of what the rule enforces
+      ```
+
+  - input: "How do I make my rules work well together?"
+    output: |
+      To ensure rules work well together:
+
+      1. **Cross-reference related rules**:
+         ```
+         See the [other-rule-name] rule for related guidelines on X.
+         ```
+
+      2. **Avoid overlapping functionality**:
+         - Each rule should have a clear, distinct responsibility
+         - If rules must overlap, ensure patterns don't conflict
+
+      3. **Use consistent terminology**:
+         - Use same terms for same concepts across rules
+         - Keep messaging style consistent
+
+      4. **Coordinate version updates**:
+         - When updating multiple related rules, increment versions consistently
+         - Document dependencies between rules in comments
+
+      5. **Test rules together**:
+         - Verify that combined rule application doesn't create conflicts
+         - Use reject patterns judiciously to avoid frustrating users
+
+  - input: "What's the best way to edit rule files with AI assistance?"
+    output: |
+      When editing rule files with AI assistance:
+
+      1. **Break it into steps**:
+         - First ensure the directory exists: `mkdir -p .cursor/rules/`
+         - Create or modify content in smaller, incremental changes
+         - Validate changes after each step with `cat` or `head`
+
+      2. **Handle YAML frontmatter separately**:
+         - If the frontmatter isn't being correctly added, use shell commands:
+         ```bash
+         # Create frontmatter separately
+         echo '---' > /tmp/frontmatter
+         echo 'description: Rule description' >> /tmp/frontmatter
+         echo 'globs: ["**/*"]' >> /tmp/frontmatter
+         echo 'alwaysApply: true' >> /tmp/frontmatter
+         echo '---' >> /tmp/frontmatter
+
+         # Combine with rule content
+         cat /tmp/frontmatter .cursor/rules/your-rule.mdc > /tmp/combined
+         mv /tmp/combined .cursor/rules/your-rule.mdc
+         ```
+
+      3. **Verify after editing**:
+         - Check for proper formatting: `cat .cursor/rules/your-rule.mdc | head -10`
+         - Ensure changes were saved: `git diff .cursor/rules/your-rule.mdc`
+         - Look for trailing whitespace issues: `git diff --check .cursor/rules/your-rule.mdc`
+
+      4. **Commit strategy**:
+         - Stage incrementally: `git add .cursor/rules/your-rule.mdc`
+         - Run pre-commit hooks before final commit: `pre-commit run --files .cursor/rules/your-rule.mdc`
+         - Fix issues discovered by hooks before committing
+
+criteria:
+  required:
+    - Place all cursor rule files in .cursor/rules/ directory
+    - Use kebab-case filenames with .mdc extension
+    - Include YAML frontmatter with description, globs, and alwaysApply
+    - Include complete rule structure (name, description, filters, actions, examples)
+    - Avoid project-specific references for reusability
+    - Use semantic versioning and update version when changing rules
+    - Keep RULES.md in sync with all rule changes
+    - Document rule purpose, behavior and requirements clearly
+    - Include helpful examples with both input and expected output
+    - Structure rules consistently with others to maintain readability
+
+metadata:
+  priority: high
+  version: 1.4
+</rule>

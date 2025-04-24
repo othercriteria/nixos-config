@@ -1,6 +1,13 @@
-{ config, ... }:
+{ config, lib, pkgs, ... }:
 
 {
+  imports = [
+    ../../modules/prometheus-rules.nix
+    ../../modules/prometheus-zfs-snapshot.nix
+  ];
+
+  services.prometheusZfsSnapshot.dataset = "fastdisk/prometheus";
+
   systemd.services.alertmanager.serviceConfig = {
     User = "dlk";
   };
@@ -14,7 +21,9 @@
     prometheus = {
       enable = true;
       port = 9001;
-
+      # Prometheus data is stored in /var/lib/prometheus2 by default.
+      # Ensure your ZFS dataset is mounted at /var/lib/prometheus2 for optimal performance and durability.
+      extraFlags = [ "--storage.tsdb.retention.time=30d" ];
       # Can't do build-time validation, since k3s token is generated at runtime
       checkConfig = false;
 
@@ -170,48 +179,8 @@
           }
         ];
 
-      # Define alerting rules as a JSON string by forcing evaluation
-      rules =
-        let
-          alertRules = {
-            groups = [
-              {
-                name = "node.rules";
-                rules = [
-                  {
-                    alert = "DiskSpaceLow";
-                    expr =
-                      "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", " +
-                      "mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", " +
-                      "mountpoint=\"/\"}) * 100 < 15";
-                    "for" = "5m";
-                    labels = { severity = "warning"; };
-                    annotations = {
-                      summary =
-                        "Low disk space on {{ $labels.instance }}";
-                      description =
-                        "Disk space is below 15% free on mount {{ $labels.mountpoint }}.";
-                    };
-                  }
-                  {
-                    alert = "HighCPUTemperature";
-                    expr =
-                      "node_hwmon_temp_celsius{chip=\"platform_nct6775_656\", sensor=\"temp1\"} > 80";
-                    "for" = "5m";
-                    labels = { severity = "critical"; };
-                    annotations = {
-                      summary =
-                        "High CPU Temperature on {{ $labels.instance }}";
-                      description =
-                        "CPU temperature is above 80°C for more than 5 minutes.";
-                    };
-                  }
-                ];
-              }
-            ];
-          };
-        in
-        [ "${builtins.toJSON alertRules}" ];
+      # Use factored-out rules from module
+      rules = config.prometheusRules;
 
       # Alertmanager configuration nested under Prometheus
       alertmanager = {
@@ -328,5 +297,7 @@
         ];
       };
     };
+
+    prometheusZfsSnapshot.enable = true;
   };
 }

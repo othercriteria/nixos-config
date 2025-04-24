@@ -1,0 +1,36 @@
+---
+description: Document and manage all manual steps required for cold start (initial deployment) of a system
+globs: ["**/*"]
+alwaysApply: true
+---
+# Cold Start Considerations
+
+<rule>
+name: cold_start
+
+# Description
+Document all manual steps required to bring up a new system from scratch that are not handled by NixOS or automation. Examples include creating ZFS datasets, provisioning hardware-specific firmware, or initial secret generation.
+
+# Requirements
+- All such steps must be:
+  1. Clearly annotated in-line in the relevant config or code (with a comment like: # COLD START: ...)
+  2. Summarized in `docs/COLD-START.md` with detailed, step-by-step instructions suitable for late-night troubleshooting
+  3. Avoided where possible, but documented if unavoidable
+- The documentation must be explicit, actionable, and assume no prior context
+- Update the summary doc and in-line comments whenever a new cold start step is introduced or removed
+
+# Examples
+- Creating a ZFS dataset for Prometheus:
+  - In config: `# COLD START: Requires /zfs/prometheus dataset to exist`
+  - In docs/COLD-START.md: Step-by-step ZFS creation instructions
+- Installing firmware for a specific device
+- Generating initial secrets or tokens
+
+# Enforcement
+- PRs introducing new cold start steps must include both in-line annotation and doc update
+- Reviewers should reject changes that add undocumented cold start steps
+
+# Metadata
+priority: high
+version: 1.0
+</rule>

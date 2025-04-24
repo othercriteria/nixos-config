@@ -32,24 +32,28 @@ actions:
       7. Headers: Use ATX-style headers (# H1, ## H2) with a space after the # symbol
       8. Header nesting: Don't skip levels (e.g., don't go from ## to ####)
 
+      These standards are enforced by markdownlint and pre-commit hooks. If you see a linting error, refer to this rule for the required fix.
+
   - type: reject
     conditions:
       - pattern: "(?m)^[^`#>].*(.{81,})$"
         message: "Line length exceeds 80 characters (excluding code blocks and tables)"
-      - pattern: "(?m)^\\s*(\\d+)\\. (?!$).+$(?:\\n\\s*(?!\\1|\\d|$)\\d+\\. .+$)+"
+      - pattern: "(?m)^\s*(\d+)\. (?!$).+$(?:\n\s*(?!\1|\d|$)\d+\. .+$)+"
         message: "Ordered list doesn't use sequential numbering starting with 1"
-      - pattern: "(?m)^(#+)(?!\\s).*$"
+      - pattern: "(?m)^(#+)(?!\s).*$"
         message: "Headers must have a space after the # symbols"
-      - pattern: "(?m)^###### .*?\\n#+\\s.*?$"
+      - pattern: "(?m)^###### .*?\n#+\s.*?$"
         message: "Header levels shouldn't exceed h6 (######)"
-      - pattern: "(?m)^#\\s.*?\\n###\\s.*?$"
+      - pattern: "(?m)^#\s.*?\n###\s.*?$"
         message: "Don't skip header levels (e.g., h1 to h3)"
-      - pattern: "(?m)^- .*?\\n[^\\n-]"
+      - pattern: "(?m)^- .*?\n[^\n-]"
         message: "Lists should be followed by a blank line"
-      - pattern: "(?m)[^\\n]\\n- .*?$"
+      - pattern: "(?m)[^\n]\n- .*?$"
         message: "Lists should be preceded by a blank line"
-      - pattern: "(?m)^```\\s*$"
+      - pattern: "(?m)^```\s*$"
         message: "Code blocks should specify a language for syntax highlighting"
+      - pattern: "(?m)^(#+)\s+(.*?)\n(?:.*\n)*?^\1\s+\2\s*$"
+        message: "Duplicate headings with the same content are not allowed"
 
 criteria:
   required:

@@ -7,6 +7,7 @@
     after = [ "k3s.service" ];
     path = [ pkgs.k3s pkgs.coreutils ];
     script = ''
+      # COLD START: k3s must be running for the Prometheus client credentials extraction service to succeed. See docs/COLD-START.md for details.
       echo "Starting k3s token extraction..."
 
       # Wait for k3s to be ready

@@ -35,3 +35,5 @@
     '';
   };
 }
+
+# COLD START: This host may require manual firmware/module setup and sensor/fan configuration. See docs/COLD-START.md for details.
