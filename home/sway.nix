@@ -180,10 +180,12 @@
 
   services.mako = {
     enable = true;
-    layer = "overlay";
-    font = "monospace 16";
-    width = 450;
-    height = 200;
-    margin = "20";
+    settings = {
+      layer = "overlay";
+      font = "monospace 16";
+      width = "450";
+      height = "200";
+      margin = "20";
+    };
   };
 }

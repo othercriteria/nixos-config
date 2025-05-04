@@ -27,7 +27,7 @@
       path = "${config.xdg.dataHome}/zsh/history";
     };
 
-    initExtra = builtins.concatStringsSep "\n" [
+    initContent = builtins.concatStringsSep "\n" [
       (builtins.readFile ../assets/p10k.zsh)
       (builtins.readFile ../assets/nix-direnv.zsh)
       "export EDITOR=\"emacs -nw\""
