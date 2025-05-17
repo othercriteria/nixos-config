@@ -15,6 +15,7 @@ configuration.
 - `private-assets/`: Private, non-public assets (not tracked in git).
 - `secrets/`: Encrypted secrets managed by git-secret.
 - `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
+  - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
 
 ## NixOS Entrypoint
 

@@ -117,6 +117,15 @@
     signal-desktop-bin
     slack
     spotify
+    (
+      let
+        vassal-original = vassal;
+      in
+      pkgs.writeShellScriptBin "vassal-with-env" ''
+        export _JAVA_AWT_WM_NONREPARENTING=1
+        exec ${vassal-original}/bin/vassal
+      ''
+    )
     vlc
     warp-terminal
     windsurf
