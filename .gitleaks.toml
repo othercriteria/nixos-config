@@ -8,7 +8,7 @@ paths = [
 [[rules]]
 id = "generic-api-key"
 description = "Generic API Key"
-regex = '''(?i)(api[_-]?key|apikey|secret)[_-]?(key)?['\"]?\s*[:=]\s*['"]?([a-zA-Z0-9-_=]{8,64})['"]?'''
+regex = '''(?i)(api[_-]?key|apikey|secret)[_-]?(key)?['\"]?\s*[:=]\s*['"]?([a-zA-Z0-9+/=]{16,})['"]?'''
 secretGroup = 3
 
 [[rules]]

@@ -45,7 +45,7 @@ in
           # Create a Python environment with required packages
           pythonEnv = pkgs.python312.withPackages (ps: with ps; [
             # Core dependencies
-            click
+            asyncclick
             rich
             kubernetes
             requests
@@ -65,13 +65,13 @@ in
         in
         pkgs.stdenv.mkDerivation {
           pname = "vibectl";
-          version = "0.6.0";
+          version = "0.8.6";
 
           src = pkgs.fetchFromGitHub {
             owner = "othercriteria";
             repo = "vibectl";
-            rev = "v0.6.0"; # Official v0.3.0 release tag
-            sha256 = "sha256-/pscGe9XaXyDYz0UWJmaotqskXkTromSRM4+jKLkK2M="; # Hash for v0.6.0 tag # pragma: allowlist secret
+            rev = "v0.8.6";
+            sha256 = "sha256-6emezxn8vpP27j+Hk4nJwyhm9lhkkwobmg0gSjIfq/0="; # pragma: allowlist secret
           };
 
           # Need nativeBuildInputs for build-time dependencies

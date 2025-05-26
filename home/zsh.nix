@@ -20,6 +20,7 @@
       # TODO: refactor!
       h = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml helm";
       k = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl";
+      k9 = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml k9s";
     };
 
     history = {

@@ -92,6 +92,7 @@
     gimp-with-plugins
 
     kubectl
+    k9s
 
     claude-code
 
