@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, uv2nix, pyprojectNix, pyprojectBuildSystems, ... }:
 
 with lib;
 
@@ -36,97 +36,99 @@ in
       description = "Path to a file containing the OpenAI API key";
       example = "/etc/nixos/secrets/openai-key";
     };
+
+    anthropicPlugin = mkOption {
+      type = types.nullOr types.bool;
+      default = null;
+      description = "Whether to include the llm-anthropic plugin. If null (default), the plugin will be included automatically when an Anthropic API key or key file is provided.";
+    };
   };
 
   config = mkIf cfg.enable {
     environment.systemPackages = [
       (
         let
-          # Create a Python environment with required packages
-          pythonEnv = pkgs.python312.withPackages (ps: with ps; [
-            # Core dependencies
-            asyncclick
-            rich
-            kubernetes
-            requests
-            pyyaml
-            pydantic
-
-            # LLM integration (still required despite improved key management)
-            llm
-            llm-anthropic
-
-            # Build dependencies
-            pip
-            setuptools
-            wheel
-            hatchling
-          ]);
-        in
-        pkgs.stdenv.mkDerivation {
-          pname = "vibectl";
-          version = "0.8.6";
-
           src = pkgs.fetchFromGitHub {
             owner = "othercriteria";
             repo = "vibectl";
-            rev = "v0.8.6";
-            sha256 = "sha256-6emezxn8vpP27j+Hk4nJwyhm9lhkkwobmg0gSjIfq/0="; # pragma: allowlist secret
+            # NOTE: update when bumping vibectl; use the same commit until a new
+            # release is pinned.
+            rev = "87d231c20d1833b92d996f2549a61cf97f8aea30"; # pragma: allowlist secret
+            sha256 = "sha256-ls5f/jPvq08gdR9Fn4L+TmPbVBHi56xPnyo2T2885q8="; # pragma: allowlist secret
           };
 
-          # Need nativeBuildInputs for build-time dependencies
-          nativeBuildInputs = [
-            pythonEnv
-            pkgs.makeWrapper
-          ];
+          # Build via uv2nix workspace → overlay → pythonSet → virtualenv
 
-          # Skip configure phase as we're not using autotools
-          dontConfigure = true;
+          workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = src; };
 
-          # Skip Python's build isolation to use our environment
-          buildPhase = ''
-            # Create a writable home directory for pip
-            export HOME=$(mktemp -d)
-
-            # Install with pip but don't use --prefix which doesn't properly setup paths
-            mkdir -p $out/${pythonEnv.sitePackages}
-            cp -r vibectl $out/${pythonEnv.sitePackages}/
-
-            # Create bin directory and script
-            mkdir -p $out/bin
-            cat > $out/bin/vibectl << EOF
-            #!${pythonEnv.interpreter}
-            import sys
-            import os
-            from vibectl.cli import cli
-
-            if __name__ == "__main__":
-                sys.exit(cli())
-            EOF
-            chmod +x $out/bin/vibectl
-          '';
-
-          # No separate install phase needed
-          dontInstall = true;
-
-          # Wrap the executable to ensure it can find dependencies
-          postFixup = ''
-            wrapProgram $out/bin/vibectl \
-              --prefix PYTHONPATH : "$out/${pythonEnv.sitePackages}:${pythonEnv}/${pythonEnv.sitePackages}" \
-              --prefix PATH : "${pkgs.kubectl}/bin:${pythonEnv}/bin" \
-              ${optionalString (cfg.anthropicApiKey != null) "--set VIBECTL_ANTHROPIC_API_KEY \"${cfg.anthropicApiKey}\""} \
-              ${optionalString (cfg.anthropicApiKeyFile != null) "--set VIBECTL_ANTHROPIC_API_KEY_FILE \"${cfg.anthropicApiKeyFile}\""} \
-              ${optionalString (cfg.openaiApiKey != null) "--set VIBECTL_OPENAI_API_KEY \"${cfg.openaiApiKey}\""} \
-              ${optionalString (cfg.openaiApiKeyFile != null) "--set VIBECTL_OPENAI_API_KEY_FILE \"${cfg.openaiApiKeyFile}\""}
-          '';
-
-          meta = with lib; {
-            description = "A vibes-based alternative to kubectl for interacting with Kubernetes clusters";
-            homepage = "https://github.com/othercriteria/vibectl";
-            license = licenses.mit;
-            platforms = platforms.linux;
+          overlay = workspace.mkPyprojectOverlay {
+            sourcePreference = "wheel";
           };
-        }
+
+          # Determine if the llm-anthropic plugin should be included
+          pluginNeeded = if cfg.anthropicPlugin != null then cfg.anthropicPlugin else (cfg.anthropicApiKey != null || cfg.anthropicApiKeyFile != null);
+
+          # Optional llm-anthropic plugin derivation
+          anthropicPluginDrv = pkgs.python312Packages.buildPythonPackage rec {
+            # PyPI uses underscores for the source archive name
+            pname = "llm_anthropic";
+            version = "0.17";
+            format = "pyproject";
+            src = pkgs.fetchPypi {
+              inherit pname version;
+              sha256 = "sha256-L14atbfrmoS40HRzqGlwiLZZ/U8ZQdloY88Yz4z7nrA="; # pragma: allowlist secret
+            };
+            propagatedBuildInputs = with pkgs.python312Packages; [ llm anthropic ];
+            pythonImportsCheck = [ "llm_anthropic" ];
+          };
+
+          pythonSet = (pkgs.callPackage pyprojectNix.build.packages { python = pkgs.python312; }).overrideScope (lib.composeManyExtensions [
+            pyprojectBuildSystems.overlays.default
+            overlay
+          ]);
+
+          base = pythonSet.mkVirtualEnv "vibectl-env" workspace.deps.default;
+
+
+        in
+        base.overrideAttrs (old:
+          let
+            pythonVer = lib.versions.majorMinor pkgs.python312.version; # e.g. "3.12"
+            sitePkgs = "$out/lib/python${pythonVer}/site-packages";
+          in
+          {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ] ++ lib.optional pluginNeeded anthropicPluginDrv;
+
+            postInstall = (old.postInstall or "") + lib.optionalString pluginNeeded ''
+              # Include llm-anthropic plugin in the virtualenv
+              pluginSitePkgs=${anthropicPluginDrv}/lib/python${pythonVer}/site-packages
+              cp -r "$pluginSitePkgs"/* "${sitePkgs}/"
+
+              # Also copy the required anthropic dependency
+              anthropicSitePkgs=${pkgs.python312Packages.anthropic}/lib/python${pythonVer}/site-packages
+              cp -r "$anthropicSitePkgs"/* "${sitePkgs}/"
+            '';
+
+            postFixup = (old.postFixup or "") + ''
+              for prog in $out/bin/vibectl $out/bin/vibectl-server; do
+                if [ -f "$prog" ]; then
+                  # Create a wrapped version that ensures Python can find the
+                  # installed modules and that kubectl is available.
+
+                  mv "$prog" "$prog.orig"
+
+                  makeWrapper "$prog.orig" "$prog" \
+                    --set PYTHONPATH "${sitePkgs}" \
+                    --prefix PATH : "${pkgs.kubectl}/bin" \
+                    ${optionalString (cfg.anthropicApiKey     != null) "--set VIBECTL_ANTHROPIC_API_KEY ${cfg.anthropicApiKey}"} \
+                    ${optionalString (cfg.anthropicApiKeyFile != null) "--set VIBECTL_ANTHROPIC_API_KEY_FILE ${cfg.anthropicApiKeyFile}"} \
+                    ${optionalString (cfg.openaiApiKey        != null) "--set VIBECTL_OPENAI_API_KEY ${cfg.openaiApiKey}"} \
+                    ${optionalString (cfg.openaiApiKeyFile    != null) "--set VIBECTL_OPENAI_API_KEY_FILE ${cfg.openaiApiKeyFile}"}
+
+                fi
+              done
+            '';
+          })
       )
     ];
   };

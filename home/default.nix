@@ -94,6 +94,7 @@
     kubectl
     k9s
 
+    amp-cli # TODO: migrate to ampcode
     claude-code
 
     links2

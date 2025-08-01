@@ -17,9 +17,30 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+
+    # Python packaging helpers (uv2nix + ecosystem)
+    pyproject-nix = {
+      url = "github:pyproject-nix/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+    };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        pyproject-nix.follows = "pyproject-nix";
+        uv2nix.follows = "uv2nix";
+      };
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-stable, home-manager, flake-utils, pre-commit-hooks, ... }:
+  outputs = { self, nixpkgs, nixpkgs-stable, home-manager, flake-utils, pre-commit-hooks, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
     let
       supportedSystems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -34,6 +55,9 @@
               inherit system;
               config.allowUnfree = true;
             };
+            inherit uv2nix;
+            pyprojectNix = pyproject-nix;
+            pyprojectBuildSystems = pyproject-build-systems;
           };
           modules = [
             ./hosts/skaia
