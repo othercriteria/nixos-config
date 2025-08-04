@@ -102,4 +102,8 @@
   security.sudo = {
     enable = true;
   };
+
+  security.pki.certificateFiles = [
+    ../../assets/certs/rootCA.pem
+  ];
 }
