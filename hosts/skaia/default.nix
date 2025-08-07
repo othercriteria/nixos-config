@@ -57,6 +57,15 @@
       enable = true;
       videoDrivers = [ "nvidia" ];
     };
+
+    # COLD START: Requires ZFS dataset slowdisk/registry mounted at /var/lib/registry
+    dockerRegistry = {
+      enable = true;
+      listenAddress = "0.0.0.0";
+      port = 5000;
+      storagePath = "/var/lib/registry";
+      enableDelete = true;
+    };
   };
 
   security = {

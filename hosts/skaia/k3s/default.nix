@@ -47,9 +47,11 @@
       # Disable default local storage provider since we'll use ZFS-LocalPV
       "--disable local-storage"
 
+      # Disable default ingress controller (Traefik) so we can use ingress-nginx instead
+      "--disable traefik"
+
       # TODO: replace these with more production-ready alternatives
       # "--disable servicelb"
-      # "--disable traefik"
     ];
 
     containerdConfigTemplate = ''

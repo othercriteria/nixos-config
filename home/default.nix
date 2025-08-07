@@ -91,6 +91,8 @@
     blender
     gimp-with-plugins
 
+    # Kubernetes
+    argocd
     kubectl
     k9s
 

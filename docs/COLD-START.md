@@ -126,7 +126,44 @@ k3s to be running and accessible.
 
 ---
 
-## 4. TODO: Secrets Management
+## 4. Create ZFS Dataset for Docker Registry
+
+**Context:** The local Docker registry (`registry:2` via NixOS
+`services.dockerRegistry`) stores its layers under `/var/lib/registry`. This
+directory must be backed by a ZFS dataset so that images are not kept on the
+root filesystem and can benefit from snapshots.
+
+**Step-by-step:**
+
+1. Create the dataset on the slow disk pool:
+
+   ```sh
+   zfs create -o mountpoint=/var/lib/registry slowdisk/registry
+   ```
+
+1. Verify the dataset is mounted:
+
+   ```sh
+   zfs list slowdisk/registry
+   ls -ld /var/lib/registry
+   ```
+
+1. (Optional) Set a quota or reservation if you want to limit/guarantee
+   space, for example 150 GiB:
+
+   ```sh
+   zfs set quota=150G slowdisk/registry
+   ```
+
+**In config:**
+
+- `hosts/skaia/default.nix` — look for
+  `# COLD START: Requires ZFS dataset slowdisk/registry` next to the
+  `services.dockerRegistry` block.
+
+---
+
+## 5. TODO: Secrets Management
 
 > TODO: Document all secrets required for cold start (e.g., API keys, passwords
 > in `/etc/nixos/secrets/`). For now, ensure any referenced secret files exist
@@ -134,7 +171,7 @@ k3s to be running and accessible.
 
 ---
 
-## 5. [Add future cold start steps here]
+## 6. [Add future cold start steps here]
 
 If you discover a new manual step, document it in-line and add a section here
 with explicit, actionable instructions.

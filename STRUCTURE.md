@@ -31,6 +31,14 @@ configuration.
 - `.gitignore`: Files and directories to ignore in git
 - `.secrets.baseline`: Baseline for secret scanning
 
+### Runtime State
+
+- `/var/lib/registry`: Storage path for the local Docker registry configured via
+  `services.dockerRegistry` (backed by ZFS dataset `slowdisk/registry`).  This
+  directory is created manually during cold-start and is **not** part of the
+  git repository, but it is essential to system operation and therefore noted
+  here.
+
 ## Directory Purposes
 
 - `modules/`: Shared modules for NixOS and Home Manager
