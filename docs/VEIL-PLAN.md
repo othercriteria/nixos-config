@@ -161,37 +161,32 @@ Recommended flow for each meteor:
   - Swap: skip disk swap; we will enable `zramSwap` in server config.
   - Create a temporary admin user (can be `dlk`); SSH enabled.
 - First boot
-  - Enable flakes without editing system files:
-    - Append to command:
-      `--option experimental-features 'nix-command flakes'`
-    - Example:
-      `sudo nixos-rebuild switch --flake /etc/nixos#meteor-1 \
-      --option experimental-features 'nix-command flakes'`
-    - Alternatively (temporary), per-user config for root:
-      - `mkdir -p /root/.config/nix`
-      - `printf '%s\n' 'experimental-features = nix-command flakes' \
-        > /root/.config/nix/nix.conf`
-    - Alternative one-shot env:
-      `NIX_CONFIG="experimental-features = nix-command flakes" \
-      sudo -E nixos-rebuild switch --flake /etc/nixos#meteor-1`
-  - Fetch the repo:
-    - Either `git clone` to `/etc/nixos` (preferred), or scp the repo from
-      `skaia` to `/etc/nixos`.
-  - Place required secrets at runtime paths (minimal for bootstrap):
+  - Clone the repo to your workspace (consistent with `skaia`):
+    - `mkdir -p ~/workspace && cd ~/workspace`
+    - `git clone git@github.com:othercriteria/nixos-config.git`
+    - `cd nixos-config`
+  - Dev shell with flakes enabled:
+    - `nix develop --extra-experimental-features nix-command \
+      --extra-experimental-features flakes`
+  - (Optional) Import GPG keys to reveal secrets:
+    - Ensure `programs.gnupg.agent` is enabled (mirrored from `skaia`)
+    - Import key and ownertrust; then `make reveal-secrets`
+  - Place required secrets if skipping git-secret:
     - `sudo mkdir -p /etc/nixos/secrets`
     - `sudo install -m600 -o root -g root secrets/veil-k3s-token \
       /etc/nixos/secrets/veil-k3s-token`
-      - Alternatively, reveal via git-secret on the host (requires your GPG
-        private key) and copy the file.
-  - Build the host:
-    - `sudo nixos-rebuild switch --flake /etc/nixos#meteor-1 \
-      --option experimental-features 'nix-command flakes'` (adjust host)
+  - Apply host using Makefile sugar:
+    - `make apply-host HOST=meteor-1`
 - Post-apply
   - Verify `k3s` is running on `meteor-1` (server, `--cluster-init`).
   - Repeat for `meteor-2` and `meteor-3` (server role joined via token).
 
 Notes:
 
+- GPG: On `skaia`, ensure pinentry works; we mirror the agent on meteors.
+- Bootloader: `server-common` enables systemd-boot for UEFI by default.
+- stateVersion: set to `24.11` in `server-common` (adjust if your initial
+  install differs).
 - Using `zramSwap` avoids disk wear and is sufficient for these nodes.
 - If you prefer disk swap, allocate 4–8 GiB; not strictly required.
 
