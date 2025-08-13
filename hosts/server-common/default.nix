@@ -72,7 +72,7 @@
   services.resolved = {
     enable = true;
     # Allow mDNS if desired for .local discovery
-    multicastDNS = true;
+    extraConfig = "MulticastDNS=yes";
   };
 
   services = {

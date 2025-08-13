@@ -119,7 +119,7 @@ Options and recommendations:
       - `services.avahi.nssmdns = true;`
     - systemd-resolved approach:
       - `services.resolved.enable = true;`
-      - `services.resolved.multicastDns = true;`
+      - `services.resolved.extraConfig = "MulticastDNS=yes";`
   - Note: `.local` is reserved for mDNS and should not be used for normal DNS
     A records.
 - Router DNS with `home.arpa` (recommended):
