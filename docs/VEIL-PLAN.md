@@ -89,10 +89,23 @@ Bring-up
 
 - [x] Add `hosts/server-common` and `hosts/meteor-*` skeleton
 - [x] Add `meteor-*` to `flake.nix`
-- [ ] Build and boot `meteor-1` (server, `--cluster-init`)
-- [ ] Verify API health
-- [ ] Build and boot `meteor-2` and `meteor-3` (server role)
-- [ ] Verify etcd cluster health
+- [x] Build and boot `meteor-1` (server, `--cluster-init`)
+- [x] Verify API health
+- [x] Build and boot `meteor-2` (server role)
+- [ ] Build and boot `meteor-3` (server role)
+- [ ] Verify etcd cluster health (all 3 members)
+
+Two-node verification (done)
+
+- [x] Nodes Ready: `k3s kubectl get nodes -o wide`
+- [x] API health: `k3s kubectl get --raw "/readyz?verbose"`
+- [ ] etcd2 health (interim):
+  - `ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+    --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+    --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt \
+    --key=/var/lib/rancher/k3s/server/tls/etcd/client.key member list`
+- [ ] kube-system pods healthy on both nodes:
+  - `watch -n2 'k3s kubectl get pods -A -o wide'`
 
 Cluster services (later)
 
