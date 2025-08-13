@@ -20,7 +20,7 @@ configuration.
 - `assets/`: Fonts, images, and other static assets.
 - `private-assets/`: Private, non-public assets (git submodule initialized via
   `make add-private-assets`).
-- `secrets/`: Encrypted secrets managed by git-secret.
+- `secrets/`: Encrypted secrets managed by git-secret (e.g., `veil-k3s-token`).
 - `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
   - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
 
