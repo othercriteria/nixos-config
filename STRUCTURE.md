@@ -8,9 +8,15 @@ configuration.
 - `modules/`: Contains shared NixOS and Home Manager modules that can be
   imported by various hosts or user profiles.
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
+  - `skaia/`: Primary workstation host and its modules
+  - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
+  - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers)
 - `home/`: Contains Home Manager user configuration modules.
 - `docs/`: Project documentation, including cold start and observability
   guides.
+  - `VEIL-PLAN.md`: Plan and progress for the veil cluster rollout
+  - `residence-1/`: Site/network documentation
+    - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
 - `assets/`: Fonts, images, and other static assets.
 - `private-assets/`: Private, non-public assets (not tracked in git).
 - `secrets/`: Encrypted secrets managed by git-secret.
@@ -42,9 +48,9 @@ configuration.
 ## Directory Purposes
 
 - `modules/`: Shared modules for NixOS and Home Manager
-- `hosts/`: Per-host configuration (e.g., `skaia/`, `common/`)
+- `hosts/`: Per-host configuration (e.g., `skaia/`, `server-common/`, `meteor-*/`)
 - `home/`: User-level configuration
-- `docs/`: Documentation for setup, cold start, and observability
+- `docs/`: Documentation for setup, cold start, observability, and network/site
 - `assets/`: Static assets (fonts, images)
 - `private-assets/`: Private assets (not tracked in git)
 - `secrets/`: Encrypted secrets (git-secret)
@@ -63,3 +69,7 @@ This document should be updated whenever:
 - [Observability Stack](docs/OBSERVABILITY.md): Details on the observability
   setup, including metrics, logs, dashboards, storage, retention, backup, and
   DR.
+- [Veil Cluster Plan](docs/VEIL-PLAN.md): Working plan for the veil cluster
+  rollout.
+- [Residence-1 Addressing](docs/residence-1/ADDRESSING.md): Addressing/DNS for
+  the home network.

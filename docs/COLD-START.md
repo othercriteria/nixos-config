@@ -175,3 +175,50 @@ root filesystem and can benefit from snapshots.
 
 If you discover a new manual step, document it in-line and add a section here
 with explicit, actionable instructions.
+
+---
+
+## 7. Veil Cluster Cold Start (meteors)
+
+Context: Bring up the HA k3s cluster (veil) across `meteor-1..3`.
+
+Step-by-step:
+
+1. Ensure DHCP reservations exist for `meteor-1..3` and the MetalLB pool is
+   reserved and outside DHCP. See `docs/residence-1/ADDRESSING.md`.
+1. Create the k3s join token secret on the build host and make it available on
+   each meteor at `/etc/nixos/secrets/veil-k3s-token`:
+
+   ```sh
+   echo "<your-random-token>" > secrets/veil-k3s-token
+   git secret add secrets/veil-k3s-token
+   git secret hide
+   # copy revealed file to each host securely or reveal on-host using your GPG key
+   ```
+
+1. Bootstrap `meteor-1` first:
+   - Build and switch: `sudo nixos-rebuild switch --flake /etc/nixos#meteor-1`
+   - This node runs k3s with `--cluster-init`.
+   - Verify readiness: `sudo k3s kubectl get nodes`
+
+1. Bootstrap `meteor-2` and `meteor-3` next:
+   - Build and switch: `sudo nixos-rebuild switch --flake /etc/nixos#meteor-2`
+   - and `meteor-3` similarly
+   - These nodes join via `--server https://192.168.0.121:6443` and token.
+
+1. Verify etcd and cluster health:
+
+   ```sh
+   sudo k3s kubectl get nodes -o wide
+   sudo k3s kubectl get --raw "/readyz?verbose"
+   ```
+
+1. Install cluster services:
+   - MetalLB in L2 mode with pool `192.168.0.220-239`
+   - ingress-nginx
+   - kube-prometheus-stack
+
+In config:
+
+- See `hosts/meteor-1/k3s/default.nix` and `join-token.nix`.
+- See `hosts/meteor-2/k3s/default.nix` and `hosts/meteor-3/k3s/default.nix`.

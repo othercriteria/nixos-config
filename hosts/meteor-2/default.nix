@@ -1,0 +1,14 @@
+{ config, lib, pkgs, pkgs-stable, ... }:
+
+{
+  imports = [
+    ../server-common
+    ./firewall.nix
+    ./k3s
+  ] ++ lib.optional (builtins.pathExists ./hardware-configuration.nix) ./hardware-configuration.nix;
+
+  networking = {
+    hostName = "meteor-2";
+    hostId = "00000002"; # COLD START: set a unique hostId after install
+  };
+}

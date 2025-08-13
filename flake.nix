@@ -71,6 +71,45 @@
             }
           ];
         };
+
+        meteor-1 = nixpkgs.lib.nixosSystem rec{
+          system = "x86_64-linux";
+          specialArgs = {
+            pkgs-stable = import nixpkgs-stable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          };
+          modules = [
+            ./hosts/meteor-1
+          ];
+        };
+
+        meteor-2 = nixpkgs.lib.nixosSystem rec{
+          system = "x86_64-linux";
+          specialArgs = {
+            pkgs-stable = import nixpkgs-stable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          };
+          modules = [
+            ./hosts/meteor-2
+          ];
+        };
+
+        meteor-3 = nixpkgs.lib.nixosSystem rec{
+          system = "x86_64-linux";
+          specialArgs = {
+            pkgs-stable = import nixpkgs-stable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          };
+          modules = [
+            ./hosts/meteor-3
+          ];
+        };
       };
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let
