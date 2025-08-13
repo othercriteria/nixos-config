@@ -4,6 +4,12 @@
   # Headless server baseline (no GUI)
   # Imports: none of the desktop modules
 
+  # Boot loader: assume UEFI and use systemd-boot
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
+  };
+
   # Core nix settings
   nix = {
     package = pkgs.nixVersions.stable;
