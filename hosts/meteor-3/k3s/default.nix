@@ -7,7 +7,6 @@
     enable = true;
     role = "server";
     extraFlags = toString [
-      "--cluster-name veil"
       "--server https://192.168.0.121:6443" # API server on meteor-1
       "--disable traefik"
       ''--write-kubeconfig-mode "0644"''

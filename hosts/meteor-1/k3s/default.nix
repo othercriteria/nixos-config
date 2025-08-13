@@ -7,7 +7,6 @@
     enable = true;
     role = "server";
     extraFlags = toString [
-      "--cluster-name veil"
       "--cluster-init" # COLD START: run meteor-1 first
       "--disable traefik"
       ''--write-kubeconfig-mode "0644"''
