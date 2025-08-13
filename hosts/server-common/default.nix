@@ -12,7 +12,7 @@
 
   # State version for new servers
   # COLD START: Update to the actual NixOS release used for initial install
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.11";
 
   # Core nix settings
   nix = {
@@ -72,6 +72,19 @@
   };
 
   programs.zsh.enable = true;
+
+  # Ensure a minimal user zsh config exists to suppress newuser prompt
+  system.userActivationScripts.initialZshrcForDlk.text = ''
+    set -e
+    HOME_DIR=$(getent passwd dlk | cut -d: -f6)
+    if [ -n "$HOME_DIR" ] && [ -d "$HOME_DIR" ]; then
+      if [ ! -f "$HOME_DIR/.zshrc" ]; then
+        echo "# Managed by NixOS: minimal zshrc" > "$HOME_DIR/.zshrc"
+        chown dlk:users "$HOME_DIR/.zshrc" || chown dlk:"$(id -gn dlk)" "$HOME_DIR/.zshrc" || true
+        chmod 0644 "$HOME_DIR/.zshrc"
+      fi
+    fi
+  '';
 
   # Networking stack: systemd-networkd by default for servers
   networking = {
