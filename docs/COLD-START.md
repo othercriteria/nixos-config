@@ -190,7 +190,7 @@ Step-by-step:
    each meteor at `/etc/nixos/secrets/veil-k3s-token`:
 
    ```sh
-   echo "<your-random-token>" > secrets/veil-k3s-token
+   head -c 48 /dev/urandom | base64 | tr -d '\n' > secrets/veil-k3s-token
    git secret add secrets/veil-k3s-token
    git secret hide
    # copy revealed file to each host securely or reveal on-host using your GPG key

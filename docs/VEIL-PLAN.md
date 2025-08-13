@@ -225,7 +225,7 @@ Preparation
 - [x] Confirm MetalLB pool (192.168.0.220-239) and reserve it
 - [ ] Create DHCP reservations for `meteor-1..3` (document IP↔MAC mapping)
 - [ ] Create k3s join token secret:
-  - `echo "..." > secrets/veil-k3s-token`
+  - `head -c 48 /dev/urandom | base64 | tr -d '\n' > secrets/veil-k3s-token`
   - `git secret add secrets/veil-k3s-token`
   - `git secret hide`
 
