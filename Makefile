@@ -118,6 +118,12 @@ update: ## Update submodules to latest
 	git submodule update --remote
 	git lfs pull
 
-add-private-assets: ## Add private assets submodule
-	git submodule add git@github.com:othercriteria/private-assets.git private-assets
-	git lfs pull
+add-private-assets: ## Add or initialize the private-assets submodule
+	@if git config -f .gitmodules --get-regexp '^submodule\.private-assets\.url' >/dev/null 2>&1; then \
+		echo "Submodule 'private-assets' already configured; initializing/updating..."; \
+		git submodule update --init --recursive private-assets; \
+	else \
+		echo "Adding submodule 'private-assets'..."; \
+		git submodule add git@github.com:othercriteria/private-assets.git private-assets; \
+		git submodule update --init --recursive private-assets; \
+	fi

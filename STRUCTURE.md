@@ -18,7 +18,8 @@ configuration.
   - `residence-1/`: Site/network documentation
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
 - `assets/`: Fonts, images, and other static assets.
-- `private-assets/`: Private, non-public assets (not tracked in git).
+- `private-assets/`: Private, non-public assets (git submodule initialized via
+  `make add-private-assets`).
 - `secrets/`: Encrypted secrets managed by git-secret.
 - `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
   - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
@@ -52,7 +53,7 @@ configuration.
 - `home/`: User-level configuration
 - `docs/`: Documentation for setup, cold start, observability, and network/site
 - `assets/`: Static assets (fonts, images)
-- `private-assets/`: Private assets (not tracked in git)
+- `private-assets/`: Private assets tracked as a submodule
 - `secrets/`: Encrypted secrets (git-secret)
 
 ## Updating Structure
