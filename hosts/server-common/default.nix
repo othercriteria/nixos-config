@@ -10,6 +10,10 @@
     efi.canTouchEfiVariables = true;
   };
 
+  # State version for new servers
+  # COLD START: Update to the actual NixOS release used for initial install
+  system.stateVersion = "24.11";
+
   # Core nix settings
   nix = {
     package = pkgs.nixVersions.stable;
