@@ -7,6 +7,7 @@ configuration.
 
 - `modules/`: Contains shared NixOS and Home Manager modules that can be
   imported by various hosts or user profiles.
+  - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix`).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
