@@ -32,45 +32,6 @@ References:
 
 ## Validation plan
 
-### Ingress functionality
-
-- Deploy a simple echo app behind ingress and test HTTP routing:
-
-```bash
-kubectl create ns ingress-test || true
-kubectl -n ingress-test create deployment hello \
-  --image=nginxdemos/hello
-kubectl -n ingress-test expose deployment hello --port=80
-cat <<'EOF' | kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: hello
-  namespace: ingress-test
-  annotations:
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: hello
-            port:
-              number: 80
-EOF
-# Determine ingress address via the ingress-nginx LoadBalancer IP
-# From LAN: curl http://192.168.0.220/ (or the assigned IP)
-```
-
-- Clean up:
-
-```bash
-kubectl delete ns ingress-test
-```
-
 ### Observability
 
 - Verify Prometheus targets and Grafana access:
