@@ -12,6 +12,8 @@ validation.
   - MetalLB (L2, pool 192.168.0.220–239)
   - ingress-nginx (LoadBalancer)
   - kube-prometheus-stack (Prometheus, Alertmanager, Grafana)
+- API readyz and etcd health verified
+- MetalLB LoadBalancer assignment validated (`lb-test` at 192.168.0.222)
 
 ## Outstanding work
 
@@ -30,51 +32,7 @@ References:
 
 ## Validation plan
 
-### 1. API and etcd health
-
-- Verify API readiness:
-
-```bash
-kubectl get --raw "/readyz?verbose"
-```
-
-- Verify etcd members and local endpoint (run on a meteor):
-
-```bash
-sudo etcdctl \
-  --endpoints=https://127.0.0.1:2379 \
-  --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
-  --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt \
-  --key=/var/lib/rancher/k3s/server/tls/etcd/client.key \
-  member list -w table
-
-sudo etcdctl \
-  --endpoints=https://127.0.0.1:2379 \
-  --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
-  --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt \
-  --key=/var/lib/rancher/k3s/server/tls/etcd/client.key \
-  endpoint status -w table
-```
-
-### 2. MetalLB assignment
-
-- Create a test app and LoadBalancer service, confirm IP in pool and reach it:
-
-```bash
-kubectl create ns test || true
-kubectl -n test create deployment lb-test --image=nginx --port=80
-kubectl -n test expose deployment lb-test --type=LoadBalancer --port=80
-kubectl -n test get svc lb-test -w
-# From LAN: curl http://<EXTERNAL-IP>/
-```
-
-- Clean up:
-
-```bash
-kubectl delete ns test
-```
-
-### 3. Ingress functionality
+### Ingress functionality
 
 - Deploy a simple echo app behind ingress and test HTTP routing:
 
@@ -113,7 +71,7 @@ EOF
 kubectl delete ns ingress-test
 ```
 
-### 4. Observability
+### Observability
 
 - Verify Prometheus targets and Grafana access:
 
@@ -125,7 +83,7 @@ kubectl -n monitoring port-forward \
 # Check Kubernetes/Nodes dashboard and alert rules
 ```
 
-### 5. Node drain and resilience
+### Node drain and resilience
 
 - Cordon and drain a control-plane node, verify service continuity:
 
@@ -138,7 +96,7 @@ kubectl get hr -A
 kubectl uncordon meteor-1
 ```
 
-### 6. Failure tests (physical)
+### Failure tests (physical)
 
 - Ethernet pull:
   1. Unplug `meteor-1` for ~2 minutes
