@@ -213,12 +213,63 @@ Step-by-step:
    sudo k3s kubectl get --raw "/readyz?verbose"
    ```
 
-1. Install cluster services:
-   - MetalLB in L2 mode with pool `192.168.0.220-239`
-   - ingress-nginx
-   - kube-prometheus-stack
+1. Install cluster services (managed by FluxCD). See Section 8 for Flux
+   bootstrap and apply order.
 
 In config:
 
 - See `hosts/meteor-1/k3s/default.nix` and `join-token.nix`.
 - See `hosts/meteor-2/k3s/default.nix` and `hosts/meteor-3/k3s/default.nix`.
+
+---
+
+## 8. FluxCD Bootstrap for Veil (GitOps)
+
+**Context:** Flux controllers reconcile Helm releases from Git, removing any
+single-node dependency and providing versioned, declarative installs.
+
+**Step-by-step:**
+
+1. Install Flux controllers (one-time per cluster):
+
+   ```bash
+   kubectl create ns flux-system || true
+   kubectl apply -f \
+     https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
+   kubectl -n flux-system get pods
+   ```
+
+1. Apply HelmRepository sources for required charts:
+
+   ```bash
+   # Apply repo sources from this repository once added, for example:
+   kubectl apply -f flux/helm-repos.yaml
+   ```
+
+1. Apply services via HelmRelease (and MetalLB IP resources):
+
+   ```bash
+   # MetalLB controller
+   kubectl apply -f flux/metallb.yaml
+   # MetalLB address pool + L2Advertisement
+   kubectl apply -f flux/metallb-pool.yaml
+   # ingress-nginx controller
+   kubectl apply -f flux/ingress-nginx.yaml
+   # kube-prometheus-stack
+   kubectl apply -f flux/monitoring.yaml
+   ```
+
+1. Verify reconciliation and health:
+
+   ```bash
+   kubectl get hr -A
+   kubectl -n flux-system get kustomizations.sources.toolkit.fluxcd.io
+   kubectl -n metallb-system get ipaddresspools,l2advertisements
+   kubectl -n ingress-nginx get svc
+   kubectl -n monitoring get pods
+   ```
+
+**In config:**
+
+- Add `# COLD START: FluxCD bootstrap required before cluster services
+  reconcile` near any references to Flux-managed services or docs.
