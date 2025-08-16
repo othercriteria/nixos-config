@@ -243,20 +243,20 @@ single-node dependency and providing versioned, declarative installs.
 
    ```bash
    # Apply repo sources from this repository once added, for example:
-   kubectl apply -f flux/helm-repos.yaml
+   kubectl apply -f flux/veil/helm-repos.yaml
    ```
 
 1. Apply services via HelmRelease (and MetalLB IP resources):
 
    ```bash
    # MetalLB controller
-   kubectl apply -f flux/metallb.yaml
+   kubectl apply -f flux/veil/metallb.yaml
    # MetalLB address pool + L2Advertisement
-   kubectl apply -f flux/metallb-pool.yaml
+   kubectl apply -f flux/veil/metallb-pool.yaml
    # ingress-nginx controller
-   kubectl apply -f flux/ingress-nginx.yaml
+   kubectl apply -f flux/veil/ingress-nginx.yaml
    # kube-prometheus-stack
-   kubectl apply -f flux/monitoring.yaml
+   kubectl apply -f flux/veil/monitoring.yaml
    ```
 
 1. Verify reconciliation and health:

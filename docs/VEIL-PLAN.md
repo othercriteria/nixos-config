@@ -28,7 +28,7 @@ References:
 
 - Cold start steps: `docs/COLD-START.md`
 - Network/DNS details: `docs/residence-1/ADDRESSING.md`
-- Flux manifests: `flux/`
+- Flux manifests: `flux/veil/`
 
 ## Validation plan
 
