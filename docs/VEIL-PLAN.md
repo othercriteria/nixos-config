@@ -1,239 +1,159 @@
 # Veil Cluster: Plan and Progress
 
 This document tracks rollout of the headless Kubernetes cluster "veil"
-(`meteor-1..3`) and minimal refactors. Use checkboxes to track progress.
+(`meteor-1..3`) and minimal refactors. Focus is on outstanding work and
+validation.
 
-## Decisions (confirmed)
+## Status
 
-- HA control plane: 3x k3s servers (embedded etcd)
-- Observability: in-cluster (no host-level Prometheus for meteors)
-- Email alerts: not used for meteors
-- IP addressing: static via DHCP reservations on router
-- Storage: k3s local-path-provisioner (no ZFS on meteors)
-- Secrets: git-secret under `secrets/`
-- Host networking stack: systemd-networkd (default; can switch if needed)
+- k3s HA control plane across `meteor-1..3` is healthy (3-member etcd)
+- FluxCD bootstrapped in `flux-system`
+- Core services installed via Flux:
+  - MetalLB (L2, pool 192.168.0.220–239)
+  - ingress-nginx (LoadBalancer)
+  - kube-prometheus-stack (Prometheus, Alertmanager, Grafana)
 
-## Network and addressing
+## Outstanding work
 
-- Router: Archer C2300 v2.0, DHCP 192.168.0.100–192.168.0.219
-- Meteor nodes reserved: 192.168.0.121–123
-- MetalLB: reserve 192.168.0.220–239 (outside DHCP)
-- See `docs/residence-1/ADDRESSING.md` for details
+- [ ] Admin kubeconfig for `dlk` with `veil` context
+- [ ] Baseline Grafana dashboards and alerting rules
+- [ ] Runbooks (backups, upgrades)
+- [ ] DNS move to `skaia` (host `veil.home.arpa`)
+- [ ] Optional: migrate `skaia` to systemd-networkd
+- [ ] Consider extracting `desktop-common` for workstation profiles
 
-## k3s cluster design (veil)
+References:
 
-- All three meteors run `services.k3s.role = "server"`
-- `meteor-1`: `--cluster-init`; `meteor-2/3`: `--server https://192.168.0.121:6443`
-- Disable Traefik; keep local-path storage; expose metrics ports
+- Cold start steps: `docs/COLD-START.md`
+- Network/DNS details: `docs/residence-1/ADDRESSING.md`
+- Flux manifests: `flux/`
 
-## DNS strategy
+## Validation plan
 
-- Prefer `veil.home.arpa` (router or move to `skaia` DNS later)
-- Use `sslip.io` during bootstrap
-- See `docs/residence-1/ADDRESSING.md`
+### 1. API and etcd health
 
-## Storage
-
-- Use local-path provisioner initially
-- Revisit Longhorn later if needed
-
-## Observability (in-cluster)
-
-- Target: `kube-prometheus-stack` (later step)
-
-## Installation guidance (streamlined)
-
-- Install NixOS (UEFI, ext4, no swap), create `dlk` admin; SSH enabled
-- On each meteor:
-  - Clone repo to `~/workspace/nixos-config`
-  - Enter dev shell:
-    `nix develop --extra-experimental-features nix-command \
-    --extra-experimental-features flakes`
-  - Secrets: either `make reveal-secrets` (with GPG) or copy the token to
-    `/etc/nixos/secrets/veil-k3s-token`
-  - Apply host: `make apply-host HOST=meteor-1` (then `meteor-2`, `meteor-3`)
-
-Notes:
-
-- Bootloader: systemd-boot default for UEFI
-- stateVersion: `25.11` in `server-common`
-- zsh: minimal `~/.zshrc` created to suppress newuser prompt
-
-## Firewall policy (per node)
-
-- Allow 6443/tcp, 2379–2380/tcp (servers), 10250/tcp, 8472/udp
-
-## Cold start summary
-
-- k3s HA boot sequence and token; MetalLB range reserved
-- See `docs/COLD-START.md`
-
-## Cluster services (FluxCD GitOps)
-
-- We will use FluxCD (GitOps) to manage cluster services. No Helm CLI on
-  nodes; Flux controllers reconcile from manifests in this repo.
-
-- [x] Bootstrap FluxCD (one-time per cluster)
+- Verify API readiness:
 
 ```bash
-# Install Flux controllers (no Helm needed)
-kubectl create ns flux-system || true
-kubectl apply -f \
-  https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
-# Verify controllers
-kubectl -n flux-system get pods
+kubectl get --raw "/readyz?verbose"
 ```
 
-- [x] Define Helm repositories (Flux sources)
+- Verify etcd members and local endpoint (run on a meteor):
 
-```yaml
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: metallb
-  namespace: flux-system
-spec:
-  url: https://metallb.github.io/metallb
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: ingress-nginx
-  namespace: flux-system
-spec:
-  url: https://kubernetes.github.io/ingress-nginx
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: prometheus-community
-  namespace: flux-system
-spec:
-  url: https://prometheus-community.github.io/helm-charts
+```bash
+sudo etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt \
+  --key=/var/lib/rancher/k3s/server/tls/etcd/client.key \
+  member list -w table
+
+sudo etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt \
+  --key=/var/lib/rancher/k3s/server/tls/etcd/client.key \
+  endpoint status -w table
 ```
 
-- [x] Install MetalLB via HelmRelease and apply address pool
+### 2. MetalLB assignment
 
-```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: metallb
-  namespace: flux-system
-spec:
-  interval: 10m
-  install:
-    createNamespace: true
-  targetNamespace: metallb-system
-  chart:
-    spec:
-      chart: metallb
-      version: 0.14.8
-      sourceRef:
-        kind: HelmRepository
-        name: metallb
-        namespace: flux-system
+- Create a test app and LoadBalancer service, confirm IP in pool and reach it:
+
+```bash
+kubectl create ns test || true
+kubectl -n test create deployment lb-test --image=nginx --port=80
+kubectl -n test expose deployment lb-test --type=LoadBalancer --port=80
+kubectl -n test get svc lb-test -w
+# From LAN: curl http://<EXTERNAL-IP>/
 ```
 
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: home-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 192.168.0.220-192.168.0.239
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: home-l2
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-  - home-pool
+- Clean up:
+
+```bash
+kubectl delete ns test
 ```
 
-- [x] Install ingress-nginx via HelmRelease
+### 3. Ingress functionality
 
-```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+- Deploy a simple echo app behind ingress and test HTTP routing:
+
+```bash
+kubectl create ns ingress-test || true
+kubectl -n ingress-test create deployment hello \
+  --image=nginxdemos/hello
+kubectl -n ingress-test expose deployment hello --port=80
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: ingress-nginx
-  namespace: flux-system
+  name: hello
+  namespace: ingress-test
+  annotations:
+    kubernetes.io/ingress.class: nginx
 spec:
-  interval: 10m
-  install:
-    createNamespace: true
-  targetNamespace: ingress-nginx
-  chart:
-    spec:
-      chart: ingress-nginx
-      version: 4.11.2
-      sourceRef:
-        kind: HelmRepository
-        name: ingress-nginx
-        namespace: flux-system
-  values:
-    controller:
-      service:
-        type: LoadBalancer
-        # Optionally pin a static IP from MetalLB pool:
-        # loadBalancerIP: 192.168.0.220
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello
+            port:
+              number: 80
+EOF
+# Determine ingress address via the ingress-nginx LoadBalancer IP
+# From LAN: curl http://192.168.0.220/ (or the assigned IP)
 ```
 
-- [x] Install kube-prometheus-stack via HelmRelease
+- Clean up:
 
-```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: kube-prometheus-stack
-  namespace: flux-system
-spec:
-  interval: 10m
-  install:
-    createNamespace: true
-  targetNamespace: monitoring
-  chart:
-    spec:
-      chart: kube-prometheus-stack
-      version: 66.3.0
-      sourceRef:
-        kind: HelmRepository
-        name: prometheus-community
-        namespace: flux-system
-  values:
-    grafana:
-      service:
-        type: LoadBalancer
+```bash
+kubectl delete ns ingress-test
 ```
 
-- Apply order:
-  1. Flux install (controllers running in `flux-system`)
-  1. HelmRepository resources
-  1. HelmRelease for MetalLB
-  1. MetalLB `IPAddressPool` and `L2Advertisement`
-  1. HelmRelease for ingress-nginx
-  1. HelmRelease for kube-prometheus-stack
+### 4. Observability
 
-- Notes:
-  - Pin chart versions and upgrade via PRs.
-  - Prefer `valuesFrom` with ConfigMaps/Secrets for larger overrides.
-  - Document Flux bootstrap in `docs/COLD-START.md`.
+- Verify Prometheus targets and Grafana access:
 
-- Validation:
-  - `kubectl get hr -A` shows all Ready
-  - `kubectl -n ingress-nginx get svc` shows LB IP in MetalLB pool
-  - `kubectl -n monitoring get pods` all Running
-  - `kubectl -n metallb-system get ipaddresspools,l2advertisements` present
+```bash
+kubectl -n monitoring get pods
+kubectl -n monitoring port-forward \
+  svc/monitoring-kube-prometheus-stack-grafana 3000:80
+# Browser: http://localhost:3000 (default creds chart-dependent)
+# Check Kubernetes/Nodes dashboard and alert rules
+```
+
+### 5. Node drain and resilience
+
+- Cordon and drain a control-plane node, verify service continuity:
+
+```bash
+kubectl cordon meteor-1
+kubectl drain meteor-1 --ignore-daemonsets --delete-emptydir-data
+kubectl get nodes -o wide
+kubectl get hr -A
+# Check ingress and monitoring endpoints still respond
+kubectl uncordon meteor-1
+```
+
+### 6. Failure tests (physical)
+
+- Ethernet pull:
+  1. Unplug `meteor-1` for ~2 minutes
+  1. Watch: `kubectl get nodes -w` and `kubectl get hr -A`
+  1. Verify services remain reachable; expect etcd leader to move if needed
+  1. Reconnect and confirm node returns to Ready
+
+- Power-cycle:
+  1. Power off `meteor-2`
+  1. Verify control plane availability and service health
+  1. Power on, confirm reconciliation and Ready state
 
 ## Post-setup (later)
 
 - [ ] Admin kubeconfig for `dlk` with `veil` context
-  - From a meteor, copy kubeconfig and point it at the API address:
 
 ```bash
 # on meteor-1
@@ -244,8 +164,8 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 ```
 
 - [ ] Baseline Grafana dashboards and alerting rules
-  - Import common Kubernetes dashboards.
-  - Configure Alertmanager receivers and routes for critical alerts.
+  - Import common Kubernetes dashboards
+  - Configure Alertmanager receivers and routes
 
 - [ ] Runbooks (backups, upgrades)
   - On-demand etcd snapshot:
@@ -264,8 +184,6 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 ## Open items
 
-- Optional: migrate `skaia` to systemd-networkd later
 - Plan DNS move to `skaia` (host `veil.home.arpa`)
-- Keep `skaia` functionally unchanged for now; consider extracting
-  `desktop-common` later
-- Residence name: `residence-1` (documented)
+- Optional: migrate `skaia` to systemd-networkd later
+- Consider extracting `desktop-common` for workstation profiles
