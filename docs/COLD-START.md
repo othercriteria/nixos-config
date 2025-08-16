@@ -163,7 +163,33 @@ root filesystem and can benefit from snapshots.
 
 ---
 
-## 5. TODO: Secrets Management
+## 5. Move LAN DNS to `skaia`
+
+**Context:** The home router may not support the desired static records for the
+`veil.home.arpa` zone. DNS will be hosted on `skaia` while Skaia continues to
+use NetworkManager for its own connectivity.
+
+**Step-by-step:**
+
+1. Configure a DNS service on `skaia` (e.g., unbound) to:
+   - Bind to `192.168.0.160` and `127.0.0.1`
+   - Serve the zone `veil.home.arpa` with static records
+     (e.g., `ingress.veil.home.arpa` → `192.168.0.220`)
+   - Forward other queries to upstream resolvers (router or public)
+1. Open firewall on `skaia` for TCP/UDP 53.
+1. Update the router's DHCP settings so the LAN DNS server is
+   `192.168.0.160`.
+1. Validate from a LAN client with
+   `dig +short @192.168.0.160 ingress.veil.home.arpa`.
+
+**In config:**
+
+- Add `# COLD START: Router DHCP must be updated to point LAN DNS to
+  192.168.0.160` near Skaia's DNS service definition when added.
+
+---
+
+## 6. TODO: Secrets Management
 
 > TODO: Document all secrets required for cold start (e.g., API keys, passwords
 > in `/etc/nixos/secrets/`). For now, ensure any referenced secret files exist
@@ -171,14 +197,14 @@ root filesystem and can benefit from snapshots.
 
 ---
 
-## 6. [Add future cold start steps here]
+## 7. [Add future cold start steps here]
 
 If you discover a new manual step, document it in-line and add a section here
 with explicit, actionable instructions.
 
 ---
 
-## 7. Veil Cluster Cold Start (meteors)
+## 8. Veil Cluster Cold Start (meteors)
 
 Context: Bring up the HA k3s cluster (veil) across `meteor-1..3`.
 
@@ -223,7 +249,7 @@ In config:
 
 ---
 
-## 8. FluxCD Bootstrap for Veil (GitOps)
+## 9. FluxCD Bootstrap for Veil (GitOps)
 
 **Context:** Flux controllers reconcile Helm releases from Git, removing any
 single-node dependency and providing versioned, declarative installs.
