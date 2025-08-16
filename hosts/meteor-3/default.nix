@@ -3,9 +3,10 @@
 {
   imports = [
     ../server-common
+    ./hardware-configuration.nix
     ./firewall.nix
     ./k3s
-  ] ++ lib.optional (builtins.pathExists ./hardware-configuration.nix) ./hardware-configuration.nix;
+  ];
 
   networking = {
     hostName = "meteor-3";
