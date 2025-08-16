@@ -36,7 +36,8 @@ References:
 
 ### Observability
 
-- Verify Prometheus targets and Grafana access:
+- Clean access via DNS and Ingress will be set up after moving DNS to `skaia`.
+  Until then, use port-forwarding for Grafana/Prometheus.
 
 ```bash
 kubectl -n monitoring get pods
@@ -45,32 +46,6 @@ kubectl -n monitoring port-forward \
 # Browser: http://localhost:3000 (default creds chart-dependent)
 # Check Kubernetes/Nodes dashboard and alert rules
 ```
-
-### Node drain and resilience
-
-- Cordon and drain a control-plane node, verify service continuity:
-
-```bash
-kubectl cordon meteor-1
-kubectl drain meteor-1 --ignore-daemonsets --delete-emptydir-data
-kubectl get nodes -o wide
-kubectl get hr -A
-# Check ingress and monitoring endpoints still respond
-kubectl uncordon meteor-1
-```
-
-### Failure tests (physical)
-
-- Ethernet pull:
-  1. Unplug `meteor-1` for ~2 minutes
-  1. Watch: `kubectl get nodes -w` and `kubectl get hr -A`
-  1. Verify services remain reachable; expect etcd leader to move if needed
-  1. Reconnect and confirm node returns to Ready
-
-- Power-cycle:
-  1. Power off `meteor-2`
-  1. Verify control plane availability and service health
-  1. Power on, confirm reconciliation and Ready state
 
 ## Post-setup (later)
 
