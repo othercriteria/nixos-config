@@ -18,6 +18,8 @@ configuration.
   - `VEIL-PLAN.md`: Plan and progress for the veil cluster rollout
   - `residence-1/`: Site/network documentation
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
+- `flux/`: FluxCD GitOps manifests (Helm repositories, Helm releases, MetalLB
+  pool)
 - `assets/`: Fonts, images, and other static assets.
 - `private-assets/`: Private, non-public assets (git submodule initialized via
   `make add-private-assets`).
@@ -53,6 +55,8 @@ configuration.
 - `hosts/`: Per-host configuration (e.g., `skaia/`, `server-common/`, `meteor-*/`)
 - `home/`: User-level configuration
 - `docs/`: Documentation for setup, cold start, observability, and network/site
+- `flux/`: Flux GitOps manifests that define cluster services (MetalLB,
+  ingress-nginx, kube-prometheus-stack)
 - `assets/`: Static assets (fonts, images)
 - `private-assets/`: Private assets tracked as a submodule
 - `secrets/`: Encrypted secrets (git-secret)
