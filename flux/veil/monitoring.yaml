@@ -19,4 +19,4 @@ spec:
   values:
     grafana:
       service:
-        type: LoadBalancer
+        type: ClusterIP
