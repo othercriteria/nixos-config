@@ -73,7 +73,7 @@ Notes:
 - We will use FluxCD (GitOps) to manage cluster services. No Helm CLI on
   nodes; Flux controllers reconcile from manifests in this repo.
 
-- [ ] Bootstrap FluxCD (one-time per cluster)
+- [x] Bootstrap FluxCD (one-time per cluster)
 
 ```bash
 # Install Flux controllers (no Helm needed)
@@ -84,7 +84,7 @@ kubectl apply -f \
 kubectl -n flux-system get pods
 ```
 
-- [ ] Define Helm repositories (Flux sources)
+- [x] Define Helm repositories (Flux sources)
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -112,18 +112,19 @@ spec:
   url: https://prometheus-community.github.io/helm-charts
 ```
 
-- [ ] Install MetalLB via HelmRelease and apply address pool
+- [x] Install MetalLB via HelmRelease and apply address pool
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: metallb
-  namespace: metallb-system
+  namespace: flux-system
 spec:
   interval: 10m
   install:
     createNamespace: true
+  targetNamespace: metallb-system
   chart:
     spec:
       chart: metallb
@@ -154,18 +155,19 @@ spec:
   - home-pool
 ```
 
-- [ ] Install ingress-nginx via HelmRelease
+- [x] Install ingress-nginx via HelmRelease
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: ingress-nginx
-  namespace: ingress-nginx
+  namespace: flux-system
 spec:
   interval: 10m
   install:
     createNamespace: true
+  targetNamespace: ingress-nginx
   chart:
     spec:
       chart: ingress-nginx
@@ -182,18 +184,19 @@ spec:
         # loadBalancerIP: 192.168.0.220
 ```
 
-- [ ] Install kube-prometheus-stack via HelmRelease
+- [x] Install kube-prometheus-stack via HelmRelease
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: kube-prometheus-stack
-  namespace: monitoring
+  namespace: flux-system
 spec:
   interval: 10m
   install:
     createNamespace: true
+  targetNamespace: monitoring
   chart:
     spec:
       chart: kube-prometheus-stack
@@ -220,6 +223,12 @@ spec:
   - Pin chart versions and upgrade via PRs.
   - Prefer `valuesFrom` with ConfigMaps/Secrets for larger overrides.
   - Document Flux bootstrap in `docs/COLD-START.md`.
+
+- Validation:
+  - `kubectl get hr -A` shows all Ready
+  - `kubectl -n ingress-nginx get svc` shows LB IP in MetalLB pool
+  - `kubectl -n monitoring get pods` all Running
+  - `kubectl -n metallb-system get ipaddresspools,l2advertisements` present
 
 ## Post-setup (later)
 
