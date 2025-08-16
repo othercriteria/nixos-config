@@ -12,7 +12,7 @@ hosts reside.
   - `skaia` → 192.168.0.160 (MAC F0-2F-74-CA-3E-AA)
   - `meteor-1` → 192.168.0.121 (MAC 58-47-CA-7F-20-99)
   - `meteor-2` → 192.168.0.122 (MAC 58-47-CA-7F-22-D1)
-  - `meteor-3` → 192.168.0.123
+  - `meteor-3` → 192.168.0.123 (MAC 58-47-CA-7F-1E-71)
   - (Add MAC↔IP mapping here for auditability)
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 
