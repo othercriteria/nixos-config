@@ -20,5 +20,4 @@ spec:
     controller:
       service:
         type: LoadBalancer
-        # Optionally pin a static IP from MetalLB pool:
-        # loadBalancerIP: 192.168.0.220
+        loadBalancerIP: 192.168.0.220

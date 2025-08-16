@@ -15,6 +15,8 @@ hosts reside.
   - `meteor-3` → 192.168.0.123 (MAC 58-47-CA-7F-1E-71)
   - (Add MAC↔IP mapping here for auditability)
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
+- Pinned LoadBalancer IPs:
+  - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
 
 ## DNS
 
@@ -23,7 +25,9 @@ hosts reside.
     `nip.io` (e.g., `app.192-168-0-220.sslip.io`).
   - Future plan: move LAN DNS to `skaia` (e.g., `unbound`, `dnsmasq`, or
     `coredns`) and manage `veil.home.arpa` there with static A records for
-    MetalLB VIPs (e.g., `grafana.veil.home.arpa` → 192.168.0.220).
+    MetalLB VIPs, for example:
+    - `ingress.veil.home.arpa` → 192.168.0.220 (ingress-nginx)
+    - `grafana.veil.home.arpa` → 192.168.0.220 (Ingress to Grafana)
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
 

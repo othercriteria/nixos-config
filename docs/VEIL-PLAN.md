@@ -20,6 +20,8 @@ validation.
 - [ ] Admin kubeconfig for `dlk` with `veil` context
 - [ ] Baseline Grafana dashboards and alerting rules
 - [ ] Runbooks (backups, upgrades)
+- [ ] Pin ingress LB IP (done: 192.168.0.220) and, once DNS moves to `skaia`,
+  add A records (e.g., `ingress.veil.home.arpa`, `grafana.veil.home.arpa`)
 - [ ] DNS move to `skaia` (host `veil.home.arpa`)
 - [ ] Optional: migrate `skaia` to systemd-networkd
 - [ ] Consider extracting `desktop-common` for workstation profiles
