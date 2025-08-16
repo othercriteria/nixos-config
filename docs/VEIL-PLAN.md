@@ -24,7 +24,7 @@ validation.
   add A records (e.g., `ingress.veil.home.arpa`, `grafana.veil.home.arpa`)
 - [ ] DNS move to `skaia` (host `veil.home.arpa`)
 - [ ] Optional: migrate `skaia` to systemd-networkd
-- [ ] Consider extracting `desktop-common` for workstation profiles
+- [x] Consider extracting `desktop-common` for workstation profiles
 
 References:
 
@@ -82,4 +82,4 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 - Plan DNS move to `skaia` (host `veil.home.arpa`)
 - Optional: migrate `skaia` to systemd-networkd later
-- Consider extracting `desktop-common` for workstation profiles
+- [x] Consider extracting `desktop-common` for workstation profiles
