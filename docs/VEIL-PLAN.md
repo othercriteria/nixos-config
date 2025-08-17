@@ -14,6 +14,9 @@ validation.
   - kube-prometheus-stack (Prometheus, Alertmanager, Grafana)
 - API readyz and etcd health verified
 - MetalLB LoadBalancer assignment validated (`lb-test` at 192.168.0.222)
+- LAN DNS moved to `skaia` (Unbound). DHCP updated to point clients at
+  `192.168.0.160`. Zone `veil.home.arpa` is served with records including:
+  `ingress.veil.home.arpa`, `grafana.veil.home.arpa`
 
 ## Outstanding work
 
@@ -22,9 +25,7 @@ validation.
 - [ ] Runbooks (backups, upgrades)
 - [ ] Pin ingress LB IP (done: 192.168.0.220) and, once DNS moves to `skaia`,
   add A records (e.g., `ingress.veil.home.arpa`, `grafana.veil.home.arpa`)
-- [ ] DNS move to `skaia` (host `veil.home.arpa`)
-  - Note: This is independent of NetworkManager vs systemd-networkd; `skaia` can
-    host DNS while continuing to use NetworkManager.
+- [ ] Optional: DNS filtering (ad-block) at resolver layer
 - [ ] Optional: migrate `skaia` to systemd-networkd
 - [x] Consider extracting `desktop-common` for workstation profiles
 
@@ -38,8 +39,9 @@ References:
 
 ### Observability
 
-- Clean access via DNS and Ingress will be set up after moving DNS to `skaia`.
-  Until then, use port-forwarding for Grafana/Prometheus.
+- With DNS in place, prefer accessing services via Ingress hostnames
+  (e.g., `grafana.veil.home.arpa`). Until dashboards and routes are finalized,
+  port-forwarding remains a fallback.
 
 ```bash
 kubectl -n monitoring get pods
@@ -48,31 +50,6 @@ kubectl -n monitoring port-forward \
 # Browser: http://localhost:3000 (default creds chart-dependent)
 # Check Kubernetes/Nodes dashboard and alert rules
 ```
-
-### DNS migration (to `skaia`)
-
-- [ ] Choose resolver on `skaia` (unbound preferred; alternatives: dnsmasq, CoreDNS)
-- [ ] Implement service in NixOS on `skaia`:
-  - Bind on `192.168.0.160` (LAN) and `127.0.0.1`
-  - Create zone `veil.home.arpa` with static A records:
-    - `ingress.veil.home.arpa` → 192.168.0.220
-    - `grafana.veil.home.arpa` → 192.168.0.220
-    - (add more as needed)
-  - Upstream forwarding: to router DNS or public resolvers
-  - Open firewall: TCP/UDP 53
-- [ ] Router/DHCP: point LAN DNS to `192.168.0.160` (see COLD START)
-- [ ] Validate from a LAN client:
-
-```bash
-# Replace CLIENT with any LAN host
-dig +short @192.168.0.160 ingress.veil.home.arpa
-# Expect: 192.168.0.220
-
-# Ensure general resolution works (forwarding)
-dig +short @192.168.0.160 example.com A
-```
-
-- [ ] Validate Ingress names resolve and route correctly once DNS is active
 
 ## Post-setup (later)
 
@@ -107,6 +84,6 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 ## Open items
 
-- Plan DNS move to `skaia` (host `veil.home.arpa`)
+- Optional: DNS filtering (ad-block) at resolver layer
 - Optional: migrate `skaia` to systemd-networkd later
 - [x] Consider extracting `desktop-common` for workstation profiles
