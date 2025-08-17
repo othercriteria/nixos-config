@@ -20,3 +20,28 @@ spec:
     grafana:
       service:
         type: ClusterIP
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - grafana.veil.home.arpa
+        path: /
+        pathType: Prefix
+    alertmanager:
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - alertmanager.veil.home.arpa
+        paths:
+          - /
+        pathType: Prefix
+    prometheus:
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - prometheus.veil.home.arpa
+        paths:
+          - /
+        pathType: Prefix
