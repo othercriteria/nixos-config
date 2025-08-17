@@ -12,7 +12,9 @@ configuration.
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix`).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
-    `unbound-rpz.nix` RPZ blocklist)
+    `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
+    binds on loopback and LAN addresses for local and network clients (loopback
+    is required for local resolution).
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
   - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers)
 - `home/`: Contains Home Manager user configuration modules.

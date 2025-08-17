@@ -6,8 +6,8 @@
     enable = true;
     settings = {
       server = {
-        # Bind only on LAN IP to avoid conflicting with NetworkManager's local DNS
-        interface = [ "192.168.0.160" ];
+        # Bind on loopback for local resolution and on LAN IP for network clients
+        interface = [ "127.0.0.1" "192.168.0.160" ];
         access-control = [
           "127.0.0.0/8 allow"
           "192.168.0.0/24 allow"
