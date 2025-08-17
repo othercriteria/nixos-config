@@ -20,14 +20,9 @@ validation.
 
 ## Outstanding work
 
-- [ ] Admin kubeconfig for `dlk` with `veil` context
-- [ ] Baseline Grafana dashboards and alerting rules
-- [ ] Runbooks (backups, upgrades)
-- [ ] Pin ingress LB IP (done: 192.168.0.220) and, once DNS moves to `skaia`,
-  add A records (e.g., `ingress.veil.home.arpa`, `grafana.veil.home.arpa`)
+- [ ] Verify Ingress hostnames resolve and route correctly
 - [ ] Optional: DNS filtering (ad-block) at resolver layer
 - [ ] Optional: migrate `skaia` to systemd-networkd
-- [x] Consider extracting `desktop-common` for workstation profiles
 
 References:
 
@@ -86,4 +81,3 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 - Optional: DNS filtering (ad-block) at resolver layer
 - Optional: migrate `skaia` to systemd-networkd later
-- [x] Consider extracting `desktop-common` for workstation profiles
