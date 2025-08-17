@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets
+.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets check-unbound build-host check-unbound-built
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -110,6 +110,7 @@ apply-host: sync-to-system ## Apply configuration for specific host
 	fi
 	sudo nixos-rebuild switch --flake $(NIXOS_DIR)#$(HOST)
 
+# Restored targets
 init: init-security ## Initialize repository
 	git lfs install
 	git lfs pull
@@ -127,3 +128,28 @@ add-private-assets: ## Add or initialize the private-assets submodule
 		git submodule add git@github.com:othercriteria/private-assets.git private-assets; \
 		git submodule update --init --recursive private-assets; \
 	fi
+
+build-host: ## Build system closure for HOST without switching (uses workspace flake)
+	@if [ -z "$(HOST)" ]; then \
+		echo "Error: HOST variable not set. Usage: make build-host HOST=skaia"; \
+		exit 1; \
+	fi
+	nixos-rebuild build --flake .#$(HOST)
+
+check-unbound: ## Validate generated unbound.conf with unbound-checkconf (HOST=skaia)
+	@if [ -z "$(HOST)" ]; then HOST=skaia; fi; \
+	OUT=$$(nix build --no-link --print-out-paths '.#nixosConfigurations.'$$HOST'.config.environment.etc."unbound/unbound.conf".source'); \
+	nix shell nixpkgs#unbound -c unbound-checkconf $$OUT; \
+	echo "unbound-checkconf passed for $$HOST"
+
+check-unbound-built: ## Validate unbound.conf from a built closure (after build-host)
+	@if [ -z "$(HOST)" ]; then HOST=skaia; fi; \
+	if [ ! -e result ]; then \
+		echo "Build first: make build-host HOST=$$HOST"; exit 1; \
+	fi; \
+	CFG=result/etc/unbound/unbound.conf; \
+	if [ ! -f $$CFG ]; then \
+		echo "No unbound.conf found in build output"; exit 1; \
+	fi; \
+	nix shell nixpkgs#unbound -c unbound-checkconf $$CFG; \
+	echo "unbound-checkconf passed for built system $$HOST"

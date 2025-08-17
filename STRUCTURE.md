@@ -34,7 +34,10 @@ configuration.
 
 - `flake.nix`: The main Nix flake entrypoint for the system.
 - `flake.lock`: Flake lock file for reproducible builds.
-- `Makefile`: Automation for common tasks (build, switch, check, etc).
+- `Makefile`: Automation for common tasks:
+  - `apply-host`, `rollback`, `reveal-secrets`
+  - `build-host`: build a host closure without switching
+  - `check-unbound`, `check-unbound-built`: validate generated Unbound config
 
 ## Important File Locations
 
