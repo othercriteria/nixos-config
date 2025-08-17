@@ -16,6 +16,7 @@
     ./observability.nix
     ./samba.nix
     ./thermal.nix
+    ./unbound-rpz.nix
     ./unbound.nix
     ./virtualisation.nix
   ];

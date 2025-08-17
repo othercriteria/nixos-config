@@ -11,7 +11,8 @@ configuration.
     (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix`).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
-  - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS)
+  - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
+    `unbound-rpz.nix` RPZ blocklist)
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
   - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers)
 - `home/`: Contains Home Manager user configuration modules.
