@@ -17,12 +17,12 @@ validation.
 - LAN DNS moved to `skaia` (Unbound). DHCP updated to point clients at
   `192.168.0.160`. Zone `veil.home.arpa` is served with records including:
   `ingress.veil.home.arpa`, `grafana.veil.home.arpa`
+- DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
+- `skaia` remains on NetworkManager (no migration to systemd-networkd)
 
 ## Outstanding work
 
 - [ ] Verify Ingress hostnames resolve and route correctly
-- [ ] Optional: DNS filtering (ad-block) at resolver layer
-- [ ] Optional: migrate `skaia` to systemd-networkd
 
 References:
 
@@ -79,5 +79,4 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 ## Open items
 
-- Optional: DNS filtering (ad-block) at resolver layer
-- Optional: migrate `skaia` to systemd-networkd later
+- (none)
