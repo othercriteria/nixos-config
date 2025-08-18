@@ -20,8 +20,8 @@ configuration.
     is required for local resolution).
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
   - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers). These
-    expose node-exporter on TCP/9100 for Prometheus scraping. HostIds are set per
-    host using machine-id–derived values.
+    expose node-exporter on TCP/9100 and etcd metrics on TCP/2381 for Prometheus
+    scraping. HostIds are set per host using machine-id–derived values.
 - `home/`: Contains Home Manager user configuration modules.
 - `docs/`: Project documentation, including cold start and observability
   guides.

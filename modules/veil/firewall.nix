@@ -7,6 +7,7 @@
       6443 # k3s API
       2379
       2380 # etcd peer/API
+      2381 # etcd metrics
       10250 # kubelet metrics
       9100 # node-exporter metrics
     ];
