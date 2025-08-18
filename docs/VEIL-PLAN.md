@@ -19,32 +19,17 @@ validation.
   `ingress.veil.home.arpa`, `grafana.veil.home.arpa`
 - DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
 - `skaia` remains on NetworkManager (no migration to systemd-networkd)
+- Observability validated: Grafana reachable via `grafana.veil.home.arpa`
 
 ## Outstanding work
 
-- [ ] Verify Ingress hostnames resolve and route correctly
+- (none)
 
 References:
 
 - Cold start steps: `docs/COLD-START.md`
 - Network/DNS details: `docs/residence-1/ADDRESSING.md`
 - Flux manifests: `flux/veil/`
-
-## Validation plan
-
-### Observability
-
-- With DNS in place, prefer accessing services via Ingress hostnames
-  (e.g., `grafana.veil.home.arpa`). Until dashboards and routes are finalized,
-  port-forwarding remains a fallback.
-
-```bash
-kubectl -n monitoring get pods
-kubectl -n monitoring port-forward \
-  svc/monitoring-kube-prometheus-stack-grafana 3000:80
-# Browser: http://localhost:3000 (default creds chart-dependent)
-# Check Kubernetes/Nodes dashboard and alert rules
-```
 
 ## Post-setup (later)
 
