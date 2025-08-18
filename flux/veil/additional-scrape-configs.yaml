@@ -23,3 +23,11 @@ stringData:
           target_label: __address__
           regex: (.*)
           replacement: $1:2381
+        - action: replace
+          target_label: job
+          replacement: kube-etcd
+        - action: replace
+          source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+          regex: (.*)
+          replacement: $1

@@ -75,6 +75,10 @@ spec:
             gnetId: 15760
             revision: 25
             datasource: Prometheus
+          etcd-clusters-as-service:
+            gnetId: 10322
+            revision: 1
+            datasource: Prometheus
     alertmanager:
       ingress:
         enabled: true

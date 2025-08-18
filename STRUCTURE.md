@@ -30,7 +30,13 @@ configuration.
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
 - `flux/`: FluxCD GitOps manifests
   - `veil/`: Veil cluster manifests (Helm repositories, Helm releases,
-    MetalLB pool)
+    MetalLB pool, monitoring). `monitoring.yaml` installs
+    `kube-prometheus-stack` (Grafana, Prometheus, Alertmanager) with default
+    dashboards and Grafana ingress, and wires the `additional-scrape-configs`
+    Secret to Prometheus. Etcd metrics are scraped from control-plane nodes on
+    TCP/2381 via job `kube-etcd` defined in
+    `flux/veil/additional-scrape-configs.yaml`. Grafana includes the etcd
+    dashboard (gnetId 10322).
 - `assets/`: Fonts, images, and other static assets.
 - `private-assets/`: Private, non-public assets (git submodule initialized via
   `make add-private-assets`).
