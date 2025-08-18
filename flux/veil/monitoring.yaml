@@ -79,6 +79,14 @@ spec:
             gnetId: 10322
             revision: 1
             datasource: Prometheus
+          etcd:
+            gnetId: 22236
+            revision: 1
+            datasource: Prometheus
+          etcd-by-prometheus:
+            gnetId: 3070
+            revision: 1
+            datasource: Prometheus
     alertmanager:
       ingress:
         enabled: true
