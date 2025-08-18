@@ -10,6 +10,7 @@
       "--kube-controller-manager-arg=bind-address=0.0.0.0"
       "--kube-proxy-arg=metrics-bind-address=0.0.0.0"
       "--kube-scheduler-arg=bind-address=0.0.0.0"
+      "--etcd-arg=listen-metrics-urls=http://0.0.0.0:2381"
     ];
     description = "Common k3s flags shared by veil meteors.";
   };

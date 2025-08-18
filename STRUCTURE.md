@@ -9,7 +9,8 @@ configuration.
   imported by various hosts or user profiles.
   - `desktop-common.nix`: Shared desktop settings for workstation-like hosts
     (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
-  - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix`).
+  - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
+    k3s flags exposing control-plane metrics for scraping).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
