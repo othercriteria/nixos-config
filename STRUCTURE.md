@@ -39,7 +39,8 @@ configuration.
     Secret to Prometheus. Etcd metrics are scraped from control-plane nodes on
     TCP/2381 via job `kube-etcd` defined in
     `flux/veil/additional-scrape-configs.yaml`. Grafana includes the etcd
-    dashboard (gnetId 10322).
+    dashboard (gnetId 10322). Additional scrape jobs cover kube-proxy (10249),
+    kube-controller-manager (10257), and kube-scheduler (10259) on meteors.
 - `assets/`: Fonts, images, and other static assets.
 - `private-assets/`: Private, non-public assets (git submodule initialized via
   `make add-private-assets`).

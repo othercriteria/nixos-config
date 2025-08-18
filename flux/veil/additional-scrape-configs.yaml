@@ -31,3 +31,70 @@ stringData:
           target_label: instance
           regex: (.*)
           replacement: $1
+    - job_name: kube-proxy-from-nodes
+      scheme: http
+      metrics_path: /metrics
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - action: replace
+          source_labels: [__meta_kubernetes_node_address_InternalIP]
+          target_label: __address__
+          regex: (.*)
+          replacement: $1:10249
+        - action: replace
+          target_label: job
+          replacement: kube-proxy
+        - action: replace
+          source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+          regex: (.*)
+          replacement: $1
+    - job_name: kube-controller-manager-from-nodes
+      scheme: https
+      metrics_path: /metrics
+      tls_config:
+        insecure_skip_verify: true
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - action: keep
+          source_labels: [__meta_kubernetes_node_label_node_role_kubernetes_io_control_plane]
+          regex: .+
+        - action: replace
+          source_labels: [__meta_kubernetes_node_address_InternalIP]
+          target_label: __address__
+          regex: (.*)
+          replacement: $1:10257
+        - action: replace
+          target_label: job
+          replacement: kube-controller-manager
+        - action: replace
+          source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+          regex: (.*)
+          replacement: $1
+    - job_name: kube-scheduler-from-nodes
+      scheme: https
+      metrics_path: /metrics
+      tls_config:
+        insecure_skip_verify: true
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - action: keep
+          source_labels: [__meta_kubernetes_node_label_node_role_kubernetes_io_control_plane]
+          regex: .+
+        - action: replace
+          source_labels: [__meta_kubernetes_node_address_InternalIP]
+          target_label: __address__
+          regex: (.*)
+          replacement: $1:10259
+        - action: replace
+          target_label: job
+          replacement: kube-scheduler
+        - action: replace
+          source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+          regex: (.*)
+          replacement: $1
