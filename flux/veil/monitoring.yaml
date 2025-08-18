@@ -34,7 +34,8 @@ spec:
       enabled: false
     prometheus:
       prometheusSpec:
-        additionalScrapeConfigs:
+        additionalScrapeConfigsSecret:
+          enabled: true
           name: additional-scrape-configs
           key: additional-scrape-configs.yaml
       ingress:
