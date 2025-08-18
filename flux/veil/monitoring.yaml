@@ -27,6 +27,25 @@ spec:
           - grafana.veil.home.arpa
         path: /
         pathType: Prefix
+      sidecar:
+        dashboards:
+          enabled: true
+          label: grafana_dashboard
+          searchNamespace: ALL
+      dashboards:
+        default:
+          node-exporter-full:
+            gnetId: 1860
+            revision: 33
+            datasource: Prometheus
+          k8s-views-nodes:
+            gnetId: 15759
+            revision: 22
+            datasource: Prometheus
+          k8s-views-pods:
+            gnetId: 15760
+            revision: 25
+            datasource: Prometheus
     alertmanager:
       ingress:
         enabled: true
