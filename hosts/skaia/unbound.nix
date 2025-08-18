@@ -21,6 +21,8 @@
         local-data = [
           "\"ingress.veil.home.arpa. A 192.168.0.220\""
           "\"grafana.veil.home.arpa. A 192.168.0.220\""
+          "\"prometheus.veil.home.arpa. A 192.168.0.220\""
+          "\"alertmanager.veil.home.arpa. A 192.168.0.220\""
           "\"skaia.veil.home.arpa. A 192.168.0.160\""
           "\"meteor-1.veil.home.arpa. A 192.168.0.121\""
           "\"meteor-2.veil.home.arpa. A 192.168.0.122\""

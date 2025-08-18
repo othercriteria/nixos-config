@@ -14,4 +14,7 @@
     ];
     description = "Common k3s flags shared by veil meteors.";
   };
+
+  # DRY: default join token location for all meteors
+  services.k3s.tokenFile = lib.mkDefault "/etc/nixos/secrets/veil-k3s-token";
 }

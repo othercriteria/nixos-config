@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ./join-token.nix
     ../../../modules/veil/k3s-common.nix
   ];
 
