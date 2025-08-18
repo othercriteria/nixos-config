@@ -4,7 +4,7 @@
   imports = [
     ../server-common
     ./hardware-configuration.nix
-    ./firewall.nix
+    ../../modules/veil/firewall.nix
     ./k3s
   ];
 

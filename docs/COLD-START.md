@@ -130,7 +130,7 @@ k3s to be running and accessible.
 
 **Context:** The local Docker registry (`registry:2` via NixOS
 `services.dockerRegistry`) stores its layers under `/var/lib/registry`. This
-directory must be backed by a ZFS dataset so that images are not kept on the
+ directory must be backed by a ZFS dataset so that images are not kept on the
 root filesystem and can benefit from snapshots.
 
 **Step-by-step:**
@@ -189,7 +189,43 @@ use NetworkManager for its own connectivity.
 
 ---
 
-## 6. TODO: Secrets Management
+## 6. Set networking.hostId per host
+
+**Context:** `networking.hostId` is used by ZFS and system components to uniquely
+identify a host. Placeholder values should be replaced with real IDs on first
+install.
+
+**Step-by-step (preferred on ZFS systems):**
+
+1. Generate a hostid (8 hex chars) and write `/etc/hostid`:
+
+   ```sh
+   # Use the kernel's hostid if present
+   hostid | cut -c1-8
+   # Or generate a deterministic one from machine-id:
+   dd if=/etc/machine-id bs=4 count=1 2>/dev/null | hexdump -e '1/4 "%08x" "\n"'
+   ```
+
+1. Copy the value into the host's Nix config:
+
+   ```nix
+   networking.hostId = "<8-hex-chars>";
+   ```
+
+1. Rebuild the system.
+
+**Notes:**
+
+- Ensure each meteor has a unique hostId.
+- If using ZFS, `hostid` must match across boots for import pools.
+
+**In config:**
+
+- See `hosts/meteor-*/default.nix` lines with `# COLD START: set a unique hostId`.
+
+---
+
+## 7. TODO: Secrets Management
 
 > TODO: Document all secrets required for cold start (e.g., API keys, passwords
 > in `/etc/nixos/secrets/`). For now, ensure any referenced secret files exist
@@ -197,14 +233,14 @@ use NetworkManager for its own connectivity.
 
 ---
 
-## 7. [Add future cold start steps here]
+## 8. [Add future cold start steps here]
 
 If you discover a new manual step, document it in-line and add a section here
 with explicit, actionable instructions.
 
 ---
 
-## 8. Veil Cluster Cold Start (meteors)
+## 9. Veil Cluster Cold Start (meteors)
 
 Context: Bring up the HA k3s cluster (veil) across `meteor-1..3`.
 
@@ -239,17 +275,18 @@ Step-by-step:
    sudo k3s kubectl get --raw "/readyz?verbose"
    ```
 
-1. Install cluster services (managed by FluxCD). See Section 8 for Flux
+1. Install cluster services (managed by FluxCD). See Section 9 for Flux
    bootstrap and apply order.
 
 In config:
 
-- See `hosts/meteor-1/k3s/default.nix` and `join-token.nix`.
+- See `hosts/meteor-1/k3s/default.nix` and common flags in
+  `modules/veil/k3s-common.nix`.
 - See `hosts/meteor-2/k3s/default.nix` and `hosts/meteor-3/k3s/default.nix`.
 
 ---
 
-## 9. FluxCD Bootstrap for Veil (GitOps)
+## 10. FluxCD Bootstrap for Veil (GitOps)
 
 **Context:** Flux controllers reconcile Helm releases from Git, removing any
 single-node dependency and providing versioned, declarative installs.

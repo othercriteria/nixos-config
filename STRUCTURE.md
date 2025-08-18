@@ -11,7 +11,7 @@ configuration.
     (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
     k3s flags exposing control-plane metrics for scraping, and setting the
-    default k3s join token path).
+    default k3s join token path; `firewall.nix` for meteor firewall defaults).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
