@@ -16,7 +16,8 @@ configuration.
     binds on loopback and LAN addresses for local and network clients (loopback
     is required for local resolution).
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
-  - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers)
+  - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers). These
+    expose node-exporter on TCP/9100 for Prometheus scraping.
 - `home/`: Contains Home Manager user configuration modules.
 - `docs/`: Project documentation, including cold start and observability
   guides.
