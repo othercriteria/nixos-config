@@ -10,6 +10,6 @@
 
   networking = {
     hostName = "meteor-2";
-    hostId = "00000002"; # COLD START: set a unique hostId after install
+    hostId = "63643165"; # COLD START: set a unique hostId after install
   };
 }
