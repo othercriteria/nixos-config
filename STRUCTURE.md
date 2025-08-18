@@ -12,6 +12,7 @@ configuration.
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
     k3s flags exposing control-plane metrics for scraping, and setting the
     default k3s join token path; `firewall.nix` for meteor firewall defaults).
+    Modules follow NixOS conventions (`options` and `config` at top-level).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
