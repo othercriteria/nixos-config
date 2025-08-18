@@ -9,8 +9,10 @@
         "--kubelet-arg=authentication-token-webhook=true"
         "--kubelet-arg=authorization-mode=Webhook"
         "--kube-controller-manager-arg=bind-address=0.0.0.0"
+        "--kube-controller-manager-arg=authorization-always-allow-paths=/metrics"
         "--kube-proxy-arg=metrics-bind-address=0.0.0.0"
         "--kube-scheduler-arg=bind-address=0.0.0.0"
+        "--kube-scheduler-arg=authorization-always-allow-paths=/metrics"
         "--etcd-arg=listen-metrics-urls=http://0.0.0.0:2381"
         "--etcd-arg=metrics=extensive"
       ];
