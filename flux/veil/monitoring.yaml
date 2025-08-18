@@ -17,6 +17,28 @@ spec:
         name: prometheus-community
         namespace: flux-system
   values:
+    defaultRules:
+      create: true
+      rules:
+        alertmanager: true
+        etcd: true
+        general: true
+        kubeApiserver: true
+        kubeControllerManager: true
+        kubeScheduler: true
+        kubeStateMetrics: true
+        kubelet: true
+        node: true
+        prometheus: true
+    kubeEtcd:
+      enabled: true
+      endpoints:
+        - 192.168.0.121
+        - 192.168.0.122
+        - 192.168.0.123
+      serviceMonitor:
+        scheme: http
+        port: 2381
     grafana:
       service:
         type: ClusterIP
