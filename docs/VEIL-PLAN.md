@@ -20,10 +20,17 @@ validation.
 - DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
 - `skaia` remains on NetworkManager (no migration to systemd-networkd)
 - Observability validated: Grafana reachable via `grafana.veil.home.arpa`
+- Monitoring: Ingress hosts configured; default rules enabled; common dashboards
+  provisioned. `etcd-from-nodes` targets appear, but `etcd_server_*` metrics are
+  absent and the etcd dashboard is currently missing.
 
 ## Outstanding work
 
-- (none)
+- Investigate etcd metrics/dashboards:
+  - Verify k3s etcd metrics exposure on 2381 across meteors
+  - Confirm Prometheus additionalScrapeConfigs job and relabeling
+  - Add/adjust scrape or ServiceMonitor as needed to surface `etcd_server_*`
+- (later) Configure Alertmanager receivers/routes once rules are settled
 
 References:
 
