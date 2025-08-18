@@ -31,14 +31,18 @@ spec:
         node: true
         prometheus: true
     kubeEtcd:
-      enabled: true
-      endpoints:
-        - 192.168.0.121
-        - 192.168.0.122
-        - 192.168.0.123
-      serviceMonitor:
-        scheme: http
-        port: 2381
+      enabled: false
+    prometheus:
+      prometheusSpec:
+        additionalScrapeConfigsSecret: additional-scrape-configs
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - prometheus.veil.home.arpa
+        paths:
+          - /
+        pathType: Prefix
     grafana:
       service:
         type: ClusterIP
@@ -74,15 +78,6 @@ spec:
         ingressClassName: nginx
         hosts:
           - alertmanager.veil.home.arpa
-        paths:
-          - /
-        pathType: Prefix
-    prometheus:
-      ingress:
-        enabled: true
-        ingressClassName: nginx
-        hosts:
-          - prometheus.veil.home.arpa
         paths:
           - /
         pathType: Prefix

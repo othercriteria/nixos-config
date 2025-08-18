@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: additional-scrape-configs
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus-additional-scrape-configs
+    app.kubernetes.io/part-of: kube-prometheus-stack
+type: Opaque
+stringData:
+  additional-scrape-configs.yaml: |
+    - job_name: etcd-from-nodes
+      scheme: http
+      metrics_path: /metrics
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - action: keep
+          source_labels: [__meta_kubernetes_node_label_node_role_kubernetes_io_control_plane]
+          regex: .+
+        - action: replace
+          source_labels: [__meta_kubernetes_node_address_InternalIP]
+          target_label: __address__
+          regex: (.*)
+          replacement: $1:2381
