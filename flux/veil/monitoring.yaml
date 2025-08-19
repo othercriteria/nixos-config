@@ -31,7 +31,7 @@ spec:
         node: true
         prometheus: true
     kubeEtcd:
-      enabled: false
+      enabled: true
     prometheus:
       prometheusSpec:
         additionalScrapeConfigsSecret:
