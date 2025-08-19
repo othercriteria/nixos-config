@@ -16,7 +16,8 @@ configuration.
     hacks. The service sets PATH and resolves the home directory robustly, runs
     as user `dlk`, fetches `veil` via `scp` trying `meteor-1.veil.home.arpa`,
     `meteor-1`, then `192.168.0.121`, and ensures `skaia` remains the default
-    context after merging.
+    context after merging. It also normalizes cluster/user names to `skaia` and
+    `veil` respectively to avoid `default` name collisions in merged configs.
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
     k3s flags exposing control-plane metrics for scraping, and setting the
     default k3s join token path; `firewall.nix` for meteor firewall defaults).
