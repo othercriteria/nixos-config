@@ -61,32 +61,7 @@ spec:
           enabled: true
           label: grafana_dashboard
           searchNamespace: ALL
-      dashboards:
-        default:
-          node-exporter-full:
-            gnetId: 1860
-            revision: 33
-            datasource: Prometheus
-          k8s-views-nodes:
-            gnetId: 15759
-            revision: 22
-            datasource: Prometheus
-          k8s-views-pods:
-            gnetId: 15760
-            revision: 25
-            datasource: Prometheus
-          etcd-clusters-as-service:
-            gnetId: 10322
-            revision: 1
-            datasource: Prometheus
-          etcd:
-            gnetId: 22236
-            revision: 1
-            datasource: Prometheus
-          etcd-by-prometheus:
-            gnetId: 3070
-            revision: 1
-            datasource: Prometheus
+      dashboards: {}
     alertmanager:
       ingress:
         enabled: true
