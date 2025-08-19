@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, config, ... }:
 {
   options = {
     veil.k3s.commonFlags = lib.mkOption {
@@ -27,10 +27,7 @@
       path = [ pkgs.k3s pkgs.coreutils pkgs.util-linux ];
       preStop = ''
         set -e
-        NODE="${toString (lib.mkDefault "${builtins.getEnv "HOSTNAME"}" )}"
-        # Prefer configured hostName if available
-        if [ -z "$NODE" ]; then NODE="${toString (builtins.getAttr "hostName" (builtins.tryEval { inherit (builtins) ; }.value) or "")}"; fi
-        NODE="${toString config.networking.hostName}"
+        NODE="${config.networking.hostName}"
         # Drain this node before k3s stops; do not fail the stop if drain fails
         k3s kubectl drain "$NODE" \
           --ignore-daemonsets \
@@ -40,7 +37,7 @@
           --timeout=10m || true
       '';
       postStart = ''
-        NODE="${toString config.networking.hostName}"
+        NODE="${config.networking.hostName}"
         k3s kubectl uncordon "$NODE" || true
       '';
     };
