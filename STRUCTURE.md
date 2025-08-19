@@ -19,12 +19,11 @@ configuration.
     context after merging. It also normalizes cluster/user names to `skaia` and
     `veil` respectively (using `yq`) to avoid `default` name collisions in
     merged configs.
-  - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
-    k3s flags exposing control-plane metrics for scraping, and setting the
-    default k3s join token path; `firewall.nix` for meteor firewall defaults).
-    Modules follow NixOS conventions (`options` and `config` at top-level).
-    Control-plane metrics endpoints (controller-manager, scheduler) are exposed
-    for Prometheus by allowing `/metrics` without auth via k3s flags.
+  - `veil/`: Veil cluster-specific shared modules:
+    - `k3s-common.nix`: Common k3s flags (metrics endpoints, etcd metrics) and
+      service hooks on meteors to drain the node before k3s stops and uncordon
+      it after k3s starts.
+    - `firewall.nix`: Firewall defaults for meteors
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
