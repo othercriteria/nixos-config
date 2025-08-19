@@ -15,9 +15,9 @@ configuration.
     Modules follow NixOS conventions (`options` and `config` at top-level).
     Control-plane metrics endpoints (controller-manager, scheduler) are exposed
     for Prometheus by allowing `/metrics` without auth via k3s flags.
-  - `veil/kubeconfig.nix`: Generates managed kubeconfigs from `/etc/rancher/k3s/k3s.yaml`,
-    optionally rewriting the server address and renaming the context. Outputs to
-    `/etc/kubernetes/kubeconfig*` and is consumed by zsh aliases.
+    - `kubeconfig.nix`: Installs a oneshot service that populates
+      `${HOME}/.kube/config` for user `dlk` from the local k3s kubeconfig when
+      k3s is enabled on the host, removing the need for `KUBECONFIG` env hacks.
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound

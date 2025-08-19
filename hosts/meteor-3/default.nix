@@ -13,13 +13,4 @@
     hostName = "meteor-3";
     hostId = "37363365"; # COLD START: set a unique hostId after install
   };
-
-  veil.kubeconfig = {
-    enable = true;
-    clusterName = "veil";
-    serverAddress = "https://192.168.0.123:6443";
-    outputPath = "/etc/kubernetes/kubeconfig";
-  };
-
-  environment.sessionVariables.KUBECONFIG = "/etc/kubernetes/kubeconfig";
 }

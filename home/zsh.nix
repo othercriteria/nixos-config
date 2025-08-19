@@ -15,11 +15,6 @@
       "tmux-list" = "tmux list-sessions";
       "tmux-make" = "tmux new -s";
       "tmux-swap" = "tmux switch -t";
-
-      # Convenience aliases (use host-provided KUBECONFIG)
-      h = "helm";
-      k = "kubectl";
-      k9 = "k9s";
     };
 
     history = {
