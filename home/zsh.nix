@@ -16,11 +16,10 @@
       "tmux-make" = "tmux new -s";
       "tmux-swap" = "tmux switch -t";
 
-      # These are only relevant on hosts that have k3s installed
-      # TODO: refactor!
-      h = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml helm";
-      k = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl";
-      k9 = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml k9s";
+      # Convenience aliases (use host-provided KUBECONFIG)
+      h = "helm";
+      k = "kubectl";
+      k9 = "k9s";
     };
 
     history = {

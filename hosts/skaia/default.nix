@@ -11,6 +11,7 @@
     ./email-alerts.nix
     ./firewall.nix
     ./graphics.nix
+    ../../modules/veil/kubeconfig.nix
     ./k3s
     ./minidlna.nix
     ./observability.nix
@@ -84,6 +85,7 @@
     NIXOS_OZONE_WL = "1";
 
     XDG_CURRENT_DESKTOP = "sway";
+    KUBECONFIG = "/etc/kubernetes/kubeconfig-skaia";
   };
 
   environment.systemPackages = with pkgs; [
@@ -123,6 +125,14 @@
         cudaSupport = true;
       };
     };
+  };
+
+  # Managed kubeconfig for local skaia cluster
+  veil.kubeconfig = {
+    enable = true;
+    clusterName = "skaia";
+    serverAddress = "https://192.168.0.160:6443";
+    outputPath = "/etc/kubernetes/kubeconfig-skaia";
   };
 
   # Copy the NixOS configuration file and link it from the resulting system
