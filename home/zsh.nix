@@ -15,6 +15,9 @@
       "tmux-list" = "tmux list-sessions";
       "tmux-make" = "tmux new -s";
       "tmux-swap" = "tmux switch -t";
+
+      h = "helm";
+      k = "kubectl";
     };
 
     history = {

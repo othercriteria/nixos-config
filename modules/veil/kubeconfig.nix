@@ -37,7 +37,7 @@ in
       description = "Populate ~/.kube/config for ${username} from local k3s kubeconfig";
       wantedBy = [ "multi-user.target" ];
       after = [ "k3s.service" ];
-      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux ];
+      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;

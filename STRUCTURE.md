@@ -18,6 +18,7 @@ configuration.
     - `kubeconfig.nix`: Installs a oneshot service that populates
       `${HOME}/.kube/config` for user `dlk` from the local k3s kubeconfig when
       k3s is enabled on the host, removing the need for `KUBECONFIG` env hacks.
+      The service PATH includes `glibc.bin` to provide `getent`.
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
