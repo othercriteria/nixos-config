@@ -35,9 +35,10 @@ let
 
     # skaia config
     cp "$SRC" "$TMP1"
-    # Rename cluster and user names to avoid default collisions
-    sed -i '/^clusters:/,/^users:/ s/^  name: default$/  name: skaia/' "$TMP1" || true
-    sed -i '/^users:/,/^contexts:/ s/^  name: default$/  name: skaia/' "$TMP1" || true
+    if command -v yq >/dev/null 2>&1; then
+      yq -i '(.clusters[] | select(.name=="default").name) = "skaia"' "$TMP1" || true
+      yq -i '(.users[] | select(.name=="default").name) = "skaia"' "$TMP1" || true
+    fi
     if command -v kubectl >/dev/null 2>&1; then
       kubectl --kubeconfig "$TMP1" config rename-context default skaia >/dev/null 2>&1 || true
       kubectl --kubeconfig "$TMP1" config set-context skaia --cluster=skaia --user=skaia >/dev/null 2>&1 || true
@@ -60,8 +61,10 @@ let
     if [ -s "$TMP2" ]; then
       # Point to the control-plane IP, rename cluster/user and context to veil
       sed -i "s#server: https://127.0.0.1:6443#server: https://${veilServerIp}:6443#" "$TMP2" || true
-      sed -i '/^clusters:/,/^users:/ s/^  name: default$/  name: veil/' "$TMP2" || true
-      sed -i '/^users:/,/^contexts:/ s/^  name: default$/  name: veil/' "$TMP2" || true
+      if command -v yq >/dev/null 2>&1; then
+        yq -i '(.clusters[] | select(.name=="default").name) = "veil"' "$TMP2" || true
+        yq -i '(.users[] | select(.name=="default").name) = "veil"' "$TMP2" || true
+      fi
       if command -v kubectl >/dev/null 2>&1; then
         kubectl --kubeconfig "$TMP2" config rename-context default veil >/dev/null 2>&1 || true
         kubectl --kubeconfig "$TMP2" config set-context veil --cluster=veil --user=veil >/dev/null 2>&1 || true
@@ -97,7 +100,7 @@ in
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
       after = [ "k3s.service" "network-online.target" ];
-      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin pkgs.k3s pkgs.openssh ];
+      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin pkgs.k3s pkgs.openssh pkgs.yq-go ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
