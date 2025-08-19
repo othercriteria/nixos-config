@@ -27,7 +27,8 @@ validation.
 
 ## Outstanding work
 
-- Admin kubeconfig for `dlk` with `veil` context
+- Configure Alertmanager receivers/routes once rules are settled
+- Runbooks (backups, upgrades)
 
 References:
 
@@ -36,24 +37,6 @@ References:
 - Flux manifests: `flux/veil/`
 
 ## Post-setup (later)
-
-- [ ] Admin kubeconfig for `dlk` with `veil` context
-
-System-managed kubeconfigs are written under `/etc/kubernetes/` on targets
-(e.g., `/etc/kubernetes/kubeconfig` on meteors and `/etc/kubernetes/kubeconfig-skaia`
-on `skaia`). Zsh shells export `KUBECONFIG` to include these; switch contexts via:
-
-```bash
-kubectl config get-contexts
-kubectl config use-context veil
-```
-
-Alternatively, copy a managed kubeconfig locally:
-
-```bash
-scp meteor-1:/etc/kubernetes/kubeconfig ~/.kube/config-veil
-kubectl --kubeconfig ~/.kube/config-veil config rename-context veil veil
-```
 
 - [ ] Baseline Grafana dashboards and alerting rules
   - Import common Kubernetes dashboards
