@@ -40,10 +40,12 @@ let
     fi
 
     HAVE_VEIL="0"
-    # Try to fetch veil kubeconfig from meteor-1 via scp as user ${username}
+    # Try to fetch veil kubeconfig from meteor-1 via scp using FQDN, shortname, then IP
     if command -v scp >/dev/null 2>&1; then
-      scp -q -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new \
-        meteor-1:/etc/rancher/k3s/k3s.yaml "$TMP2" 2>/dev/null || true
+      for H in meteor-1.veil.home.arpa meteor-1 ${veilServerIp}; do
+        scp -q -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new \
+          "$H:/etc/rancher/k3s/k3s.yaml" "$TMP2" 2>/dev/null && break || true
+      done
     fi
 
     # Fallback to local file if scp didn't produce a file
@@ -63,6 +65,8 @@ let
     TARGET="$HOME_DIR/.kube/config"
     if [ "$HAVE_VEIL" = "1" ] && command -v kubectl >/dev/null 2>&1; then
       KUBECONFIG="$TMP1:$TMP2" kubectl config view --flatten > "$OUTTMP"
+      # Ensure skaia remains default
+      kubectl --kubeconfig "$OUTTMP" config use-context skaia >/dev/null 2>&1 || true
     else
       cp "$TMP1" "$OUTTMP"
     fi
