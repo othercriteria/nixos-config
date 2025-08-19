@@ -40,14 +40,13 @@ let
     fi
 
     HAVE_VEIL="0"
-    # Try to fetch veil kubeconfig from meteor-1 via ssh
-    if command -v ssh >/dev/null 2>&1; then
-      if ssh -o BatchMode=yes -o ConnectTimeout=5 meteor-1 'test -r /etc/rancher/k3s/k3s.yaml' 2>/dev/null; then
-        ssh -o BatchMode=yes -o ConnectTimeout=5 meteor-1 'sudo cat /etc/rancher/k3s/k3s.yaml' > "$TMP2" || true
-      fi
+    # Try to fetch veil kubeconfig from meteor-1 via scp as user ${username}
+    if command -v scp >/dev/null 2>&1; then
+      scp -q -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new \
+        meteor-1:/etc/rancher/k3s/k3s.yaml "$TMP2" 2>/dev/null || true
     fi
 
-    # Fallback to local file if ssh didn't produce a file
+    # Fallback to local file if scp didn't produce a file
     if [ ! -s "$TMP2" ] && [ -r "${fallbackVeilFile}" ]; then
       cp "${fallbackVeilFile}" "$TMP2"
     fi
@@ -74,7 +73,6 @@ let
     fi
     if [ ! -f "$TARGET" ] || ! cmp -s "$OUTTMP" "$TARGET"; then
       install -m 0644 "$OUTTMP" "$TARGET"
-      chown ${username}:users "$TARGET" || chown ${username}:"$(id -gn ${username})" "$TARGET" || true
     fi
 
     rm -f "$TMP1" "$TMP2" "$OUTTMP"
@@ -92,6 +90,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        User = username;
       };
       inherit script;
     };

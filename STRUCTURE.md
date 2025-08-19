@@ -13,7 +13,9 @@ configuration.
     populate `${HOME}/.kube/config` for user `dlk`. On `skaia`, it merges the
     local cluster context (`skaia`) with a fetched or fallback `veil` context
     pointing at `https://192.168.0.121:6443`. This avoids `KUBECONFIG` env
-    hacks. The service sets PATH and resolves the home directory robustly.
+    hacks. The service sets PATH and resolves the home directory robustly, runs
+    as user `dlk`, and fetches the `veil` kubeconfig via `scp` from `meteor-1`
+    when available.
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
     k3s flags exposing control-plane metrics for scraping, and setting the
     default k3s join token path; `firewall.nix` for meteor firewall defaults).
