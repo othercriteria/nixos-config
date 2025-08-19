@@ -20,17 +20,16 @@ validation.
 - DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
 - `skaia` remains on NetworkManager (no migration to systemd-networkd)
 - Observability validated: Grafana reachable via `grafana.veil.home.arpa`
-- Monitoring: Ingress hosts configured; default rules enabled; common dashboards
-  provisioned. `etcd-from-nodes` targets appear, but `etcd_server_*` metrics are
-  absent and the etcd dashboard is currently missing.
+- Monitoring: Ingress hosts configured; default rules enabled. etcd metrics are
+  scraped from control-plane nodes and the etcd dashboard is available and
+  populated. kube-proxy, controller-manager, and scheduler metrics are scraped
+  from nodes; corresponding alerts are clear.
 
 ## Outstanding work
 
-- Investigate etcd metrics/dashboards:
-  - Verify k3s etcd metrics exposure on 2381 across meteors
-  - Confirm Prometheus additionalScrapeConfigs job and relabeling
-  - Add/adjust scrape or ServiceMonitor as needed to surface `etcd_server_*`
-- (later) Configure Alertmanager receivers/routes once rules are settled
+- Admin kubeconfig for `dlk` with `veil` context
+- Configure Alertmanager receivers/routes once rules are settled
+- Runbooks (backups, upgrades)
 
 References:
 
@@ -52,7 +51,6 @@ kubectl --kubeconfig ~/.kube/config-veil config rename-context default veil
 
 - [ ] Baseline Grafana dashboards and alerting rules
   - Import common Kubernetes dashboards
-  - Configure Alertmanager receivers and routes
 
 - [ ] Runbooks (backups, upgrades)
   - On-demand etcd snapshot:
