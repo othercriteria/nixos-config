@@ -59,6 +59,9 @@ configuration.
 - `secrets/`: Encrypted secrets managed by git-secret (e.g., `veil-k3s-token`).
 - `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
   - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
+  - Note: The `project-structure.mdc` rule triggers only on structural file
+    events (create/delete/move) and provides separate guidance when editing
+    `STRUCTURE.md`.
 
 ## NixOS Entrypoint
 

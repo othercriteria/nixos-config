@@ -28,7 +28,15 @@ validation.
 ## Outstanding work
 
 - Configure Alertmanager receivers/routes once rules are settled
-- Runbooks (backups, upgrades)
+- Observability robustness:
+  - Enable PVC persistence for Prometheus, Grafana, and Alertmanager (initially
+    with `local-path`), and consider a networked or replicated StorageClass
+    (Longhorn, Rook-Ceph, OpenEBS) for node independence
+  - Configure Prometheus retention and `walCompression: true`
+  - Optionally add remote_write to a durable backend (Thanos/Mimir/VictoriaMetrics)
+    and/or Thanos sidecar + Thanos Query for HA reads and long-term storage
+  - Add PDBs and anti-affinity/topology spread where applicable
+- Runbooks (backups)
 
 References:
 
@@ -38,22 +46,11 @@ References:
 
 ## Post-setup (later)
 
-- [ ] Baseline Grafana dashboards and alerting rules
-  - Import common Kubernetes dashboards
-
-- [ ] Runbooks (backups, upgrades)
+- [ ] Runbooks (backups)
   - On-demand etcd snapshot:
 
     ```bash
     sudo k3s etcd-snapshot save --name on-demand-$(date +%F)
-    ```
-
-  - Rolling upgrades:
-
-    ```bash
-    kubectl drain <node> --ignore-daemonsets --delete-emptydir-data
-    # Rebuild host (NixOS), reboot, verify node Ready again
-    kubectl uncordon <node>
     ```
 
 ## Open items

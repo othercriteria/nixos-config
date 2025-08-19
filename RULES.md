@@ -16,7 +16,9 @@ structure, or workflow.
 - **secrets-management.mdc**: Standards for managing secrets with git-secret in
   the NixOS configuration
 - **project-structure.mdc**: Standards for maintaining project structure
-  documentation
+  documentation. Triggers only on structural file events (create/delete/move)
+  to suggest updating STRUCTURE.md, plus separate authoring guidance when
+  editing `STRUCTURE.md`.
 - **rules.mdc**: Standards for placing Cursor rule files in the correct
   directory
 - **markdown-standards.mdc**: Standards for authoring Markdown files that

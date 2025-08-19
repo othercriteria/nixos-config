@@ -1,20 +1,43 @@
----
-description: Standards for maintaining project structure documentation
-globs: ["STRUCTURE.md"]
-alwaysApply: true
----
 # Project Structure Documentation
 
 Document project structure in STRUCTURE.md.
 
 <rule>
-name: project_structure
-description: Standards for maintaining project structure documentation
+name: project_structure_events
+description: Suggest updating STRUCTURE.md when structural changes occur
+
 filters:
-  # Match STRUCTURE.md file
+  # Trigger on file create/delete/move events
+  - type: event
+    pattern: "(?i)^(file_(create|delete|move))$"
+  # Ignore VCS internals
+  - type: path
+    pattern: "^(?!\\.git/).+"
+
+actions:
+  - type: suggest
+    message: |
+      A structural change was detected (file create, delete, or move).
+      Review and update STRUCTURE.md if directory purposes or key locations changed.
+
+criteria:
+  required:
+    - STRUCTURE.md exists in project root
+    - Update STRUCTURE.md when directories are added/removed/moved
+    - Keep key component locations current
+
+metadata:
+  priority: medium
+  version: 1.2
+</rule>
+
+<rule>
+name: project_structure_authoring
+description: Provide authoring guidance when editing STRUCTURE.md or asking about structure
+
+filters:
   - type: file
     pattern: "STRUCTURE\\.md$"
-  # Match queries about project structure
   - type: intent
     pattern: "(?i)\\b(structure|organization|layout|architecture)\\b"
 
@@ -30,11 +53,6 @@ actions:
 
       Update when adding directories, moving files, or changing structure.
 
-  - type: reject
-    conditions:
-      - pattern: "^(?!.*STRUCTURE\\.md$)"
-        message: "Project structure documentation must be in STRUCTURE.md"
-
 criteria:
   required:
     - STRUCTURE.md exists in project root
@@ -43,9 +61,11 @@ criteria:
     - Directory purposes explained
     - Key file locations listed
 
-examples:
-  - input: "Where should I put my new service component?"
-    output: "Check STRUCTURE.md for guidelines on component placement. Update STRUCTURE.md after adding your new service."
+metadata:
+  priority: high
+  version: 1.2
+</rule>
+
 
 metadata:
   priority: high
