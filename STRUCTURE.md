@@ -23,7 +23,8 @@ configuration.
     - `k3s-common.nix`: Common k3s flags (metrics endpoints, etcd metrics) and
       service hooks on meteors to drain the node before k3s stops and uncordon
       it after k3s starts. The node name is derived from
-      `config.networking.hostName`.
+      `config.networking.hostName`. Enables unauthenticated `/metrics` on
+      controller-manager and scheduler for Prometheus scraping.
     - `firewall.nix`: Firewall defaults for meteors
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
