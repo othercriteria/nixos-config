@@ -7,14 +7,24 @@ let
   serviceName = "populate-kubeconfig-for-${username}";
   script = ''
     set -euo pipefail
+    export PATH="/run/current-system/sw/bin:$PATH"
+
     SRC="${kubeconfigSource}"
     if [ ! -f "$SRC" ]; then
       exit 0
     fi
-    HOME_DIR=$(getent passwd ${username} | cut -d: -f6)
+
+    # Resolve home directory; prefer getent if available, otherwise shell expansion
+    if command -v getent >/dev/null 2>&1; then
+      HOME_DIR=$(getent passwd ${username} | cut -d: -f6)
+    else
+      HOME_DIR=$(eval echo ~${username})
+    fi
+
     if [ -z "$HOME_DIR" ] || [ ! -d "$HOME_DIR" ]; then
       exit 0
     fi
+
     mkdir -p "$HOME_DIR/.kube"
     TMP="$(mktemp)"
     cp "$SRC" "$TMP"
@@ -30,6 +40,7 @@ let
     fi
     rm -f "$TMP"
   '';
+
 in
 {
   config = lib.mkIf enableKubeconfig {
