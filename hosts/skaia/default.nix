@@ -12,7 +12,7 @@
     ./firewall.nix
     ./graphics.nix
     ./k3s
-    ../../modules/veil/kubeconfig.nix
+    ../../modules/kubeconfig.nix
     ./minidlna.nix
     ./observability.nix
     ./samba.nix

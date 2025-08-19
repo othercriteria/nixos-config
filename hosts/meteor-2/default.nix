@@ -5,7 +5,6 @@
     ../server-common
     ./hardware-configuration.nix
     ../../modules/veil/firewall.nix
-    ../../modules/veil/kubeconfig.nix
     ./k3s
   ];
 

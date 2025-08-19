@@ -9,32 +9,28 @@ configuration.
   imported by various hosts or user profiles.
   - `desktop-common.nix`: Shared desktop settings for workstation-like hosts
     (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
+  - `kubeconfig.nix`: Installs a oneshot service on hosts running k3s to
+    populate `${HOME}/.kube/config` for user `dlk`. On `skaia`, it merges the
+    local cluster context (`skaia`) with a fetched or fallback `veil` context
+    pointing at `https://192.168.0.121:6443`. This avoids `KUBECONFIG` env
+    hacks. The service sets PATH and resolves the home directory robustly.
   - `veil/`: Veil cluster-specific shared modules (e.g., `k3s-common.nix` for
     k3s flags exposing control-plane metrics for scraping, and setting the
     default k3s join token path; `firewall.nix` for meteor firewall defaults).
     Modules follow NixOS conventions (`options` and `config` at top-level).
     Control-plane metrics endpoints (controller-manager, scheduler) are exposed
     for Prometheus by allowing `/metrics` without auth via k3s flags.
-    - `kubeconfig.nix`: Installs a oneshot service that populates
-      `${HOME}/.kube/config` for user `dlk` from the local k3s kubeconfig when
-      k3s is enabled on the host, removing the need for `KUBECONFIG` env hacks.
-      The service PATH includes `glibc.bin` and sets PATH to include
-      `/run/current-system/sw/bin`, and falls back to `~user` expansion if
-      `getent` is unavailable. On meteor hosts it rewrites the server to
-      `https://192.168.0.121:6443` and renames the context to `veil` (injected
-      conditionally via Nix `optionalString`).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
     binds on loopback and LAN addresses for local and network clients (loopback
-    is required for local resolution).
+    is required for local resolution). Includes `modules/kubeconfig.nix` to
+    manage kubeconfig as described above.
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
   - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers). These
     expose node-exporter on TCP/9100 and etcd metrics on TCP/2381 for Prometheus
-    scraping. HostIds are set per host using machine-id–derived values.
-    Firewall configuration for meteors is centralized in
-    `modules/veil/firewall.nix`; per-host `hosts/meteor-*/firewall.nix` files
-    have been removed.
+    scraping. HostIds are set per host using machine-id–derived values. Firewall
+    configuration for meteors is centralized in `modules/veil/firewall.nix`.
 - `home/`: Contains Home Manager user configuration modules.
 - `docs/`: Project documentation, including cold start and observability
   guides.
