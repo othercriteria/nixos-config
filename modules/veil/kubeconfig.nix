@@ -5,6 +5,10 @@ let
   kubeconfigSource = "/etc/rancher/k3s/k3s.yaml";
   username = "dlk";
   serviceName = "populate-kubeconfig-for-${username}";
+  hostName = config.networking.hostName or "";
+  isMeteor = lib.hasPrefix "meteor-" hostName;
+  meteorServerIp = "192.168.0.121";
+  desiredContext = if isMeteor then "veil" else "skaia";
   script = ''
     set -euo pipefail
     export PATH="/run/current-system/sw/bin:$PATH"
@@ -14,7 +18,7 @@ let
       exit 0
     fi
 
-    # Resolve home directory; prefer getent if available, otherwise shell expansion
+    # Resolve home directory without relying solely on getent
     if command -v getent >/dev/null 2>&1; then
       HOME_DIR=$(getent passwd ${username} | cut -d: -f6)
     else
@@ -28,6 +32,16 @@ let
     mkdir -p "$HOME_DIR/.kube"
     TMP="$(mktemp)"
     cp "$SRC" "$TMP"
+
+    # For meteors, point server to the control-plane VIP and name context 'veil'
+    if ${toString isMeteor}; then
+      sed -i "s#server: https://127.0.0.1:6443#server: https://${meteorServerIp}:6443#" "$TMP" || true
+    fi
+
+    # Try to rename default context to desired name if kubectl is available
+    if command -v kubectl >/dev/null 2>&1; then
+      kubectl --kubeconfig "$TMP" config rename-context default "${desiredContext}" >/dev/null 2>&1 || true
+    fi
 
     TARGET="$HOME_DIR/.kube/config"
     if [ -f "$TARGET" ] && ! cmp -s "$TMP" "$TARGET"; then
@@ -48,7 +62,7 @@ in
       description = "Populate ~/.kube/config for ${username} from local k3s kubeconfig";
       wantedBy = [ "multi-user.target" ];
       after = [ "k3s.service" ];
-      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin ];
+      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin pkgs.k3s ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
