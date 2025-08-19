@@ -33,10 +33,10 @@ let
     TMP="$(mktemp)"
     cp "$SRC" "$TMP"
 
-    # For meteors, point server to the control-plane VIP and name context 'veil'
-    if ${toString isMeteor}; then
+    ${lib.optionalString isMeteor ''
+      # On meteors, point server to the control-plane VIP
       sed -i "s#server: https://127.0.0.1:6443#server: https://${meteorServerIp}:6443#" "$TMP" || true
-    fi
+    ''}
 
     # Try to rename default context to desired name if kubectl is available
     if command -v kubectl >/dev/null 2>&1; then

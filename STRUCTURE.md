@@ -21,7 +21,8 @@ configuration.
       The service PATH includes `glibc.bin` and sets PATH to include
       `/run/current-system/sw/bin`, and falls back to `~user` expansion if
       `getent` is unavailable. On meteor hosts it rewrites the server to
-      `https://192.168.0.121:6443` and renames the context to `veil`.
+      `https://192.168.0.121:6443` and renames the context to `veil` (injected
+      conditionally via Nix `optionalString`).
 - `hosts/`: Contains per-host NixOS configuration files and subdirectories.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
