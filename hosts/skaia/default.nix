@@ -69,6 +69,7 @@
       port = 5000;
       storagePath = "/var/lib/registry";
       enableDelete = true;
+      enableGarbageCollect = true;
     };
   };
 
