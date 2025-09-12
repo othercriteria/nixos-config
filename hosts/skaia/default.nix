@@ -37,6 +37,19 @@
       fsType = "zfs";
     };
 
+  # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
+  # mountpoint and disable autosnapshots on it. After mounting, chown to the
+  # user (dlk) so applications can write to it.
+  #
+  #   zfs create -o mountpoint=legacy fastdisk/user/home/dlk-cache
+  #   zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
+  #   chown -R dlk:users /home/dlk/.cache
+  fileSystems."/home/dlk/.cache" =
+    {
+      device = "fastdisk/user/home/dlk-cache";
+      fsType = "zfs";
+    };
+
   networking = {
     hostName = "skaia"; # XXX: this is used in email-alerts.nix
     hostId = "68ae467c";

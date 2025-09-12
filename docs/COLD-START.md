@@ -336,3 +336,80 @@ single-node dependency and providing versioned, declarative installs.
 
 - Add `# COLD START: FluxCD bootstrap required before cluster services
   reconcile` near any references to Flux-managed services or docs.
+
+---
+
+## 11. User Cache on Separate ZFS Dataset
+
+**Context:** `~/.cache` can grow large and is not worth keeping in ZFS
+snapshots. Place it on its own ZFS dataset and disable autosnapshots there so
+other datasets continue to be snapshotted normally.
+
+**Step-by-step:**
+
+1. Create the dataset with a legacy mountpoint and disable autosnapshots:
+
+   ```sh
+   zfs create -o mountpoint=legacy fastdisk/user/home/dlk-cache
+   zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
+   ```
+
+1. Add a persistent mount for the cache in the host config:
+
+   ```nix
+   # hosts/skaia/default.nix
+   # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
+   # mountpoint and disable autosnapshots on it.
+   fileSystems."/home/dlk/.cache" = {
+     device = "fastdisk/user/home/dlk-cache";
+     fsType = "zfs";
+   };
+   ```
+
+1. Rebuild and switch to activate the mount:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#skaia
+   ```
+
+1. Fix ownership so the user can write to the cache directory:
+
+   ```sh
+   chown -R dlk:users /home/dlk/.cache
+   ```
+
+1. (Optional) If you want to preserve specific cached files, copy them from
+   the previous location before removing the backup:
+
+   ```sh
+   # Only if you backed up ~/.cache elsewhere during migration
+   rsync -a ~/.cache.bak/ ~/.cache/
+   rm -rf ~/.cache.bak
+   ```
+
+**Recovering space from past snapshots:**
+
+Moving `~/.cache` prevents future snapshots from including it, but existing
+snapshots may still hold space. Review and destroy old snapshots as needed:
+
+```sh
+# Inspect snapshot usage at the home dataset level
+zfs get used,usedbysnapshots fastdisk/user/home/dlk
+
+# List snapshots with sizes (oldest first)
+zfs list -t snapshot -o name,used,creation -s creation \
+  fastdisk/user/home/dlk | cat
+
+# Destroy specific snapshots you no longer need (example)
+sudo zfs destroy fastdisk/user/home/dlk@auto-2025-09-10-1200
+
+# Or destroy a range after careful review (example shows first 10)
+# WARNING: This is irreversible; confirm names before running
+zfs list -H -t snapshot -o name -s creation fastdisk/user/home/dlk | \
+  sed -n '1,10p' | xargs -n1 sudo zfs destroy
+```
+
+**In config:**
+
+- See `hosts/skaia/default.nix` for the `fileSystems."/home/dlk/.cache"` entry
+  and the `# COLD START:` annotation.

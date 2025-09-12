@@ -87,6 +87,11 @@ configuration.
   directory is created manually during cold-start and is **not** part of the
   git repository, but it is essential to system operation and therefore noted
   here.
+- `/home/dlk/.cache`: User cache directory mounted as its own ZFS dataset
+  (`fastdisk/user/home/dlk-cache`) with autosnapshots disabled. This prevents
+  large, low-value cache data from being captured in snapshots and reduces
+  churn. The dataset is created during cold-start and mounted via
+  `fileSystems."/home/dlk/.cache"` on host `skaia`.
 
 ## Directory Purposes
 
