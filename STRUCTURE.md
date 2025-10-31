@@ -9,6 +9,7 @@ configuration.
   imported by various hosts or user profiles.
   - `desktop-common.nix`: Shared desktop settings for workstation-like hosts
     (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
+  - `greetd.nix`: TTY greeter using `tuigreet` to launch Sway on login
   - `kubeconfig.nix`: Installs a oneshot service on hosts running k3s to
     populate `${HOME}/.kube/config` for user `dlk`. On `skaia`, it merges the
     local cluster context (`skaia`) with a fetched or fallback `veil` context

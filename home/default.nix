@@ -37,10 +37,12 @@
 
     git = {
       enable = true;
-      userName = "Daniel Klein";
-      userEmail = "othercriteria@gmail.com";
       lfs.enable = true;
-      extraConfig = {
+      settings = {
+        user = {
+          name = "Daniel Klein";
+          email = "othercriteria@gmail.com";
+        };
         credential.helper = "store";
       };
     };
@@ -78,7 +80,7 @@
     gnupg
     ripgrep
     jq
-    nvtopPackages.full
+    nvitop
     tree
     unzip
     zip
@@ -106,7 +108,7 @@
 
     code-cursor
     discord
-    firefox-wayland
+    firefox
     flightgear
     (google-chrome.override {
       commandLineArgs = "--enable-wayland-ime --wayland-text-input-version=3";
@@ -133,6 +135,7 @@
     vlc
     warp-terminal
     windsurf
+    wine
     zoom-us
   ];
 }

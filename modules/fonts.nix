@@ -15,6 +15,7 @@ in
         serif = [ "Cambria" ];
         sansSerif = [ "Ubuntu" ];
         monospace = [ "Berkeley Mono" ];
+        emoji = [ "Noto Color Emoji" ];
       };
     };
 
@@ -34,14 +35,16 @@ in
         meslo-lg
         monaspace
         noto-fonts
+        noto-fonts-color-emoji
         noto-fonts-cjk-sans
+        font-awesome
         powerline-fonts
         source-code-pro
         source-han-sans
         source-han-serif
-        ubuntu_font_family
+        ubuntu-classic
         unifont
-        vistafonts
+        vista-fonts
         nerd-fonts.droid-sans-mono
         nerd-fonts.fira-code
         nerd-fonts.jetbrains-mono

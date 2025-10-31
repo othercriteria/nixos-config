@@ -53,7 +53,7 @@ in
           PermissionsStartOnly = true;
         };
         wants = [ "network-online.target" ];
-        after = [ "network-online.target" "nss-lookup.target" ];
+        after = [ "network-online.target" ];
         wantedBy = [ "multi-user.target" ];
       };
 

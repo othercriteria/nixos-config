@@ -134,9 +134,8 @@
         obs-pipewire-audio-capture
         obs-vkcapture
       ];
-      package = pkgs.obs-studio.override {
-        cudaSupport = true;
-      };
+      # Use stock OBS without CUDA toolchain to ensure we don't evaluate CUDA 12.8
+      package = pkgs.obs-studio;
     };
   };
 

@@ -16,7 +16,7 @@
       # For UI elements
       font-awesome
       noto-fonts
-      noto-fonts-emoji
+      noto-fonts-color-emoji
 
       jq
     ];
@@ -47,7 +47,7 @@
       export QT_IM_MODULE=fcitx
       export XMODIFIERS=@im=fcitx
       export SDL_IM_MODULE=fcitx
-      export GLFW_IM_MODULE=ibus
+      export GLFW_IM_MODULE=fcitx
     '';
 
     config = rec {
