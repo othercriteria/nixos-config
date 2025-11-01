@@ -7,6 +7,9 @@
     homeDirectory = "/home/dlk";
   };
 
+  # Use out-of-home cache to avoid nested filesystem mount issues
+  xdg.cacheHome = "/fastcache/dlk";
+
   imports = [
     ./helm.nix
     ./keyboard.nix

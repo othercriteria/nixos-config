@@ -38,13 +38,13 @@
     };
 
   # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
-  # mountpoint and disable autosnapshots on it. After mounting, chown to the
-  # user (dlk) so applications can write to it.
+  # mountpoint and disable autosnapshots on it. Mount it outside $HOME to avoid
+  # nested filesystem ordering issues during login.
   #
   #   zfs create -o mountpoint=legacy fastdisk/user/home/dlk-cache
   #   zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
-  #   chown -R dlk:users /home/dlk/.cache
-  fileSystems."/home/dlk/.cache" =
+  #   mkdir -p /fastcache/dlk && chown -R dlk:users /fastcache/dlk
+  fileSystems."/fastcache/dlk" =
     {
       device = "fastdisk/user/home/dlk-cache";
       fsType = "zfs";
@@ -99,6 +99,8 @@
     NIXOS_OZONE_WL = "1";
 
     XDG_CURRENT_DESKTOP = "sway";
+    # Ensure writable cache for fontconfig and apps in greetd/uwsm sessions
+    XDG_CACHE_HOME = "/fastcache/dlk";
   };
 
   environment.systemPackages = with pkgs; [
@@ -118,6 +120,8 @@
   programs = {
     # Needed for remote VS Code to work, per https://nixos.wiki/wiki/Visual_Studio_Code
     nix-ld.enable = true;
+
+    sway.enable = true;
 
     # Some programs need SUID wrappers, can be configured further or are
     # started in user sessions.

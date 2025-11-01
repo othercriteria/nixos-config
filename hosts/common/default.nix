@@ -54,26 +54,39 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  # Common system packages
-  environment.systemPackages = with pkgs; [
-    # Configuration and debugging
-    file
-    git
-    glances
-    htop
-    hwinfo
-    lsof
-    pciutils
-    tree
-    tmux
-    usbutils
-    wget
+  # Common environment settings
+  environment = {
+    # Common system packages
+    systemPackages = with pkgs; [
+      # Configuration and debugging
+      file
+      git
+      glances
+      htop
+      hwinfo
+      lsof
+      pciutils
+      tree
+      tmux
+      usbutils
+      wget
 
-    # Text editor
-    emacs
-  ];
+      # Text editor
+      emacs
+    ];
 
-  environment.pathsToLink = [ "/share/zsh" ];
+    pathsToLink = [ "/share/zsh" ];
+
+    # Ensure zsh login shells get a correct HOME even if the environment
+    # inherited HOME="/". This fixes SSH/greetd sessions where zsh starts
+    # with HOME unset or set to "/".
+    etc."zshenv.local".text = ''
+      if [ -z "$HOME" ] || [ "$HOME" = "/" ]; then
+        HOME="$(getent passwd "$USER" | cut -d: -f6)"
+        export HOME
+      fi
+    '';
+  };
 
   users.users.dlk = {
     isNormalUser = true;
@@ -81,10 +94,32 @@
     shell = pkgs.zsh;
   };
 
-  programs.zsh.enable = true;
+  programs = {
+    zsh.enable = true;
+    uwsm = {
+      enable = true;
+      waylandCompositors = {
+        sway = {
+          prettyName = "Sway";
+          comment = "Sway compositor managed by UWSM";
+          binPath = "/etc/profiles/per-user/dlk/bin/sway";
+        };
+      };
+    };
+  };
+
+  # Ensure the systemd user manager has a correct HOME for login sessions
+  systemd.user.extraConfig = ''
+    DefaultEnvironment=HOME=/home/dlk
+  '';
+
+
 
   services = {
-    dbus.enable = true;
+    dbus = {
+      enable = true;
+      implementation = "broker";
+    };
     openssh = {
       enable = true;
       settings = {

@@ -30,6 +30,7 @@
     };
   };
 
+
   wayland.windowManager.sway = {
     enable = true;
 
@@ -92,7 +93,7 @@
       bindsym --no-warn Mod4+Shift+E exec wofi-emoji
 
       # Auto-start Fcitx5
-      exec --no-startup-id fcitx5 -d
+      exec --no-startup-id fcitx5 -d -r
     '';
   };
 
@@ -101,7 +102,7 @@
       enable = true;
       systemd = {
         enable = true;
-        target = "sway-session.target";
+        target = "graphical-session.target";
       };
       style = builtins.readFile ../assets/waybar.css;
       settings = {

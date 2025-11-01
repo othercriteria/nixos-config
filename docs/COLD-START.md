@@ -339,11 +339,11 @@ single-node dependency and providing versioned, declarative installs.
 
 ---
 
-## 11. User Cache on Separate ZFS Dataset
+## 11. User Cache on Separate ZFS Dataset (no nesting under $HOME)
 
 **Context:** `~/.cache` can grow large and is not worth keeping in ZFS
-snapshots. Place it on its own ZFS dataset and disable autosnapshots there so
-other datasets continue to be snapshotted normally.
+snapshots. To avoid login races and nested filesystem ordering issues, mount
+the cache dataset outside `$HOME` and point `XDG_CACHE_HOME` to it.
 
 **Step-by-step:**
 
@@ -354,13 +354,13 @@ other datasets continue to be snapshotted normally.
    zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
    ```
 
-1. Add a persistent mount for the cache in the host config:
+1. Add a persistent mount for the cache outside `$HOME` in the host config:
 
    ```nix
    # hosts/skaia/default.nix
    # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
-   # mountpoint and disable autosnapshots on it.
-   fileSystems."/home/dlk/.cache" = {
+   # mountpoint and disable autosnapshots on it. Mount outside $HOME.
+   fileSystems."/fastcache/dlk" = {
      device = "fastdisk/user/home/dlk-cache";
      fsType = "zfs";
    };
@@ -372,24 +372,23 @@ other datasets continue to be snapshotted normally.
    sudo nixos-rebuild switch --flake /etc/nixos#skaia
    ```
 
-1. Fix ownership so the user can write to the cache directory:
+1. Create the mountpoint and set ownership:
 
    ```sh
-   chown -R dlk:users /home/dlk/.cache
+   sudo mkdir -p /fastcache/dlk
+   sudo chown -R dlk:users /fastcache/dlk
    ```
 
-1. (Optional) If you want to preserve specific cached files, copy them from
-   the previous location before removing the backup:
+1. Point the user cache to the new location (Home Manager):
 
-   ```sh
-   # Only if you backed up ~/.cache elsewhere during migration
-   rsync -a ~/.cache.bak/ ~/.cache/
-   rm -rf ~/.cache.bak
+   ```nix
+   # home/default.nix
+   xdg.cacheHome = "/fastcache/dlk";
    ```
 
 **Recovering space from past snapshots:**
 
-Moving `~/.cache` prevents future snapshots from including it, but existing
+Moving the cache prevents future snapshots from including it, but existing
 snapshots may still hold space. Review and destroy old snapshots as needed:
 
 ```sh
