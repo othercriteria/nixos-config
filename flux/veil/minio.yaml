@@ -11,9 +11,10 @@ spec:
   chart:
     spec:
       chart: minio
+      version: 17.0.21
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: bitnami-oci
         namespace: flux-system
   values:
     # Distributed mode across 3 replicas with 2 drives each => 6 drives total
