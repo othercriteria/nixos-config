@@ -37,8 +37,16 @@ spec:
       size: 125Gi
       storageClass: local-path
 
-    # Prefer spreading but don't block scheduling
+    # Prefer spreading but don't block scheduling (servers only)
     podAntiAffinityPreset: soft
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: minio
+            app.kubernetes.io/component: server
 
     service:
       type: ClusterIP
@@ -71,3 +79,4 @@ spec:
     # Relax anti-affinity for console explicitly (override chart defaults)
     console:
       podAntiAffinityPreset: soft
+      topologySpreadConstraints: []
