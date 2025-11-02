@@ -37,15 +37,8 @@ spec:
       size: 125Gi
       storageClass: local-path
 
-    # Spread pods across nodes; prefer one per node
-    podAntiAffinityPreset: hard
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: minio
+    # Prefer spreading but don't block scheduling
+    podAntiAffinityPreset: soft
 
     service:
       type: ClusterIP
@@ -74,3 +67,7 @@ spec:
         nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
         nginx.ingress.kubernetes.io/proxy-buffering: "off"
       tls: []
+
+    # Relax anti-affinity for console explicitly (override chart defaults)
+    console:
+      podAntiAffinityPreset: soft
