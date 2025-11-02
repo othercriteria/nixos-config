@@ -16,18 +16,25 @@
         hide-identity = "yes";
         hide-version = "yes";
 
-        # Local authoritative zone for the home network
-        local-zone = [ "\"veil.home.arpa.\" static" ];
+        # Local authoritative zones
+        # - veil.home.arpa: cluster services (MetalLB VIPs, ingresses, etc.)
+        # - home.arpa: LAN hosts (skaia, meteors, hive, etc.)
+        local-zone = [ "\"veil.home.arpa.\" static" "\"home.arpa.\" static" ];
         local-data = [
+          # veil (cluster services)
           "\"ingress.veil.home.arpa. A 192.168.0.220\""
           "\"grafana.veil.home.arpa. A 192.168.0.220\""
           "\"prometheus.veil.home.arpa. A 192.168.0.220\""
           "\"alertmanager.veil.home.arpa. A 192.168.0.220\""
-          "\"skaia.veil.home.arpa. A 192.168.0.160\""
-          "\"meteor-1.veil.home.arpa. A 192.168.0.121\""
-          "\"meteor-2.veil.home.arpa. A 192.168.0.122\""
-          "\"meteor-3.veil.home.arpa. A 192.168.0.123\""
-          "\"hive.veil.home.arpa. A 192.168.0.144\""
+          "\"s3.veil.home.arpa. A 192.168.0.220\""
+          "\"s3-console.veil.home.arpa. A 192.168.0.220\""
+
+          # home (LAN hosts)
+          "\"skaia.home.arpa. A 192.168.0.160\""
+          "\"meteor-1.home.arpa. A 192.168.0.121\""
+          "\"meteor-2.home.arpa. A 192.168.0.122\""
+          "\"meteor-3.home.arpa. A 192.168.0.123\""
+          "\"hive.home.arpa. A 192.168.0.144\""
         ];
 
         include = "/var/lib/unbound/rpz-local-zones.conf";

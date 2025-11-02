@@ -21,14 +21,27 @@ hosts reside.
 
 ## DNS
 
-- Private zone: `veil.home.arpa`
-  - Router may not support static A records. Interim: use `sslip.io` or
-    `nip.io` (e.g., `app.192-168-0-220.sslip.io`).
-  - Future plan: move LAN DNS to `skaia` (e.g., `unbound`, `dnsmasq`, or
-    `coredns`) and manage `veil.home.arpa` there with static A records for
-    MetalLB VIPs, for example:
+- LAN DNS is served by `unbound` on `skaia` (192.168.0.160).
+
+- Private zones:
+
+  - `veil.home.arpa` (cluster services)
+
     - `ingress.veil.home.arpa` → 192.168.0.220 (ingress-nginx)
-    - `grafana.veil.home.arpa` → 192.168.0.220 (Ingress to Grafana)
+    - `grafana.veil.home.arpa` → 192.168.0.220 (Grafana via Ingress)
+    - `prometheus.veil.home.arpa` → 192.168.0.220
+    - `alertmanager.veil.home.arpa` → 192.168.0.220
+    - `s3.veil.home.arpa` → 192.168.0.220 (MinIO S3 API via Ingress)
+    - `s3-console.veil.home.arpa` → 192.168.0.220 (MinIO console via Ingress)
+
+  - `home.arpa` (LAN hosts)
+
+    - `skaia.home.arpa` → 192.168.0.160
+    - `meteor-1.home.arpa` → 192.168.0.121
+    - `meteor-2.home.arpa` → 192.168.0.122
+    - `meteor-3.home.arpa` → 192.168.0.123
+    - `hive.home.arpa` → 192.168.0.144
+
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
 
@@ -39,7 +52,7 @@ hosts reside.
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - `unknown client name` → 192.168.0.189 (MAC 7C-78-B2-86-82-6F)
 - If these prove important, migrate them to static reservations and add
-  corresponding DNS A records under `veil.home.arpa`.
+  corresponding DNS A records under the appropriate zone.
 
 ## Notes
 
@@ -47,3 +60,7 @@ hosts reside.
 - Document reservations and MetalLB allocations to maintain clarity.
 - In the future, this network definition may move into Nix modules if
   multiple sites/networks are managed here.
+
+- TODO: Consider assigning a dedicated MetalLB IP for MinIO if direct
+  TCP access (bypassing Ingress) is desired for throughput, or to
+  isolate S3 traffic for policy/observability/PKI reasons.

@@ -31,7 +31,10 @@ configuration.
   - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
     `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
     binds on loopback and LAN addresses for local and network clients (loopback
-    is required for local resolution). Includes `modules/kubeconfig.nix` to
+    is required for local resolution). Unbound serves two private zones:
+    `veil.home.arpa` (cluster services like `ingress`, `grafana`, `prometheus`,
+    `alertmanager`, `s3`, `s3-console`) and `home.arpa` (LAN hosts like `skaia`,
+    `meteor-1..3`, `hive`). Includes `modules/kubeconfig.nix` to
     manage kubeconfig as described above.
   - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
   - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers). These
