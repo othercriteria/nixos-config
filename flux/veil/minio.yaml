@@ -21,21 +21,11 @@ spec:
     image:
       registry: docker.io
       repository: bitnamilegacy/minio
-    # Distributed mode across 3 replicas with 2 drives each => 6 drives total
-    # MinIO will apply EC(4,2) automatically for 6 drives
-    architecture: distributed
+    # Distributed mode; try 6 pods × 1 drive (EC(4,2) requires >=4, even)
+    mode: distributed
     statefulset:
-      replicaCount: 3
-      drivesPerNode: 2
-      podAntiAffinityPreset: soft
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: minio
-              app.kubernetes.io/component: server
+      replicaCount: 6
+      drivesPerNode: 1
 
     # COLD START: Create the Secret "minio-root" in namespace object-store with
     # keys "root-user" and "root-password" before first deploy. Example:
@@ -55,8 +45,7 @@ spec:
 
     service:
       type: ClusterIP
-    consoleService:
-      type: ClusterIP
+    # Console service type under console.service
 
     # Expose API and Console via ingress-nginx at 192.168.0.220
     ingress:
@@ -68,15 +57,14 @@ spec:
         nginx.ingress.kubernetes.io/proxy-body-size: "0"
         nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
         nginx.ingress.kubernetes.io/proxy-buffering: "off"
-      tls: []
+      tls: false
 
-    # Console settings
     console:
       image:
         registry: docker.io
         repository: bitnamilegacy/minio-object-browser
-      podAntiAffinityPreset: soft
-      topologySpreadConstraints: []
+      service:
+        type: ClusterIP
       ingress:
         enabled: true
         ingressClassName: nginx
@@ -86,4 +74,4 @@ spec:
           nginx.ingress.kubernetes.io/proxy-body-size: "0"
           nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
           nginx.ingress.kubernetes.io/proxy-buffering: "off"
-        tls: []
+        tls: false
