@@ -23,9 +23,19 @@ spec:
       repository: bitnamilegacy/minio
     # Distributed mode across 3 replicas with 2 drives each => 6 drives total
     # MinIO will apply EC(4,2) automatically for 6 drives
-    mode: distributed
-    replicaCount: 3
-    drivesPerNode: 2
+    architecture: distributed
+    statefulset:
+      replicaCount: 3
+      drivesPerNode: 2
+      podAntiAffinityPreset: soft
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: minio
+              app.kubernetes.io/component: server
 
     # COLD START: Create the Secret "minio-root" in namespace object-store with
     # keys "root-user" and "root-password" before first deploy. Example:
@@ -42,15 +52,6 @@ spec:
       storageClass: local-path
 
     # Prefer spreading but don't block scheduling (servers only)
-    podAntiAffinityPreset: soft
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: minio
-            app.kubernetes.io/component: server
 
     service:
       type: ClusterIP
@@ -69,21 +70,20 @@ spec:
         nginx.ingress.kubernetes.io/proxy-buffering: "off"
       tls: []
 
-    consoleIngress:
-      enabled: true
-      ingressClassName: nginx
-      hostname: s3-console.veil.home.arpa
-      path: /
-      annotations:
-        nginx.ingress.kubernetes.io/proxy-body-size: "0"
-        nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
-        nginx.ingress.kubernetes.io/proxy-buffering: "off"
-      tls: []
-
-    # Relax anti-affinity for console explicitly (override chart defaults)
+    # Console settings
     console:
       image:
         registry: docker.io
         repository: bitnamilegacy/minio-object-browser
       podAntiAffinityPreset: soft
       topologySpreadConstraints: []
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hostname: s3-console.veil.home.arpa
+        path: /
+        annotations:
+          nginx.ingress.kubernetes.io/proxy-body-size: "0"
+          nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+          nginx.ingress.kubernetes.io/proxy-buffering: "off"
+        tls: []
