@@ -17,6 +17,10 @@ spec:
         name: bitnami-oci
         namespace: flux-system
   values:
+    # Use Bitnami Legacy repositories due to catalog changes
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/minio
     # Distributed mode across 3 replicas with 2 drives each => 6 drives total
     # MinIO will apply EC(4,2) automatically for 6 drives
     mode: distributed
@@ -78,5 +82,8 @@ spec:
 
     # Relax anti-affinity for console explicitly (override chart defaults)
     console:
+      image:
+        registry: docker.io
+        repository: bitnamilegacy/minio-object-browser
       podAntiAffinityPreset: soft
       topologySpreadConstraints: []
