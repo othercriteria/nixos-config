@@ -37,11 +37,24 @@ if [ -n "$UNTRACKED_RULES" ]; then
   exit 1
 fi
 
-# Check if STRUCTURE.md needs updating
+# Check if STRUCTURE.md needs updating (only for adds/deletes/renames)
 CHANGED_FILES=$(git diff --cached --name-only)
+CHANGED_STATUS=$(git diff --cached --name-status --find-renames)
 NEEDS_STRUCTURE_UPDATE=false
-# Adjusted grep pattern to be relative to project root
-echo "$CHANGED_FILES" | grep -qE '^(\.cursor/rules/.*\.mdc|.*\.nix|Makefile|hosts/|modules/|home/)' && NEEDS_STRUCTURE_UPDATE=true
+
+# Collect files that were Added, Deleted, or Renamed (new path)
+STRUCT_PATHS=$(echo "$CHANGED_STATUS" | awk '
+  /^A\t/ { print $2 }
+  /^D\t/ { print $2 }
+  /^R[0-9]+\t/ { print $3 }')
+
+if [ -n "$STRUCT_PATHS" ]; then
+  # Consider structural only if paths are within top-level structural areas
+  echo "$STRUCT_PATHS" | grep -qE '^(modules/|hosts/|home/|flux/|assets/|private-assets/|secrets/|flake\.nix|Makefile|\.cursor/rules/.*\.mdc$)'
+  if [ $? -eq 0 ]; then
+    NEEDS_STRUCTURE_UPDATE=true
+  fi
+fi
 
 if [ "$NEEDS_STRUCTURE_UPDATE" = true ] && ! echo "$CHANGED_FILES" | grep -q '^STRUCTURE\.md$'; then
   echo "Error: Structural changes detected but STRUCTURE.md not updated." >&2
