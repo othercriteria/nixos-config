@@ -339,6 +339,37 @@ single-node dependency and providing versioned, declarative installs.
 
 ---
 
+## 11. MinIO Root Credentials (object-store namespace)
+
+**Context:** The MinIO HelmRelease references an existing Secret for the root
+user. This secret must be created manually before the first deploy to avoid
+crashloop.
+
+**Step-by-step:**
+
+1. Create the namespace if it does not exist:
+
+   ```sh
+   kubectl create ns object-store || true
+   ```
+
+1. Create the secret with root user and password:
+
+   ```sh
+   kubectl -n object-store create secret generic minio-root \
+     --from-literal=root-user="minioadmin" \
+     --from-literal=root-password="<change-me>"
+   ```
+
+1. After the secret exists, Flux will roll out MinIO automatically after you
+   commit and push the HelmRelease.
+
+**In config:**
+
+- See `flux/veil/minio.yaml` for the HelmRelease and `auth.existingSecret`.
+
+---
+
 ## 11. User Cache on Separate ZFS Dataset (no nesting under $HOME)
 
 **Context:** `~/.cache` can grow large and is not worth keeping in ZFS

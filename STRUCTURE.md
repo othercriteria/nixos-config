@@ -47,9 +47,10 @@ configuration.
   - `VEIL-PLAN.md`: Plan and progress for the veil cluster rollout
   - `residence-1/`: Site/network documentation
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
+  - `COLD-START.md`: Manual steps required for new hosts and cluster services
 - `flux/`: FluxCD GitOps manifests
   - `veil/`: Veil cluster manifests (Helm repositories, Helm releases,
-    MetalLB pool, monitoring). `monitoring.yaml` installs
+    MetalLB pool, monitoring, apps). `monitoring.yaml` installs
     `kube-prometheus-stack` (Grafana, Prometheus, Alertmanager) with default
     dashboards and Grafana ingress, and wires the `additional-scrape-configs`
     Secret to Prometheus. Etcd metrics are scraped from control-plane nodes on
