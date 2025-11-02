@@ -24,7 +24,7 @@ spec:
     # Distributed mode across 3 replicas with 2 drives each => 6 drives total
     # MinIO will apply EC(4,2) automatically for 6 drives
     mode: distributed
-    replicas: 3
+    replicaCount: 3
     drivesPerNode: 2
 
     # COLD START: Create the Secret "minio-root" in namespace object-store with
