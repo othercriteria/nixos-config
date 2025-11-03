@@ -26,6 +26,7 @@ spec:
     statefulset:
       replicaCount: 6
       drivesPerNode: 1
+    resourcesPreset: medium
 
     # COLD START: Create the Secret "minio-root" in namespace object-store with
     # keys "root-user" and "root-password" before first deploy. Example:
@@ -75,3 +76,4 @@ spec:
           nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
           nginx.ingress.kubernetes.io/proxy-buffering: "off"
         tls: false
+      resourcesPreset: small
