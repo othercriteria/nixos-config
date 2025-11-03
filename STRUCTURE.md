@@ -47,6 +47,7 @@ configuration.
   - `VEIL-PLAN.md`: Plan and progress for the veil cluster rollout
   - `residence-1/`: Site/network documentation
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
+  - `COLD-START.md`: Manual steps for new hosts/services
   - `COLD-START.md`: Manual steps required for new hosts and cluster services
 - `flux/`: FluxCD GitOps manifests
   - `veil/`: Veil cluster manifests (Helm repositories, Helm releases,

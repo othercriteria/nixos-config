@@ -5,6 +5,7 @@
     ./gpu-operator.nix
     ./k3s-token.nix
     ./openebs-zfs-localpv.nix
+    ./coredns-forward.nix
   ];
 
   environment.systemPackages = with pkgs; [
