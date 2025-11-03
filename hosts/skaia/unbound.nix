@@ -11,6 +11,9 @@
         access-control = [
           "127.0.0.0/8 allow"
           "192.168.0.0/24 allow"
+          # Allow k3s pod and service CIDRs so in-cluster pods can query Unbound
+          "10.42.0.0/16 allow"
+          "10.43.0.0/16 allow"
         ];
         verbosity = 1;
         hide-identity = "yes";
