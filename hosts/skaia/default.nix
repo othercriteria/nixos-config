@@ -13,10 +13,12 @@
     ./graphics.nix
     ./k3s
     ../../modules/kubeconfig.nix
+    ./nginx.nix
     ./minidlna.nix
     ./observability.nix
     ./samba.nix
     ./thermal.nix
+    ./teleport.nix
     ./unbound-rpz.nix
     ./unbound.nix
     ./virtualisation.nix
@@ -75,6 +77,9 @@
       videoDrivers = [ "nvidia" ];
     };
 
+    # Provide Secret Service (org.freedesktop.secrets) for apps like ProtonVPN
+    gnome.gnome-keyring.enable = true;
+
     # COLD START: Requires ZFS dataset slowdisk/registry mounted at /var/lib/registry
     dockerRegistry = {
       enable = true;
@@ -84,6 +89,12 @@
       enableDelete = true;
       enableGarbageCollect = true;
     };
+  };
+
+  # Ensure keyring unlock and D-Bus activation for login and greetd sessions
+  security.pam.services = {
+    login.enableGnomeKeyring = true;
+    greetd.enableGnomeKeyring = true;
   };
 
   # Generally, Wayland-related...

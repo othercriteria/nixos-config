@@ -443,3 +443,132 @@ zfs list -H -t snapshot -o name -s creation fastdisk/user/home/dlk | \
 
 - See `hosts/skaia/default.nix` for the `fileSystems."/home/dlk/.cache"` entry
   and the `# COLD START:` annotation.
+
+---
+
+## 12. Router Port Forwards for `skaia` Ingress
+
+**Context:** External access to public web content and Teleport passes through
+the TP-Link AC2300 router. The router must forward specific TCP ports to
+`skaia` before these services become reachable from the internet.
+
+**Step-by-step:**
+
+1. Sign in to the router admin UI (default `http://192.168.0.1`) with an admin
+   account.
+1. Navigate to **NAT Forwarding → Virtual Servers**.
+1. Add or update entries so that:
+   - TCP `80` → `192.168.0.160` (`skaia`, nginx HTTP)
+   - TCP `443` → `192.168.0.160` (`skaia`, nginx HTTPS)
+   - TCP `3023` → `192.168.0.160` (`skaia`, Teleport proxy)
+   - TCP `3024` → `192.168.0.160` (`skaia`, Teleport reverse tunnel)
+1. Save changes and confirm the new rules are active. The router may require a
+   reboot to apply updates.
+1. Ensure public DNS records point at the router's WAN IP. `ddclient` updates
+   both `valueof.info` and `teleport.valueof.info` automatically once secrets
+   are in place.
+1. Verify externally by connecting through a non-LAN network (e.g., mobile
+   hotspot) and running:
+
+   ```sh
+   curl -I http://valueof.info/
+   curl -I https://teleport.valueof.info/
+   tsh login --proxy teleport.valueof.info:443
+   ```
+
+**In config:**
+
+- `hosts/skaia/nginx.nix` — see the `# COLD START:` comment preceding the nginx
+  service.
+- `hosts/skaia/teleport.nix` — see the `# COLD START:` comment preceding the
+  Teleport service.
+
+---
+
+## 13. Teleport Cluster Bootstrap
+
+**Context:** Teleport provides authenticated access (SSH, Kubernetes, web apps).
+The initial admin user and node enrollments require manual steps.
+
+**Step-by-step:**
+
+1. After deploying `skaia` with Teleport enabled, create the storage directory
+   if it does not exist (usually handled automatically):
+
+   ```sh
+   sudo install -d -m 700 /var/lib/teleport
+   ```
+
+1. Generate the first administrator:
+
+   ```sh
+   sudo tctl users add <admin-user> --roles=editor,access
+   ```
+
+   This prints a one-time invitation URL such as
+   `https://teleport.valueof.info/web/invite/...`. Open it in a browser (the
+   request stays on nginx with an ACME certificate) or continue via CLI in the
+   next step.
+
+1. Log in from your workstation (or from `skaia` for the first run):
+
+   ```sh
+   tsh login --proxy teleport.valueof.info:443 --user=<admin-user>
+   ```
+
+   If the invite was completed in the browser, `tsh login` should proceed
+   without additional prompts. This step only provisions Teleport credentials
+   for the user; node enrollment happens separately.
+
+1. Grant each user the Unix logins they should be allowed to assume. Without
+   this, SSH and Kubernetes access will be denied even though the user can
+   authenticate:
+
+   ```sh
+   sudo tctl users update <admin-user> --set-logins=dlk,root
+   # repeat for any additional users
+   ```
+
+   After changing roles or logins, have the user re-run `tsh logout` and
+   `tsh login ...` so new certificates pick up the updated traits.
+
+1. For each server you want in Teleport (e.g., `skaia`, `meteor-*`), mint a
+   one-time join token and stage it on the host before rebuilding:
+
+   ```sh
+   # Example for meteor-1 (repeat for each host, adjusting names)
+   sudo tctl tokens add --type=node --format=text --ttl=30m \
+     --labels=host=meteor-1 > /etc/nixos/secrets/teleport/meteor-1.token
+
+   sudo chmod 600 /etc/nixos/secrets/teleport/meteor-1.token
+   sudo chown root:root /etc/nixos/secrets/teleport/meteor-1.token
+   scp /etc/nixos/secrets/teleport/meteor-1.token \
+     meteor-1.home.arpa:/etc/nixos/secrets/teleport/meteor-1.token
+   ```
+
+   Rebuild the host (`sudo nixos-rebuild switch --flake /etc/nixos#meteor-1`)
+   so `custom.teleportNode.enable = true` starts the `teleport` systemd unit.
+   If the token file is empty or missing, the service starts using cached creds.
+
+1. Verify from the Teleport auth server that the node registered. On `skaia`:
+
+   ```sh
+   sudo systemctl status teleport
+   tsh ls
+   ```
+
+   Nodes running `custom.teleportNode` will show up alongside the proxy host.
+
+1. Once a node appears, wipe the token file to avoid storing long-lived join
+   secrets:
+
+   ```sh
+   sudo truncate -s0 /etc/nixos/secrets/teleport/meteor-1.token
+   ```
+
+**In config:**
+
+- `hosts/skaia/teleport.nix` contains the Teleport service definition and
+  `# COLD START:` notes.
+- Future host-specific Teleport agent modules should add their own `# COLD START`
+  comments referencing the join token requirement.

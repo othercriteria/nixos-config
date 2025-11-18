@@ -1,6 +1,10 @@
 { config, pkgs, pkgs-stable, lib, ... }:
 
 {
+  imports = [
+    ../../modules/teleport-node.nix
+  ];
+
   # Headless server baseline (no GUI)
   # Imports: none of the desktop modules
 
@@ -119,6 +123,12 @@
   security.pki.certificateFiles = [
     ../../assets/certs/rootCA.pem
   ];
+
+  custom.teleportNode = {
+    enable = lib.mkDefault false;
+    authServer = lib.mkDefault "skaia.home.arpa:3025";
+    dataDir = lib.mkDefault "/var/lib/teleport-node";
+  };
 
   # Memory: prefer zramSwap for these nodes
   zramSwap = {
