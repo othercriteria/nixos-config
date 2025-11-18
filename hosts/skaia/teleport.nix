@@ -37,7 +37,7 @@ in
         listen_addr = "0.0.0.0:3023";
         tunnel_listen_addr = "0.0.0.0:3024";
         public_addr = "teleport.valueof.info:443";
-        tunnel_public_addr = "valueof.info:3023";
+        tunnel_public_addr = "valueof.info:3024";
         # Keep the HTTPS UI bound locally; nginx reverse-proxies to this port.
         web_listen_addr = "127.0.0.1:3080";
       };

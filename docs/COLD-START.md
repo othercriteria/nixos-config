@@ -474,6 +474,8 @@ the TP-Link AC2300 router. The router must forward specific TCP ports to
    curl -I http://valueof.info/
    curl -I https://teleport.valueof.info/
    tsh login --proxy teleport.valueof.info:443
+   # Confirm reverse tunnel port is reachable
+   nc -vz valueof.info 3024
    ```
 
 **In config:**
