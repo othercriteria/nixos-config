@@ -534,6 +534,15 @@ The initial admin user and node enrollments require manual steps.
    After changing roles or logins, have the user re-run `tsh logout` and
    `tsh login ...` so new certificates pick up the updated traits.
 
+1. Grant Kubernetes RBAC for Teleport-issued credentials. For quick
+   administrative access you can map the user into `system:masters`:
+
+   ```sh
+   sudo tctl users update <admin-user> --set-kubernetes-groups=system:masters
+   ```
+
+   Re-login with `tsh logout`/`tsh login` to refresh certificates.
+
 1. For each server you want in Teleport (e.g., `skaia`, `meteor-*`), mint a
    one-time join token and stage it on the host before rebuilding:
 
@@ -574,3 +583,27 @@ The initial admin user and node enrollments require manual steps.
   `# COLD START:` notes.
 - Future host-specific Teleport agent modules should add their own `# COLD START`
   comments referencing the join token requirement.
+
+1. Test Kubernetes access via Teleport once the kubernetes service is enabled on
+   `skaia`:
+
+   ```sh
+   tsh kube login skaia
+   tsh kubectl -n default get pods
+   ```
+
+   If this fails, confirm the user has the expected Kubernetes groups and
+   that `skaia` can reach the k3s API on port `6443`.
+
+1. The Teleport pre-start hook normalizes the copied k3s kubeconfig so the
+   cluster/context is named `skaia`. If you ever need to rotate the kubeconfig
+   manually, run the same commands:
+
+   ```sh
+   sudo KUBECONFIG=/var/lib/teleport/kubeconfig/k3s.yaml \
+     kubectl config rename-context default skaia
+   sudo KUBECONFIG=/var/lib/teleport/kubeconfig/k3s.yaml \
+     kubectl config rename-cluster default skaia
+   sudo KUBECONFIG=/var/lib/teleport/kubeconfig/k3s.yaml \
+     kubectl config use-context skaia
+   ```
