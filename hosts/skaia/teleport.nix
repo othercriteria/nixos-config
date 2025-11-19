@@ -76,5 +76,7 @@ in
 
     ${pkgs.gnused}/bin/sed -i 's/name: default/name: skaia/g' /var/lib/teleport/kubeconfig/k3s.yaml
     ${pkgs.gnused}/bin/sed -i 's/current-context: .*/current-context: skaia/' /var/lib/teleport/kubeconfig/k3s.yaml
+    ${pkgs.gnused}/bin/sed -i 's/cluster: default/cluster: skaia/g' /var/lib/teleport/kubeconfig/k3s.yaml
+    ${pkgs.gnused}/bin/sed -i 's/user: default/user: skaia/g' /var/lib/teleport/kubeconfig/k3s.yaml
   '';
 }

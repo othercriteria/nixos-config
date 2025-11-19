@@ -597,5 +597,6 @@ The initial admin user and node enrollments require manual steps.
 
 1. The Teleport pre-start hook normalizes the copied k3s kubeconfig so the
    cluster/context is named `skaia`. If you ever need to rotate the kubeconfig
-   manually, copy the raw k3s config and replace `name: default` with
-   `name: skaia`, plus `current-context: skaia`.
+   manually, copy the raw k3s config and replace every `name: default`,
+   `cluster: default`, and `user: default` with `skaia`, then ensure
+   `current-context: skaia`.
