@@ -10,6 +10,13 @@
   # Use out-of-home cache to avoid nested filesystem mount issues
   xdg.cacheHome = "/fastcache/dlk";
 
+  # Home Manager 25.11 switched to sd-switch for user unit restarts by default.
+  # The new behavior currently fails to start fcitx5-daemon during activation,
+  # which prevents `nixos-rebuild switch` from completing. Disable automatic
+  # restarts so we can still activate the generation; services will start once
+  # the user session reaches graphical-session.target.
+  systemd.user.startServices = false;
+
   imports = [
     ./helm.nix
     ./keyboard.nix

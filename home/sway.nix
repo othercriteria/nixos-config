@@ -59,6 +59,15 @@
       menu = "wofi --allow-images --allow-markup --show run";
 
       bars = [ ];
+
+      startup = [
+        {
+          # Ensure the input method daemon is running even when systemd
+          # user units are not restarted automatically during activation.
+          command = "${config.i18n.inputMethod.package}/bin/fcitx5 -rd";
+          always = true;
+        }
+      ];
     };
 
     # TODO: the display settings should be host-specific
@@ -92,8 +101,6 @@
       # Emoji picker (overrides existing shortcut for exiting sway)
       bindsym --no-warn Mod4+Shift+E exec wofi-emoji
 
-      # Auto-start Fcitx5
-      exec --no-startup-id fcitx5 -d -r
     '';
   };
 
