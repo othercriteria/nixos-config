@@ -74,11 +74,7 @@ in
     install -D -m 640 -o root -g root "$tmpfile" /var/lib/teleport/kubeconfig/k3s.yaml
     rm -f "$tmpfile"
 
-    export KUBECONFIG=/var/lib/teleport/kubeconfig/k3s.yaml
-    ${pkgs.kubectl}/bin/kubectl config rename-context default skaia >/dev/null 2>&1 || true
-    ${pkgs.kubectl}/bin/kubectl config rename-cluster default skaia >/dev/null 2>&1 || true
-    ${pkgs.kubectl}/bin/kubectl config delete-context default >/dev/null 2>&1 || true
-    ${pkgs.kubectl}/bin/kubectl config delete-cluster default >/dev/null 2>&1 || true
-    ${pkgs.kubectl}/bin/kubectl config use-context skaia >/dev/null 2>&1 || true
+    ${pkgs.gnused}/bin/sed -i 's/name: default/name: skaia/g' /var/lib/teleport/kubeconfig/k3s.yaml
+    ${pkgs.gnused}/bin/sed -i 's/current-context: .*/current-context: skaia/' /var/lib/teleport/kubeconfig/k3s.yaml
   '';
 }
