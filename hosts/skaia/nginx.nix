@@ -93,11 +93,46 @@ in
           add_header Strict-Transport-Security "max-age=31536000" always;
         '';
       };
+
+      "urbit.valueof.info" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://hive.home.arpa:8080";
+          extraConfig = ''
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            chunked_transfer_encoding off;
+            proxy_buffering off;
+            proxy_cache off;
+          '';
+        };
+      };
+
+      "stiletto-demo.valueof.info" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:32081";
+        };
+        extraConfig = ''
+          add_header Strict-Transport-Security "max-age=31536000" always;
+        '';
+      };
     };
   };
 
   security.acme = {
     acceptTerms = true;
     defaults.email = "othercriteria@gmail.com";
+  };
+
+  # Ensure nginx only starts or reloads once DNS (Unbound) is available so
+  # upstreams that rely on home.arpa resolution don't fail config tests.
+  systemd.services.nginx = {
+    after = lib.mkAfter [ "unbound.service" ];
+    requires = lib.mkAfter [ "unbound.service" ];
   };
 }

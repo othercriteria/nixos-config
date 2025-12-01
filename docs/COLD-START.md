@@ -465,8 +465,8 @@ the TP-Link AC2300 router. The router must forward specific TCP ports to
 1. Save changes and confirm the new rules are active. The router may require a
    reboot to apply updates.
 1. Ensure public DNS records point at the router's WAN IP. `ddclient` updates
-   both `valueof.info` and `teleport.valueof.info` automatically once secrets
-   are in place.
+   `valueof.info`, `teleport.valueof.info`, and `urbit.valueof.info`
+   automatically once secrets are in place.
 1. Verify externally by connecting through a non-LAN network (e.g., mobile
    hotspot) and running:
 
