@@ -14,6 +14,7 @@ hosts reside.
   - `meteor-2` → 192.168.0.122 (MAC 58-47-CA-7F-22-D1)
   - `meteor-3` → 192.168.0.123 (MAC 58-47-CA-7F-1E-71)
   - `hive` → 192.168.0.144 (MAC E0-D5-5E-2B-FB-72)
+  - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - (Add MAC↔IP mapping here for auditability)
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
@@ -41,6 +42,7 @@ hosts reside.
     - `meteor-2.home.arpa` → 192.168.0.122
     - `meteor-3.home.arpa` → 192.168.0.123
     - `hive.home.arpa` → 192.168.0.144
+  - `homeassistant.home.arpa` → 192.168.0.184
 
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
@@ -49,7 +51,6 @@ hosts reside.
 
 - Optional (not preserved unless needed):
   - `ESP_4DBB32` → 192.168.0.208 (MAC 04-CF-8C-4D-BB-32)
-  - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - `unknown client name` → 192.168.0.189 (MAC 7C-78-B2-86-82-6F)
 - If these prove important, migrate them to static reservations and add
   corresponding DNS A records under the appropriate zone.

@@ -38,6 +38,7 @@
           "\"meteor-2.home.arpa. A 192.168.0.122\""
           "\"meteor-3.home.arpa. A 192.168.0.123\""
           "\"hive.home.arpa. A 192.168.0.144\""
+          "\"homeassistant.home.arpa. A 192.168.0.184\""
         ];
 
         include = "/var/lib/unbound/rpz-local-zones.conf";
