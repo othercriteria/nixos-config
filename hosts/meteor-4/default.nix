@@ -10,7 +10,7 @@
 
   networking = {
     hostName = "meteor-4";
-    hostId = "FIXME000"; # COLD START: set a unique hostId after install
+    hostId = "21c8b855";
   };
 
   custom.teleportNode = {
