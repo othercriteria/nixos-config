@@ -11,6 +11,7 @@
       445 # Samba SMB over TCP (LAN-only expectation)
       3023 # Teleport proxy (SSH/RDP/WebApp entrypoint)
       3024 # Teleport reverse tunnel listener
+      3025 # Teleport auth server (node join from LAN)
       3026 # Teleport Kubernetes proxy listener
       6443 # k3s API server (required for cluster nodes/pods)
       6881 # BitTorrent (double-check necessity; high exposure surface)
