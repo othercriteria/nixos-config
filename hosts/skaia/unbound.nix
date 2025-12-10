@@ -37,6 +37,7 @@
           "\"meteor-1.home.arpa. A 192.168.0.121\""
           "\"meteor-2.home.arpa. A 192.168.0.122\""
           "\"meteor-3.home.arpa. A 192.168.0.123\""
+          "\"meteor-4.home.arpa. A 192.168.0.124\""
           "\"hive.home.arpa. A 192.168.0.144\""
           "\"homeassistant.home.arpa. A 192.168.0.184\""
         ];

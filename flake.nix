@@ -110,6 +110,19 @@
             ./hosts/meteor-3
           ];
         };
+
+        meteor-4 = nixpkgs.lib.nixosSystem rec{
+          system = "x86_64-linux";
+          specialArgs = {
+            pkgs-stable = import nixpkgs-stable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          };
+          modules = [
+            ./hosts/meteor-4
+          ];
+        };
       };
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let

@@ -13,6 +13,7 @@ hosts reside.
   - `meteor-1` → 192.168.0.121 (MAC 58-47-CA-7F-20-99)
   - `meteor-2` → 192.168.0.122 (MAC 58-47-CA-7F-22-D1)
   - `meteor-3` → 192.168.0.123 (MAC 58-47-CA-7F-1E-71)
+  - `meteor-4` → 192.168.0.124 (MAC 38-05-25-31-86-AE)
   - `hive` → 192.168.0.144 (MAC E0-D5-5E-2B-FB-72)
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - (Add MAC↔IP mapping here for auditability)
@@ -41,6 +42,7 @@ hosts reside.
     - `meteor-1.home.arpa` → 192.168.0.121
     - `meteor-2.home.arpa` → 192.168.0.122
     - `meteor-3.home.arpa` → 192.168.0.123
+    - `meteor-4.home.arpa` → 192.168.0.124
     - `hive.home.arpa` → 192.168.0.144
   - `homeassistant.home.arpa` → 192.168.0.184
 
