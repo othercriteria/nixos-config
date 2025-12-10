@@ -4,6 +4,7 @@
   networking.firewall = {
     allowedTCPPorts = [
       22
+      3022 # Teleport SSH node
       6443 # k3s API
       2379
       2380 # etcd peer/API
