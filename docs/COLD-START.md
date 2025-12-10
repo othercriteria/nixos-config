@@ -242,47 +242,67 @@ with explicit, actionable instructions.
 
 ## 9. Veil Cluster Cold Start (meteors)
 
-Context: Bring up the HA k3s cluster (veil) across `meteor-1..3`.
+Context: Bring up the HA k3s cluster (veil) across `meteor-1..4`.
 
-Step-by-step:
+### Initial cluster bootstrap (one-time)
 
-1. Ensure DHCP reservations exist for `meteor-1..3` and the MetalLB pool is
+1. Ensure DHCP reservations exist for all meteors and the MetalLB pool is
    reserved and outside DHCP. See `docs/residence-1/ADDRESSING.md`.
-1. Create the k3s join token secret on the build host and make it available on
-   each meteor at `/etc/nixos/secrets/veil-k3s-token`:
+
+1. Generate the k3s join token (one-time, already done):
 
    ```sh
    head -c 48 /dev/urandom | base64 | tr -d '\n' > secrets/veil-k3s-token
    git secret add secrets/veil-k3s-token
    git secret hide
-   # copy revealed file to each host securely or reveal on-host using your GPG key
    ```
 
-1. Bootstrap `meteor-1` first:
-   - Build and switch: `sudo nixos-rebuild switch --flake /etc/nixos#meteor-1`
-   - This node runs k3s with `--cluster-init`.
-   - Verify readiness: `sudo k3s kubectl get nodes`
+1. Bootstrap `meteor-1` first (runs with `--cluster-init`), then other nodes.
 
-1. Bootstrap `meteor-2` and `meteor-3` next:
-   - Build and switch: `sudo nixos-rebuild switch --flake /etc/nixos#meteor-2`
-   - and `meteor-3` similarly
-   - These nodes join via `--server https://192.168.0.121:6443` and token.
+### Adding a new meteor node
 
-1. Verify etcd and cluster health:
+1. Boot from NixOS installer and complete base installation.
+
+1. Clone the config repo and reveal secrets:
 
    ```sh
-   sudo k3s kubectl get nodes -o wide
-   sudo k3s kubectl get --raw "/readyz?verbose"
+   sudo git clone https://github.com/othercriteria/nixos-config.git /etc/nixos
+   cd /etc/nixos && sudo git secret reveal
    ```
 
-1. Install cluster services (managed by FluxCD). See Section 9 for Flux
-   bootstrap and apply order.
+   The k3s join token at `/etc/nixos/secrets/veil-k3s-token` is now in place.
 
-In config:
+1. Generate a unique hostId and update the host config:
 
-- See `hosts/meteor-1/k3s/default.nix` and common flags in
-  `modules/veil/k3s-common.nix`.
-- See `hosts/meteor-2/k3s/default.nix` and `hosts/meteor-3/k3s/default.nix`.
+   ```sh
+   HOSTID=$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | hexdump -e '1/4 "%08x" "\n"')
+   sudo sed -i "s/FIXME000/$HOSTID/" /etc/nixos/hosts/meteor-N/default.nix
+   ```
+
+1. Build and switch:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#meteor-N
+   ```
+
+1. Verify cluster membership:
+
+   ```sh
+   k3s kubectl get nodes -o wide
+   k3s kubectl get --raw "/readyz?verbose"
+   ```
+
+1. If a stale node appears (e.g., from the installer hostname), delete it:
+
+   ```sh
+   k3s kubectl delete node nixos
+   ```
+
+**In config:**
+
+- See `hosts/meteor-1/k3s/default.nix` (initial node with `--cluster-init`)
+- See `hosts/meteor-{2,3,4}/k3s/default.nix` (join via meteor-1)
+- Common flags in `modules/veil/k3s-common.nix`
 
 ---
 

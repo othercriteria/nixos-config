@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (lib) mkEnableOption mkIf mkOption optionalString types;
+  inherit (lib) mkEnableOption mkIf mkOption types;
 
   cfg = config.custom.teleportNode;
 
@@ -10,6 +10,21 @@ let
       labelPairs = map (name: "${name}=${cfg.labels.${name}}") (lib.attrNames cfg.labels);
     in
     lib.concatStringsSep "," labelPairs;
+
+  # Teleport 18 requires a config file for data_dir; CLI flag was removed
+  configFile = pkgs.writeText "teleport-node.yaml" ''
+    version: v3
+    teleport:
+      nodename: ${cfg.nodeName}
+      data_dir: ${cfg.dataDir}
+      auth_server: ${cfg.authServer}
+    ssh_service:
+      enabled: true
+    auth_service:
+      enabled: false
+    proxy_service:
+      enabled: false
+  '';
 
   startScript = pkgs.writeShellScript "teleport-node-start" ''
     set -euo pipefail
@@ -28,10 +43,7 @@ let
     fi
 
     exec ${pkgs.teleport_18}/bin/teleport start \
-      --roles=node \
-      --auth-server=${cfg.authServer} \
-      --data-dir=${cfg.dataDir} \
-      --nodename=${cfg.nodeName} \
+      --config=${configFile} \
       "''${LABELS_ARG[@]}" \
       "''${TOKEN_ARG[@]}"
   '';

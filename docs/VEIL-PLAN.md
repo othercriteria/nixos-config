@@ -6,7 +6,7 @@ validation.
 
 ## Status
 
-- k3s HA control plane across `meteor-1..3` is healthy (3-member etcd)
+- k3s HA control plane across `meteor-1..4` is healthy (4-member etcd)
 - FluxCD bootstrapped in `flux-system`
 - Core services installed via Flux:
   - MetalLB (L2, pool 192.168.0.220–239)
