@@ -1,0 +1,52 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gpu-operator
+  namespace: flux-system
+spec:
+  interval: 10m
+  install:
+    createNamespace: true
+  targetNamespace: gpu-operator
+  chart:
+    spec:
+      chart: gpu-operator
+      sourceRef:
+        kind: HelmRepository
+        name: nvidia
+        namespace: flux-system
+  values:
+    # Host-installed driver (via NixOS) - don't let operator manage it
+    driver:
+      enabled: false
+
+    # Host-installed nvidia-container-toolkit - don't let operator manage it
+    toolkit:
+      enabled: false
+
+    # CDI disabled - host driver artifacts not in expected location
+    cdi:
+      enabled: false
+
+    # DCGM exporter for Prometheus metrics
+    dcgmExporter:
+      enabled: true
+      # Use Ubuntu image for easier debugging
+      version: 4.4.1-4.6.0-ubuntu22.04
+
+    # Validator environment for host-driver setup
+    validator:
+      driver:
+        env:
+          - name: DISABLE_DEV_CHAR_SYMLINK_CREATION
+            value: "true"
+      env:
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: all
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: all
+        - name: NVIDIA_DISABLE_REQUIRE
+          value: "true"
+
+    # Node Feature Discovery labels nodes with GPUs automatically
+    # Device plugin will only activate on nodes where it finds GPUs
