@@ -5,6 +5,7 @@
     ../server-common
     ./hardware-configuration.nix
     ../../modules/veil/firewall.nix
+    ./gpu.nix
     ./k3s
   ];
 
