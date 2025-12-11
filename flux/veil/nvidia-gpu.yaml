@@ -95,6 +95,13 @@ spec:
     # Use nvidia runtime to access GPU
     runtimeClassName: nvidia
 
+    # DCGM needs more memory than default 256Mi
+    resources:
+      requests:
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+
     # Enable ServiceMonitor for Prometheus Operator
     serviceMonitor:
       enabled: true
