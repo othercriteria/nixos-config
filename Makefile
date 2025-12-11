@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets check-unbound build-host check-unbound-built
+.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets check-unbound build-host check-unbound-built flux-apply flux-status flux-diff
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -153,3 +153,39 @@ check-unbound-built: ## Validate unbound.conf from a built closure (after build-
 	fi; \
 	nix shell nixpkgs#unbound -c unbound-checkconf $$CFG; \
 	echo "unbound-checkconf passed for built system $$HOST"
+
+# Flux / Kubernetes targets
+flux-apply: ## Apply Flux manifests for a cluster (CLUSTER=veil)
+	@if [ -z "$(CLUSTER)" ]; then \
+		echo "Error: CLUSTER variable not set. Usage: make flux-apply CLUSTER=veil"; \
+		exit 1; \
+	fi; \
+	if [ ! -d "flux/$(CLUSTER)" ]; then \
+		echo "Error: flux/$(CLUSTER) directory not found"; \
+		exit 1; \
+	fi; \
+	echo "Applying Flux manifests for $(CLUSTER)..."; \
+	kubectl apply -f flux/$(CLUSTER)/
+
+flux-status: ## Show status of HelmReleases (CLUSTER=veil)
+	@if [ -z "$(CLUSTER)" ]; then \
+		echo "Error: CLUSTER variable not set. Usage: make flux-status CLUSTER=veil"; \
+		exit 1; \
+	fi; \
+	echo "HelmReleases in flux-system:"; \
+	kubectl get helmreleases -n flux-system -o wide; \
+	echo ""; \
+	echo "HelmRepositories:"; \
+	kubectl get helmrepositories -n flux-system
+
+flux-diff: ## Show what would change (CLUSTER=veil)
+	@if [ -z "$(CLUSTER)" ]; then \
+		echo "Error: CLUSTER variable not set. Usage: make flux-diff CLUSTER=veil"; \
+		exit 1; \
+	fi; \
+	if [ ! -d "flux/$(CLUSTER)" ]; then \
+		echo "Error: flux/$(CLUSTER) directory not found"; \
+		exit 1; \
+	fi; \
+	echo "Diff for Flux manifests in $(CLUSTER)..."; \
+	kubectl diff -f flux/$(CLUSTER)/ || true
