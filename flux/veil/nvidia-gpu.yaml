@@ -1,0 +1,77 @@
+# NVIDIA Device Plugin - exposes nvidia.com/gpu resources to Kubernetes
+# NixOS manages the driver and nvidia-container-toolkit on the host
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nvidia-device-plugin
+  namespace: flux-system
+spec:
+  interval: 10m
+  timeout: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  targetNamespace: nvidia-device-plugin
+  chart:
+    spec:
+      chart: nvidia-device-plugin
+      sourceRef:
+        kind: HelmRepository
+        name: nvidia-device-plugin
+        namespace: flux-system
+  values:
+    # Only run on nodes with gpu=true label
+    nodeSelector:
+      gpu: "true"
+
+    # Tolerate GPU taints if any
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+---
+# DCGM Exporter - GPU metrics for Prometheus
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dcgm-exporter
+  namespace: flux-system
+spec:
+  interval: 10m
+  timeout: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  targetNamespace: nvidia-device-plugin
+  chart:
+    spec:
+      chart: dcgm-exporter
+      sourceRef:
+        kind: HelmRepository
+        name: nvidia-dcgm
+        namespace: flux-system
+  values:
+    # Only run on nodes with gpu=true label
+    nodeSelector:
+      gpu: "true"
+
+    # Tolerate GPU taints if any
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+    # Enable ServiceMonitor for Prometheus Operator
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: monitoring
