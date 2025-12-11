@@ -106,4 +106,4 @@ spec:
     serviceMonitor:
       enabled: true
       additionalLabels:
-        release: monitoring
+        release: monitoring-kube-prometheus-stack
