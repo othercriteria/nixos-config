@@ -18,7 +18,7 @@ validation.
   `192.168.0.160`. Zones served:
   - `veil.home.arpa` (cluster services): `ingress`, `grafana`, `prometheus`,
     `alertmanager`, `s3`, `s3-console`
-  - `home.arpa` (LAN hosts): `skaia`, `meteor-1..3`, `hive`
+  - `home.arpa` (LAN hosts): `skaia`, `meteor-1..4`, `hive`
 - DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
 - `skaia` remains on NetworkManager (no migration to systemd-networkd)
 - Observability validated: Grafana reachable via `grafana.veil.home.arpa`
@@ -26,6 +26,9 @@ validation.
   scraped from control-plane nodes and the etcd dashboard is available and
   populated. kube-proxy, controller-manager, and scheduler metrics are scraped
   from nodes; corresponding alerts are clear.
+- GPU support (`meteor-4`): RTX 3080 Ti via OCuLink, NVIDIA driver managed by
+  NixOS, nvidia-container-toolkit for k3s containerd runtime. Device plugin
+  exposes `nvidia.com/gpu`, DCGM exporter provides Prometheus metrics.
 
 ## Outstanding work
 
