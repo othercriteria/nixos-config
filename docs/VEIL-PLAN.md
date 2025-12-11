@@ -7,7 +7,7 @@ validation.
 ## Status
 
 - k3s HA control plane across `meteor-1..4` is healthy (4-member etcd)
-- FluxCD bootstrapped in `flux-system`
+- FluxCD bootstrapped in `flux-system`, reconciling from `gitops-veil` repo
 - Core services installed via Flux:
   - MetalLB (L2, pool 192.168.0.220–239)
   - ingress-nginx (LoadBalancer)
@@ -32,6 +32,8 @@ validation.
 
 ## Outstanding work
 
+- Complete GitOps migration: move manifests from `flux/veil/` to `gitops-veil/`,
+  set up deploy key and Flux GitRepository/Kustomization
 - Configure Alertmanager receivers/routes once rules are settled
 - Observability robustness:
   - Enable PVC persistence for Prometheus, Grafana, and Alertmanager (initially
@@ -56,7 +58,8 @@ References:
 
 - Cold start steps: `docs/COLD-START.md`
 - Network/DNS details: `docs/residence-1/ADDRESSING.md`
-- Flux manifests: `flux/veil/`
+- GitOps manifests: `gitops-veil/` submodule (private repo)
+- Legacy manifests: `flux/veil/` (to be removed after GitOps migration)
 
 ## Post-setup (later)
 

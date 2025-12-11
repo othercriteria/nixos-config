@@ -149,6 +149,10 @@
               echo "Warning: private-assets submodule not found."
               echo "Run 'make add-private-assets' to add it."
             fi
+            if [ ! -d gitops-veil ]; then
+              echo "Note: gitops-veil submodule not found."
+              echo "Run 'make add-gitops-veil' if you need veil cluster GitOps access."
+            fi
             pre-commit install
           '';
         };

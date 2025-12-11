@@ -19,7 +19,8 @@ Personal NixOS configuration managed with flakes.
 ├── home/                 # Home-manager configurations
 ├── secrets/              # Encrypted secrets (using git-secret)
 ├── assets/               # Static assets (fonts, images, etc.) - managed with Git LFS
-└── private-assets/       # Private assets (fonts, images, etc.) - managed with Git LFS
+├── private-assets/       # Private assets submodule (fonts, etc.)
+└── gitops-veil/          # GitOps submodule for veil cluster (private)
 ```
 
 ## Quick Start
@@ -31,10 +32,11 @@ Personal NixOS configuration managed with flakes.
    cd nixos-config
    ```
 
-1. Add the private assets submodule:
+1. Initialize submodules (as needed):
 
    ```bash
-   git submodule add git@github.com:othercriteria/private-assets.git private-assets
+   make add-private-assets    # Private assets (fonts, etc.)
+   make add-gitops-veil       # GitOps for veil cluster (optional)
    ```
 
 1. Initialize Git LFS:
@@ -99,10 +101,12 @@ When adding new large files:
 1. Verify they match the patterns in `.gitattributes`
 1. Run `git lfs status` to confirm tracking
 
-### Private Assets
+### Private Submodules
 
-For assets you don't want to share with the world, use the `private-assets`
-submodule.
+- `private-assets/`: Non-redistributable assets (fonts, etc.)
+- `gitops-veil/`: GitOps manifests for the veil Kubernetes cluster
+
+Initialize with `make add-private-assets` or `make add-gitops-veil`.
 
 ## License
 

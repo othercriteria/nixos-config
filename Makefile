@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets check-unbound build-host check-unbound-built flux-apply flux-status flux-diff
+.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -119,7 +119,8 @@ update: ## Update submodules to latest
 	git submodule update --remote
 	git lfs pull
 
-add-private-assets: ## Add or initialize the private-assets submodule
+# Submodule targets
+add-private-assets: ## Initialize private-assets submodule (fonts, etc.)
 	@if git config -f .gitmodules --get-regexp '^submodule\.private-assets\.url' >/dev/null 2>&1; then \
 		echo "Submodule 'private-assets' already configured; initializing/updating..."; \
 		git submodule update --init --recursive private-assets; \
@@ -127,6 +128,28 @@ add-private-assets: ## Add or initialize the private-assets submodule
 		echo "Adding submodule 'private-assets'..."; \
 		git submodule add git@github.com:othercriteria/private-assets.git private-assets; \
 		git submodule update --init --recursive private-assets; \
+	fi
+	@git lfs pull --include "private-assets/**"
+
+add-gitops-veil: ## Initialize gitops-veil submodule (veil cluster GitOps)
+	@if git config -f .gitmodules --get-regexp '^submodule\.gitops-veil\.url' >/dev/null 2>&1; then \
+		echo "Submodule 'gitops-veil' already configured; initializing/updating..."; \
+		git submodule update --init --recursive gitops-veil; \
+	else \
+		echo "Adding submodule 'gitops-veil'..."; \
+		git submodule add git@github.com:othercriteria/gitops-veil.git gitops-veil; \
+		git submodule update --init --recursive gitops-veil; \
+	fi
+
+snapshot-gitops: ## Sync public GitOps manifests to flux-snapshot/ (illustrative)
+	@echo "Syncing gitops-veil/public/ to flux-snapshot/veil/public/..."
+	@if [ -d gitops-veil/public ]; then \
+		mkdir -p flux-snapshot/veil; \
+		rsync -a --delete gitops-veil/public/ flux-snapshot/veil/public/; \
+		echo "Snapshot complete. Remember: flux-snapshot/ is illustrative, not authoritative."; \
+	else \
+		echo "Error: gitops-veil/public/ not found. Run 'make add-gitops-veil' first."; \
+		exit 1; \
 	fi
 
 build-host: ## Build system closure for HOST without switching (uses workspace flake)
@@ -153,39 +176,3 @@ check-unbound-built: ## Validate unbound.conf from a built closure (after build-
 	fi; \
 	nix shell nixpkgs#unbound -c unbound-checkconf $$CFG; \
 	echo "unbound-checkconf passed for built system $$HOST"
-
-# Flux / Kubernetes targets
-flux-apply: ## Apply Flux manifests for a cluster (CLUSTER=veil)
-	@if [ -z "$(CLUSTER)" ]; then \
-		echo "Error: CLUSTER variable not set. Usage: make flux-apply CLUSTER=veil"; \
-		exit 1; \
-	fi; \
-	if [ ! -d "flux/$(CLUSTER)" ]; then \
-		echo "Error: flux/$(CLUSTER) directory not found"; \
-		exit 1; \
-	fi; \
-	echo "Applying Flux manifests for $(CLUSTER)..."; \
-	kubectl apply -f flux/$(CLUSTER)/
-
-flux-status: ## Show status of HelmReleases (CLUSTER=veil)
-	@if [ -z "$(CLUSTER)" ]; then \
-		echo "Error: CLUSTER variable not set. Usage: make flux-status CLUSTER=veil"; \
-		exit 1; \
-	fi; \
-	echo "HelmReleases in flux-system:"; \
-	kubectl get helmreleases -n flux-system -o wide; \
-	echo ""; \
-	echo "HelmRepositories:"; \
-	kubectl get helmrepositories -n flux-system
-
-flux-diff: ## Show what would change (CLUSTER=veil)
-	@if [ -z "$(CLUSTER)" ]; then \
-		echo "Error: CLUSTER variable not set. Usage: make flux-diff CLUSTER=veil"; \
-		exit 1; \
-	fi; \
-	if [ ! -d "flux/$(CLUSTER)" ]; then \
-		echo "Error: flux/$(CLUSTER) directory not found"; \
-		exit 1; \
-	fi; \
-	echo "Diff for Flux manifests in $(CLUSTER)..."; \
-	kubectl diff -f flux/$(CLUSTER)/ || true

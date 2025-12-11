@@ -49,19 +49,19 @@ configuration.
     - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
   - `COLD-START.md`: Manual steps for new hosts/services
   - `COLD-START.md`: Manual steps required for new hosts and cluster services
-- `flux/`: FluxCD GitOps manifests
-  - `veil/`: Veil cluster manifests (Helm repositories, Helm releases,
-    MetalLB pool, monitoring, apps). `monitoring.yaml` installs
-    `kube-prometheus-stack` (Grafana, Prometheus, Alertmanager) with default
-    dashboards and Grafana ingress, and wires the `additional-scrape-configs`
-    Secret to Prometheus. Etcd metrics are scraped from control-plane nodes on
-    TCP/2381 via job `kube-etcd` defined in
-    `flux/veil/additional-scrape-configs.yaml`. Grafana includes the etcd
-    dashboard (gnetId 10322). Additional scrape jobs cover kube-proxy (10249),
-    kube-controller-manager (10257), and kube-scheduler (10259) on meteors.
+- `gitops-veil/`: GitOps manifests for veil cluster (private git submodule, `make
+  add-gitops-veil`). Contains `public/` and `private/` subdirectories.
+  `monitoring.yaml` installs `kube-prometheus-stack` (Grafana, Prometheus,
+  Alertmanager) with default dashboards and Grafana ingress. Etcd metrics are
+  scraped from control-plane nodes on TCP/2381 via job `kube-etcd`. Grafana
+  includes the etcd dashboard (gnetId 10322). Additional scrape jobs cover
+  kube-proxy (10249), kube-controller-manager (10257), and kube-scheduler
+  (10259) on meteors.
+- `flux-snapshot/`: Public snapshots of `gitops-*/public/` manifests
+  (illustrative, not authoritative). Use `make snapshot-gitops` to sync.
 - `assets/`: Fonts, images, and other static assets.
-- `private-assets/`: Private, non-public assets (git submodule initialized via
-  `make add-private-assets`).
+- `private-assets/`: Private, non-public assets (git submodule, `make
+  add-private-assets`).
 - `secrets/`: Encrypted secrets managed by git-secret (e.g., `veil-k3s-token`).
 - `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
   - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
@@ -105,10 +105,10 @@ configuration.
 - `hosts/`: Per-host configuration (e.g., `skaia/`, `server-common`, `meteor-*/`)
 - `home/`: User-level configuration
 - `docs/`: Documentation for setup, cold start, observability, and network/site
-- `flux/`: Flux GitOps manifests; subdirectories may separate clusters (e.g.,
-  `flux/veil/`)
+- `gitops-veil/`: GitOps manifests for veil cluster (private submodule)
+- `flux-snapshot/`: Public snapshots of GitOps manifests (illustrative)
 - `assets/`: Static assets (fonts, images)
-- `private-assets/`: Private assets tracked as a submodule
+- `private-assets/`: Private assets (submodule)
 - `secrets/`: Encrypted secrets (git-secret)
 
 ## Updating Structure

@@ -308,10 +308,22 @@ Context: Bring up the HA k3s cluster (veil) across `meteor-1..4`.
 
 ## 10. FluxCD Bootstrap for Veil (GitOps)
 
-**Context:** Flux controllers reconcile Helm releases from Git, removing any
-single-node dependency and providing versioned, declarative installs.
+**Context:** Flux controllers reconcile Helm releases from a private Git repo
+(`gitops-veil`), providing versioned, declarative cluster management. The repo
+appears in-tree as a submodule for local editing.
 
-**Step-by-step:**
+### Prerequisites
+
+- SSH key with access to `github.com:othercriteria/gitops-veil.git`
+- `kubectl` configured for the veil cluster
+
+### Step-by-step
+
+1. Initialize the `gitops-veil` submodule (for local editing):
+
+   ```bash
+   make add-gitops-veil
+   ```
 
 1. Install Flux controllers (one-time per cluster):
 
@@ -322,40 +334,58 @@ single-node dependency and providing versioned, declarative installs.
    kubectl -n flux-system get pods
    ```
 
-1. Apply HelmRepository sources for required charts:
+1. Create the deploy key for Flux to pull from the private repo:
 
    ```bash
-   # Apply repo sources from this repository once added, for example:
-   kubectl apply -f flux/veil/helm-repos.yaml
+   # Generate a deploy key (do this once, store securely)
+   ssh-keygen -t ed25519 -f /tmp/gitops-veil-deploy -N ""
+
+   # Add the public key to GitHub repo Settings > Deploy keys (read-only)
+   cat /tmp/gitops-veil-deploy.pub
+
+   # Create the secret in-cluster
+   kubectl -n flux-system create secret generic gitops-veil-deploy-key \
+     --from-file=identity=/tmp/gitops-veil-deploy \
+     --from-literal=known_hosts="github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+
+   # Clean up local key
+   rm /tmp/gitops-veil-deploy /tmp/gitops-veil-deploy.pub
    ```
 
-1. Apply services via HelmRelease (and MetalLB IP resources):
+1. Apply the GitOps bootstrap (GitRepository + Kustomization):
 
    ```bash
-   # MetalLB controller
-   kubectl apply -f flux/veil/metallb.yaml
-   # MetalLB address pool + L2Advertisement
-   kubectl apply -f flux/veil/metallb-pool.yaml
-   # ingress-nginx controller
-   kubectl apply -f flux/veil/ingress-nginx.yaml
-   # kube-prometheus-stack
-   kubectl apply -f flux/veil/monitoring.yaml
+   kubectl apply -f gitops-veil/bootstrap/
    ```
 
-1. Verify reconciliation and health:
+1. Verify Flux is reconciling:
 
    ```bash
+   kubectl -n flux-system get gitrepositories,kustomizations
    kubectl get hr -A
-   kubectl -n flux-system get kustomizations.sources.toolkit.fluxcd.io
-   kubectl -n metallb-system get ipaddresspools,l2advertisements
-   kubectl -n ingress-nginx get svc
-   kubectl -n monitoring get pods
    ```
+
+### Workflow after bootstrap
+
+Edit manifests locally in `gitops-veil/`, then:
+
+```bash
+cd gitops-veil
+git add . && git commit -m "description" && git push
+# Flux auto-reconciles within ~1 minute
+```
+
+Watch reconciliation:
+
+```bash
+kubectl -n flux-system get kustomizations -w
+```
 
 **In config:**
 
-- Add `# COLD START: FluxCD bootstrap required before cluster services
-  reconcile` near any references to Flux-managed services or docs.
+- `gitops-veil/` submodule contains all veil cluster manifests
+- `gitops-veil/bootstrap/` contains the GitRepository and Kustomization that
+  point Flux at the repo itself
 
 ---
 
