@@ -1,8 +1,15 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, pkgs-stable, lib, ... }:
 
 {
   imports = [
     ../../../modules/veil/k3s-common.nix
+  ];
+
+  # nvidia-container-toolkit for GPU workloads
+  # Using stable due to glibc compatibility issues with unstable v1.17.x+
+  # (see hosts/skaia/k3s/default.nix for details)
+  environment.systemPackages = [
+    pkgs-stable.nvidia-container-toolkit
   ];
 
   services.k3s = {

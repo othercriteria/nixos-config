@@ -27,8 +27,6 @@
       nvidiaSettings = false;
     };
 
-    # Enable container toolkit for k3s GPU workloads
-    nvidia-container-toolkit.enable = true;
   };
 
   # Ensure nvidia-smi is available for debugging
