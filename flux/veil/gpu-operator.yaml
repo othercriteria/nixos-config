@@ -5,8 +5,14 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  timeout: 15m
   install:
     createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   targetNamespace: gpu-operator
   chart:
     spec:
@@ -16,37 +22,54 @@ spec:
         name: nvidia
         namespace: flux-system
   values:
-    # Host-installed driver (via NixOS) - don't let operator manage it
+    # NixOS manages the NVIDIA driver on the host
     driver:
       enabled: false
 
-    # Host-installed nvidia-container-toolkit - don't let operator manage it
+    # NixOS provides nvidia-container-toolkit via hardware.nvidia-container-toolkit
     toolkit:
       enabled: false
 
-    # CDI disabled - host driver artifacts not in expected location
-    cdi:
-      enabled: false
+    # Device plugin discovers GPUs and exposes them to k8s
+    devicePlugin:
+      enabled: true
 
     # DCGM exporter for Prometheus metrics
     dcgmExporter:
       enabled: true
-      # Use Ubuntu image for easier debugging
-      version: 4.4.1-4.6.0-ubuntu22.04
+      serviceMonitor:
+        enabled: true
 
-    # Validator environment for host-driver setup
-    validator:
+    # GPU feature discovery for node labels
+    gfd:
+      enabled: true
+
+    # Node feature discovery (detects hardware capabilities)
+    nfd:
+      enabled: true
+
+    # MIG manager not needed for consumer GPUs
+    migManager:
+      enabled: false
+
+    # Sandbox workloads not needed
+    sandboxWorkloads:
+      enabled: false
+
+    # vGPU not applicable
+    vgpuManager:
       driver:
-        env:
-          - name: DISABLE_DEV_CHAR_SYMLINK_CREATION
-            value: "true"
-      env:
-        - name: NVIDIA_DRIVER_CAPABILITIES
-          value: all
-        - name: NVIDIA_VISIBLE_DEVICES
-          value: all
-        - name: NVIDIA_DISABLE_REQUIRE
-          value: "true"
+        enabled: false
 
-    # Node Feature Discovery labels nodes with GPUs automatically
-    # Device plugin will only activate on nodes where it finds GPUs
+    # vfio-manager not needed
+    vfioManager:
+      enabled: false
+
+    # Only schedule GPU operator components on nodes with NVIDIA GPUs
+    daemonsets:
+      labels:
+        gpu: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
