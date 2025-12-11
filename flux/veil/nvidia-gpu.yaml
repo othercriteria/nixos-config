@@ -1,3 +1,10 @@
+# RuntimeClass for nvidia - tells k8s how to run containers with GPU access
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: nvidia
+handler: nvidia
+---
 # NVIDIA Device Plugin - exposes nvidia.com/gpu resources to Kubernetes
 # NixOS manages the driver and nvidia-container-toolkit on the host
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -34,6 +41,21 @@ spec:
         operator: Exists
         effect: NoSchedule
 
+    # Use nvidia runtime to access GPU devices
+    runtimeClassName: nvidia
+
+    # Configure device discovery to use NVML
+    config:
+      default: |
+        version: v1
+        flags:
+          migStrategy: none
+          failOnInitError: false
+          deviceDiscoveryStrategy: nvml
+          plugin:
+            deviceListStrategy:
+              - envvar
+
 ---
 # DCGM Exporter - GPU metrics for Prometheus
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -69,6 +91,9 @@ spec:
       - key: nvidia.com/gpu
         operator: Exists
         effect: NoSchedule
+
+    # Use nvidia runtime to access GPU
+    runtimeClassName: nvidia
 
     # Enable ServiceMonitor for Prometheus Operator
     serviceMonitor:
