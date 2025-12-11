@@ -1,0 +1,39 @@
+# Node Feature Discovery - auto-labels nodes with hardware capabilities
+# Detects CPU, memory, storage, GPU features and more
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: node-feature-discovery
+  namespace: flux-system
+spec:
+  interval: 10m
+  timeout: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  targetNamespace: node-feature-discovery
+  chart:
+    spec:
+      chart: node-feature-discovery
+      sourceRef:
+        kind: HelmRepository
+        name: node-feature-discovery
+        namespace: flux-system
+  values:
+    # Master handles label management
+    master:
+      replicaCount: 1
+
+    # Worker runs on all nodes to detect features
+    worker:
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+
+    # Garbage collector cleans up stale labels
+    gc:
+      enable: true
