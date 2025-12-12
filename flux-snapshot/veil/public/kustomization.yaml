@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - helm-repos.yaml
   - cert-manager.yaml
+  - cert-manager-issuer.yaml
   - metallb.yaml
   - metallb-pool.yaml
   - ingress-nginx.yaml
