@@ -17,7 +17,7 @@ validation.
 - LAN DNS moved to `skaia` (Unbound). DHCP updated to point clients at
   `192.168.0.160`. Zones served:
   - `veil.home.arpa` (cluster services): `ingress`, `grafana`, `prometheus`,
-    `alertmanager`, `s3`, `s3-console`
+    `alertmanager`, `s3`, `s3-console`, `argocd`
   - `home.arpa` (LAN hosts): `skaia`, `meteor-1..4`, `hive`
 - DNS filtering enabled on `skaia` via Unbound RPZ (StevenBlack list)
 - `skaia` remains on NetworkManager (no migration to systemd-networkd)
@@ -29,11 +29,12 @@ validation.
 - GPU support (`meteor-4`): RTX 3080 Ti via OCuLink, NVIDIA driver managed by
   NixOS, nvidia-container-toolkit for k3s containerd runtime. Device plugin
   exposes `nvidia.com/gpu`, DCGM exporter provides Prometheus metrics.
+- cert-manager with home CA (`home-ca` ClusterIssuer) for automatic TLS
+- ArgoCD at `argocd.veil.home.arpa` (TLS via cert-manager)
+- GitOps via private `gitops-veil` repo (Flux reconciles automatically)
 
 ## Outstanding work
 
-- Complete GitOps migration: move manifests from `flux/veil/` to `gitops-veil/`,
-  set up deploy key and Flux GitRepository/Kustomization
 - Configure Alertmanager receivers/routes once rules are settled
 - Observability robustness:
   - Enable PVC persistence for Prometheus, Grafana, and Alertmanager (initially
@@ -59,7 +60,7 @@ References:
 - Cold start steps: `docs/COLD-START.md`
 - Network/DNS details: `docs/residence-1/ADDRESSING.md`
 - GitOps manifests: `gitops-veil/` submodule (private repo)
-- Legacy manifests: `flux/veil/` (to be removed after GitOps migration)
+- Public snapshot: `flux-snapshot/veil/public/` (illustrative, not authoritative)
 
 ## Post-setup (later)
 
