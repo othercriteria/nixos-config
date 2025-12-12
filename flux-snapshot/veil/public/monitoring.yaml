@@ -41,21 +41,33 @@ spec:
       ingress:
         enabled: true
         ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: "home-ca"
         hosts:
           - prometheus.veil.home.arpa
         paths:
           - /
         pathType: Prefix
+        tls:
+          - secretName: prometheus-tls
+            hosts:
+              - prometheus.veil.home.arpa
     grafana:
       service:
         type: ClusterIP
       ingress:
         enabled: true
         ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: "home-ca"
         hosts:
           - grafana.veil.home.arpa
         path: /
         pathType: Prefix
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.veil.home.arpa
       sidecar:
         dashboards:
           enabled: true
@@ -66,8 +78,14 @@ spec:
       ingress:
         enabled: true
         ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: "home-ca"
         hosts:
           - alertmanager.veil.home.arpa
         paths:
           - /
         pathType: Prefix
+        tls:
+          - secretName: alertmanager-tls
+            hosts:
+              - alertmanager.veil.home.arpa
