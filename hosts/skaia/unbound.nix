@@ -32,6 +32,8 @@
           "\"s3.veil.home.arpa. A 192.168.0.220\""
           "\"s3-console.veil.home.arpa. A 192.168.0.220\""
           "\"argocd.veil.home.arpa. A 192.168.0.220\""
+          "\"argo-workflows.veil.home.arpa. A 192.168.0.220\""
+          "\"argo-rollouts.veil.home.arpa. A 192.168.0.220\""
 
           # home (LAN hosts)
           "\"skaia.home.arpa. A 192.168.0.160\""
