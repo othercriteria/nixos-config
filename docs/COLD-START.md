@@ -389,7 +389,38 @@ kubectl -n flux-system get kustomizations -w
 
 ---
 
-## 11. MinIO Root Credentials (object-store namespace)
+## 11. cert-manager CA Secret
+
+**Context:** cert-manager uses a ClusterIssuer (`home-ca`) to sign TLS
+certificates for cluster services. The CA key is stored encrypted in
+`secrets/home-ca.key` (revealed via `make reveal-secrets`).
+
+**Step-by-step:**
+
+1. Ensure secrets are revealed:
+
+   ```bash
+   make reveal-secrets
+   ```
+
+1. Create the CA secret in-cluster:
+
+   ```bash
+   kubectl create ns cert-manager || true
+   kubectl -n cert-manager create secret tls home-ca-secret \
+     --cert=secrets/home-ca.crt \
+     --key=secrets/home-ca.key
+   ```
+
+**In config:**
+
+- `secrets/home-ca.crt` and `secrets/home-ca.key` (encrypted via git-secret)
+- `gitops-veil/public/cert-manager.yaml` defines the ClusterIssuer `home-ca`
+- Ingresses use annotation `cert-manager.io/cluster-issuer: "home-ca"`
+
+---
+
+## 12. MinIO Root Credentials (object-store namespace)
 
 **Context:** The MinIO HelmRelease references an existing Secret for the root
 user. This secret must be created manually before the first deploy to avoid
@@ -420,7 +451,7 @@ crashloop.
 
 ---
 
-## 11. User Cache on Separate ZFS Dataset (no nesting under $HOME)
+## 13. User Cache on Separate ZFS Dataset (no nesting under $HOME)
 
 **Context:** `~/.cache` can grow large and is not worth keeping in ZFS
 snapshots. To avoid login races and nested filesystem ordering issues, mount
@@ -496,7 +527,7 @@ zfs list -H -t snapshot -o name -s creation fastdisk/user/home/dlk | \
 
 ---
 
-## 12. Router Port Forwards for `skaia` Ingress
+## 14. Router Port Forwards for `skaia` Ingress
 
 **Context:** External access to public web content and Teleport passes through
 the TP-Link AC2300 router. The router must forward specific TCP ports to
@@ -537,7 +568,7 @@ the TP-Link AC2300 router. The router must forward specific TCP ports to
 
 ---
 
-## 13. Teleport Cluster Bootstrap
+## 15. Teleport Cluster Bootstrap
 
 **Context:** Teleport provides authenticated access (SSH, Kubernetes, web apps).
 The initial admin user and node enrollments require manual steps.
