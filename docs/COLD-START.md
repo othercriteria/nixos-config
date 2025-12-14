@@ -720,3 +720,47 @@ The SSH key is stored encrypted in `secrets/argocd-repo-key`.
 - `secrets/argocd-repo-key` — SSH private key (encrypted via git-secret)
 - The secret uses `repo-creds` type (credential template) rather than a
   per-repo secret, so it applies to all matching repos automatically
+
+---
+
+## 17. Docker Registry (in-cluster)
+
+**Context:** The veil cluster runs an in-cluster Docker Registry for container
+images, using MinIO as the S3 backend.
+
+**Step-by-step:**
+
+1. Create the MinIO bucket for registry storage (via MinIO Console at
+   `https://s3-console.veil.home.arpa` or `mc` CLI):
+
+   ```bash
+   # Using mc CLI (configure alias first)
+   mc mb minio/registry
+   ```
+
+1. Create the registry namespace and S3 credentials secret:
+
+   ```bash
+   kubectl create ns registry
+
+   # Use the same credentials as MinIO root (or create a dedicated user)
+   kubectl -n registry create secret generic registry-s3 \
+     --from-literal=s3AccessKey="minioadmin" \
+     --from-literal=s3SecretKey="<minio-root-password>"
+   ```
+
+1. The registry will be available at `https://registry.veil.home.arpa` once
+   Flux reconciles.
+
+1. To push images from a meteor node:
+
+   ```bash
+   docker tag myimage:latest registry.veil.home.arpa/myimage:latest
+   docker push registry.veil.home.arpa/myimage:latest
+   ```
+
+**In config:**
+
+- `gitops-veil/public/registry.yaml` — HelmRelease for Docker Registry
+- Uses MinIO S3 backend at `minio.object-store.svc.cluster.local:9000`
+- TLS via cert-manager (home CA trusted by all nodes)

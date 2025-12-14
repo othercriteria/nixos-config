@@ -12,3 +12,4 @@ resources:
   - minio.yaml
   - nvidia-gpu.yaml
   - node-feature-discovery.yaml
+  - registry.yaml
