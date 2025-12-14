@@ -681,3 +681,42 @@ The initial admin user and node enrollments require manual steps.
    manually, copy the raw k3s config and replace every `name: default`,
    `cluster: default`, and `user: default` with `skaia`, then ensure
    `current-context: skaia`.
+
+---
+
+## 16. ArgoCD Repository Credentials
+
+**Context:** ArgoCD needs SSH credentials to access private Git repositories.
+The SSH key is stored encrypted in `secrets/argocd-repo-key`.
+
+**Step-by-step:**
+
+1. Ensure secrets are revealed:
+
+   ```bash
+   make reveal-secrets
+   ```
+
+1. Create the ArgoCD repository secret:
+
+   ```bash
+   kubectl -n argocd create secret generic argocd-repo-creds \
+     --from-literal=type=git \
+     --from-literal=url=git@github.com:othercriteria \
+     --from-file=sshPrivateKey=secrets/argocd-repo-key
+   kubectl -n argocd label secret argocd-repo-creds \
+     argocd.argoproj.io/secret-type=repo-creds
+   ```
+
+   This creates a credential template that matches all repos under the
+   `othercriteria` GitHub account.
+
+1. Verify in ArgoCD UI: Settings → Repository certificates and known hosts
+   should show the credential, and you can now add Applications pointing to
+   private repos.
+
+**In config:**
+
+- `secrets/argocd-repo-key` — SSH private key (encrypted via git-secret)
+- The secret uses `repo-creds` type (credential template) rather than a
+  per-repo secret, so it applies to all matching repos automatically

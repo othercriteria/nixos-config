@@ -22,3 +22,4 @@ secrets/anthropic-2025-04-10-vibectl-personal-usage
 secrets/veil-k3s-token
 secrets/home-ca.crt
 secrets/home-ca.key
+secrets/argocd-repo-key
