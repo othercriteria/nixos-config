@@ -762,5 +762,5 @@ images, using MinIO as the S3 backend.
 **In config:**
 
 - `gitops-veil/public/registry.yaml` — HelmRelease for Docker Registry
-- Uses MinIO S3 backend at `object-store-minio.object-store.svc.cluster.local:9000`
+- Uses MinIO S3 backend via `s3.veil.home.arpa` (external ingress)
 - TLS via cert-manager (home CA trusted by all nodes)
