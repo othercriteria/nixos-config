@@ -135,4 +135,18 @@
     enable = true;
     memoryPercent = 25;
   };
+
+  # Docker for container image building
+  virtualisation.docker = {
+    enable = true;
+    daemon.settings = {
+      default-ulimits = {
+        nofile = {
+          name = "nofile";
+          hard = 64000;
+          soft = 64000;
+        };
+      };
+    };
+  };
 }
