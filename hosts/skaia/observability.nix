@@ -6,8 +6,6 @@
     ../../modules/prometheus-zfs-snapshot.nix
   ];
 
-  services.prometheusZfsSnapshot.dataset = "fastdisk/prometheus";
-
   systemd.services.alertmanager.serviceConfig = {
     User = "dlk";
   };
@@ -18,6 +16,39 @@
   };
 
   services = {
+    prometheusZfsSnapshot.dataset = "fastdisk/prometheus";
+
+    # Netdata: real-time monitoring with PSI support and intelligent correlation
+    # Addresses io_uring iowait misreporting by showing actual pressure metrics
+    netdata = {
+      enable = true;
+      # Enable cloud UI (requires unfree license acceptance)
+      package = pkgs.netdata.override { withCloudUi = true; };
+      config = {
+        global = {
+          "bind to" = "127.0.0.1";
+          "update every" = 1; # 1-second granularity
+          "memory mode" = "dbengine"; # Efficient tiered storage
+        };
+        # PSI metrics - the "correct" signal for resource pressure
+        "plugin:proc:/proc/pressure" = {
+          "enable collecting pressure metrics" = "yes";
+        };
+        # NVIDIA GPU monitoring via nvidia-smi
+        "plugin:proc" = {
+          "/sys/class/powercap" = "yes";
+        };
+      };
+      # Enable nvidia-smi collector for GPU metrics
+      configDir = {
+        "go.d/nvidia_smi.conf" = pkgs.writeText "nvidia_smi.conf" ''
+          jobs:
+            - name: gpu0
+              binary_path: ${pkgs.linuxPackages.nvidia_x11.bin}/bin/nvidia-smi
+        '';
+      };
+    };
+
     prometheus = {
       enable = true;
       port = 9001;
