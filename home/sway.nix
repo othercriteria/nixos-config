@@ -8,6 +8,7 @@
       playerctl # media control
       pavucontrol # audio control
       slurp # screenshots
+      (pkgs.callPackage ../modules/multibg-wayland.nix { }) # per-workspace wallpapers
       waybar # status bar
       wlroots # Wayland compositor
       wl-clipboard # clipboard manager
@@ -54,7 +55,7 @@
     config = rec {
       modifier = "Mod4"; # command
 
-      terminal = "alacritty";
+      terminal = "ghostty"; # trialing as Alacritty replacement
 
       menu = "wofi --allow-images --allow-markup --show run";
 
@@ -65,6 +66,11 @@
           # Ensure the input method daemon is running even when systemd
           # user units are not restarted automatically during activation.
           command = "${config.i18n.inputMethod.package}/bin/fcitx5 -rd";
+          always = true;
+        }
+        {
+          # Per-workspace wallpapers from private-assets
+          command = "multibg-wayland /etc/nixos/private-assets/wallpapers";
           always = true;
         }
       ];
@@ -100,6 +106,9 @@
 
       # Emoji picker (overrides existing shortcut for exiting sway)
       bindsym --no-warn Mod4+Shift+E exec wofi-emoji
+
+      # Alacritty fallback (Mod+Shift+Return) for comparison
+      bindsym Mod4+Shift+Return exec alacritty
 
     '';
   };

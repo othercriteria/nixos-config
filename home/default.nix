@@ -81,6 +81,66 @@
         };
       };
     };
+
+    # Ghostty: modern GPU-accelerated terminal (trialing as Alacritty replacement)
+    ghostty = {
+      enable = true;
+      enableZshIntegration = true;
+      installBatSyntax = true;
+
+      settings = {
+        # Font: match Alacritty setup
+        font-family = "Berkeley Mono";
+        font-size = 16;
+        font-thicken = true; # Slightly bolder for legibility over backgrounds
+
+        # Theme: Catppuccin Mocha for a rich, modern aesthetic
+        theme = "Catppuccin Mocha";
+
+        # Window chrome: clean, minimal look
+        gtk-titlebar = false;
+        window-padding-x = 8;
+        window-padding-y = 6;
+        window-padding-balance = true;
+
+        # Cursor: distinctive block cursor with smooth blinking
+        cursor-style = "block";
+        cursor-style-blink = true;
+        cursor-color = "#f5e0dc"; # Catppuccin rosewater
+
+        # Visual polish: subtle transparency to see wallpaper through
+        background-opacity = 0.98;
+        unfocused-split-opacity = 0.96;
+        minimum-contrast = 1.2; # Boost for legibility with busy backgrounds
+
+        # Splits and panes: nice visual separation
+        split-divider-color = "#313244"; # Catppuccin surface0
+
+        # Shell integration for rich features (prompt marks, etc.)
+        shell-integration = "zsh";
+        shell-integration-features = "cursor,sudo,title";
+
+        # Scrollback
+        scrollback-limit = 50000;
+
+        # Copy/paste behavior
+        copy-on-select = "clipboard";
+        clipboard-paste-protection = true;
+
+        # Performance: ensure GPU rendering
+        gtk-single-instance = true;
+
+        # Links: clickable URLs
+        link-url = true;
+
+        # Bell: visual flash only, no audio
+        bell-features = "no-audio";
+
+        # Use xterm-256color for better SSH compatibility
+        # (remote hosts often lack xterm-ghostty terminfo)
+        term = "xterm-256color";
+      };
+    };
   };
 
   home.packages = with pkgs; [
