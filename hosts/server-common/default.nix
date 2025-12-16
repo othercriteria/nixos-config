@@ -39,7 +39,7 @@
         "https://cache.nixos.org"
       ];
       trusted-public-keys = [
-        (builtins.readFile ../../assets/harmonia-cache-public-key.txt)
+        (lib.strings.removeSuffix "\n" (builtins.readFile ../../assets/harmonia-cache-public-key.txt))
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       ];
     };
