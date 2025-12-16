@@ -11,6 +11,7 @@
     ./email-alerts.nix
     ./firewall.nix
     ./graphics.nix
+    ../../modules/harmonia.nix
     ./k3s
     ../../modules/kubeconfig.nix
     ./nginx.nix

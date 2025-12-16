@@ -764,3 +764,81 @@ images, using MinIO as the S3 backend.
 - `gitops-veil/public/registry.yaml` — HelmRelease for Docker Registry
 - Uses MinIO S3 backend via `s3.veil.home.arpa` (external ingress)
 - TLS via cert-manager (home CA trusted by all nodes)
+
+---
+
+## 18. Harmonia Binary Cache Signing Key
+
+**Context:** Harmonia serves the nix store from `skaia` to other LAN hosts. It
+signs cached derivations with a private key; clients verify with the
+corresponding public key.
+
+**Step-by-step:**
+
+1. Generate the signing keypair (one-time, from the repo root):
+
+   ```sh
+   nix-store --generate-binary-cache-key cache.home.arpa \
+     secrets/harmonia-cache-private-key \
+     assets/harmonia-cache-public-key.txt
+   ```
+
+   The public key file will contain something like:
+
+   ```text
+   cache.home.arpa:AbCdEf123...base64...==
+   ```
+
+1. Add the private key to git-secret and encrypt:
+
+   ```sh
+   git secret add secrets/harmonia-cache-private-key
+   git secret hide
+   ```
+
+1. Commit both files:
+
+   ```sh
+   git add secrets/harmonia-cache-private-key.secret \
+           assets/harmonia-cache-public-key.txt \
+           .gitignore
+   git commit -m "feat: add harmonia binary cache signing keys"
+   ```
+
+1. Deploy to `skaia`:
+
+   ```sh
+   make reveal-secrets
+   make apply-host HOST=skaia
+   ```
+
+1. Verify Harmonia is serving:
+
+   ```sh
+   curl -I http://cache.home.arpa/nix-cache-info
+   ```
+
+   Expected output includes `StoreDir: /nix/store` and `Priority: 30`.
+
+1. Deploy to meteors to pick up the new substituter config:
+
+   ```sh
+   make apply-host HOST=meteor-1
+   # repeat for other hosts
+   ```
+
+1. Test that meteors use the cache by building something available on skaia:
+
+   ```sh
+   # On a meteor, with nix verbose output
+   nix build nixpkgs#hello --print-build-logs -v 2>&1 | grep cache.home.arpa
+   ```
+
+**In config:**
+
+- `modules/harmonia.nix` — service definition (skaia only)
+- `hosts/skaia/nginx.nix` — reverse proxy for `cache.home.arpa`
+- `hosts/skaia/unbound.nix` — DNS record for `cache.home.arpa`
+- `hosts/server-common/default.nix` — substituter config for meteor nodes
+- `assets/harmonia-cache-public-key.txt` — public key (plain text, committed)
+- `secrets/harmonia-cache-private-key` — private key (git-secret encrypted)

@@ -39,6 +39,7 @@
           # home (LAN hosts)
           "\"skaia.home.arpa. A 192.168.0.160\""
           "\"netdata.home.arpa. A 192.168.0.160\""
+          "\"cache.home.arpa. A 192.168.0.160\""
           "\"meteor-1.home.arpa. A 192.168.0.121\""
           "\"meteor-2.home.arpa. A 192.168.0.122\""
           "\"meteor-3.home.arpa. A 192.168.0.123\""

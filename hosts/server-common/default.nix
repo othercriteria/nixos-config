@@ -31,6 +31,17 @@
     settings = {
       download-buffer-size = 1000000000;
       auto-optimise-store = true;
+
+      # Use local binary cache on skaia (served by Harmonia)
+      # Falls back to cache.nixos.org if local cache unavailable
+      substituters = [
+        "http://cache.home.arpa"
+        "https://cache.nixos.org"
+      ];
+      trusted-public-keys = [
+        (builtins.readFile ../../assets/harmonia-cache-public-key.txt)
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      ];
     };
     gc = {
       automatic = true;
