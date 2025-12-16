@@ -35,7 +35,11 @@
   wayland.windowManager.sway = {
     enable = true;
 
-    systemd.enable = true;
+    # Disable home-manager's systemd integration - we use UWSM to manage the
+    # Wayland session, which has its own systemd target handling. Using both
+    # causes graphical-session.target to never activate properly, breaking
+    # services like waybar that depend on it.
+    systemd.enable = false;
 
     wrapperFeatures.gtk = true;
 
@@ -63,8 +67,18 @@
 
       startup = [
         {
-          # Ensure the input method daemon is running even when systemd
-          # user units are not restarted automatically during activation.
+          # Status bar - started via sway rather than systemd since we use
+          # UWSM for session management (see systemd.enable comment above)
+          command = "waybar";
+          always = false;
+        }
+        {
+          # Notification daemon
+          command = "mako";
+          always = false;
+        }
+        {
+          # Input method daemon
           command = "${config.i18n.inputMethod.package}/bin/fcitx5 -rd";
           always = true;
         }
@@ -116,10 +130,10 @@
   programs = {
     waybar = {
       enable = true;
-      systemd = {
-        enable = true;
-        target = "graphical-session.target";
-      };
+      # Disabled: we start waybar via sway's startup config instead of systemd
+      # because UWSM manages our Wayland session and home-manager's systemd
+      # targets don't activate properly with UWSM.
+      systemd.enable = false;
       style = builtins.readFile ../assets/waybar.css;
       settings = {
         mainBar = {

@@ -13,4 +13,11 @@
     passwordFile = "/etc/nixos/secrets/ddclient-password";
     protocol = "namecheap";
   };
+
+  # Auto-retry on failure - handles transient race conditions during
+  # nixos-rebuild switch when DynamicUser lookup may temporarily fail
+  systemd.services.ddclient.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "30s";
+  };
 }
