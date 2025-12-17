@@ -105,8 +105,21 @@ sync-to-system: reveal-secrets ## Sync changes to /etc/nixos
 
 apply-host: sync-to-system ## Apply configuration for specific host
 	@if [ -z "$(HOST)" ]; then \
-		echo "Error: HOST variable not set. Usage: make apply-host HOST=laptop"; \
+		echo "Error: HOST variable not set. Usage: make apply-host HOST=skaia"; \
 		exit 1; \
+	fi
+	@CURRENT_HOST=$$(hostname); \
+	if [ "$$CURRENT_HOST" != "$(HOST)" ]; then \
+		echo ""; \
+		echo "⚠️  WARNING: Hostname mismatch!"; \
+		echo "   Current host: $$CURRENT_HOST"; \
+		echo "   Target config: $(HOST)"; \
+		echo ""; \
+		read -p "Are you sure you want to apply $(HOST) config to $$CURRENT_HOST? [y/N] " confirm; \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Aborted."; \
+			exit 1; \
+		fi; \
 	fi
 	sudo nixos-rebuild switch --flake $(NIXOS_DIR)#$(HOST)
 
@@ -156,6 +169,10 @@ build-host: ## Build system closure for HOST without switching (uses workspace f
 	@if [ -z "$(HOST)" ]; then \
 		echo "Error: HOST variable not set. Usage: make build-host HOST=skaia"; \
 		exit 1; \
+	fi
+	@CURRENT_HOST=$$(hostname); \
+	if [ "$$CURRENT_HOST" != "$(HOST)" ]; then \
+		echo "Note: Building $(HOST) config on $$CURRENT_HOST (cross-host build)"; \
 	fi
 	nixos-rebuild build --flake .#$(HOST)
 
