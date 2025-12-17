@@ -3,129 +3,99 @@
 This document outlines the structure and organization of this NixOS
 configuration.
 
-## Key Directories and Their Purposes
+## Key Directories
 
-- `modules/`: Contains shared NixOS and Home Manager modules that can be
-  imported by various hosts or user profiles.
-  - `desktop-common.nix`: Shared desktop settings for workstation-like hosts
-    (Thunar, XDG portals, GNUPG agent, polkit/rtkit, GVFS/Tumbler)
-  - `greetd.nix`: TTY greeter using tuigreet to launch Sway on login
-  - `kubeconfig.nix`: Installs a oneshot service on hosts running k3s to
-    populate `${HOME}/.kube/config` for user `dlk`. On `skaia`, it merges the
-    local cluster context (`skaia`) with a fetched or fallback `veil` context
-    pointing at `https://192.168.0.121:6443`. This avoids `KUBECONFIG` env
-    hacks. The service sets PATH and resolves the home directory robustly, runs
-    as user `dlk`, fetches `veil` via `scp` trying `meteor-1.veil.home.arpa`,
-    `meteor-1`, then `192.168.0.121`, and ensures `skaia` remains the default
-    context after merging. It also normalizes cluster/user names to `skaia` and
-    `veil` respectively (using `yq`) to avoid `default` name collisions in
-    merged configs.
-  - `veil/`: Veil cluster-specific shared modules:
-    - `k3s-common.nix`: Common k3s flags (metrics endpoints, etcd metrics) and
-      service hooks on meteors to drain the node before k3s stops and uncordon
-      it after k3s starts. The node name is derived from
-      `config.networking.hostName`. Enables unauthenticated `/metrics` on
-      controller-manager and scheduler for Prometheus scraping.
-    - `firewall.nix`: Firewall defaults for meteors
-- `hosts/`: Contains per-host NixOS configuration files and subdirectories.
-  - `skaia/`: Primary workstation host and its modules (e.g., `unbound.nix` DNS,
-    `unbound-rpz.nix` RPZ blocklist with systemd service/timer updater). Unbound
-    binds on loopback and LAN addresses for local and network clients (loopback
-    is required for local resolution). Unbound serves two private zones:
-    `veil.home.arpa` (cluster services like `ingress`, `grafana`, `prometheus`,
-    `alertmanager`, `s3`, `s3-console`) and `home.arpa` (LAN hosts like `skaia`,
-    `meteor-1..3`, `hive`). Includes `modules/kubeconfig.nix` to
-    manage kubeconfig as described above.
-  - `server-common/`: Headless server baseline for Kubernetes nodes (no GUI)
-  - `meteor-1/`, `meteor-2/`, `meteor-3/`: Veil cluster nodes (k3s servers). These
-    expose node-exporter on TCP/9100 and etcd metrics on TCP/2381 for Prometheus
-    scraping. HostIds are set per host using machine-id–derived values. Firewall
-    configuration for meteors is centralized in `modules/veil/firewall.nix`.
-- `home/`: Contains Home Manager user configuration modules.
-- `docs/`: Project documentation, including cold start and observability
-  guides.
-  - `VEIL-PLAN.md`: Plan and progress for the veil cluster rollout
-  - `residence-1/`: Site/network documentation
-    - `ADDRESSING.md`: LAN addressing and DNS strategy for residence-1
-  - `COLD-START.md`: Manual steps for new hosts/services
-  - `COLD-START.md`: Manual steps required for new hosts and cluster services
-- `gitops-veil/`: GitOps manifests for veil cluster (private git submodule, `make
-  add-gitops-veil`). Contains `public/` and `private/` subdirectories.
-  `monitoring.yaml` installs `kube-prometheus-stack` (Grafana, Prometheus,
-  Alertmanager) with default dashboards and Grafana ingress. Etcd metrics are
-  scraped from control-plane nodes on TCP/2381 via job `kube-etcd`. Grafana
-  includes the etcd dashboard (gnetId 10322). Additional scrape jobs cover
-  kube-proxy (10249), kube-controller-manager (10257), and kube-scheduler
-  (10259) on meteors.
-- `flux-snapshot/`: Public snapshots of `gitops-*/public/` manifests
-  (illustrative, not authoritative). Use `make snapshot-gitops` to sync.
-- `assets/`: Fonts, images, and other static assets.
-- `private-assets/`: Private, non-public assets (git submodule, `make
-  add-private-assets`).
-- `secrets/`: Encrypted secrets managed by git-secret (e.g., `veil-k3s-token`).
-- `.cursor/rules/`: Cursor rule files for code quality and workflow standards.
-  - `scripts/`: Helper scripts used by Cursor rules (e.g., for commit automation).
-  - Note: The `project-structure.mdc` rule triggers only on structural file
-    events (create/delete/move) and provides separate guidance when editing
-    `STRUCTURE.md`.
+### `hosts/`
 
-## NixOS Entrypoint
+Per-host NixOS configurations:
 
-- `flake.nix`: The main Nix flake entrypoint for the system.
-- `flake.lock`: Flake lock file for reproducible builds.
-- `Makefile`: Automation for common tasks:
-  - `apply-host`, `rollback`, `reveal-secrets`
-  - `build-host`: build a host closure without switching
-  - `check-unbound`, `check-unbound-built`: validate generated Unbound config
+- `common/`: Shared desktop workstation configuration (fonts, greetd, printing,
+  ProtonVPN, vibectl, user config, SSH hardening)
+- `server-common/`: Headless server baseline (systemd-networkd, zramSwap,
+  Docker, Teleport node agent, no GUI)
+- `skaia/`: Primary workstation and infrastructure hub
+  - k3s control plane, Unbound DNS, nginx reverse proxy
+  - Observability stack (Prometheus, Grafana, Loki, Netdata parent)
+  - Teleport auth server, Harmonia nix cache
+  - Samba, MiniDLNA, thermal management
+- `meteor-{1,2,3,4}/`: Veil cluster k3s server nodes
+  - GPU support on meteor-4
+  - Node exporter for Prometheus scraping
+- `hive/`: Headless server for Urbit and misc services
+  - Streams metrics/logs to skaia (node exporter, Netdata child, Promtail)
+  - LUKS-encrypted root, bulk storage mounts
 
-## Important File Locations
+### `modules/`
 
-- `README.md`: Project documentation and usage instructions
-- `.gitleaks.toml`: Configuration for secret scanning with gitleaks
-- `.pre-commit-config.yaml`: Pre-commit hook configuration
-- `.gitignore`: Files and directories to ignore in git
-- `.secrets.baseline`: Baseline for secret scanning
+Reusable NixOS modules:
 
-### Runtime State
+- `desktop-common.nix`: Shared desktop settings (Thunar, XDG portals, polkit)
+- `greetd.nix`: TTY greeter using tuigreet to launch Sway
+- `fonts.nix`: System font configuration
+- `harmonia.nix`: Nix binary cache server (skaia only)
+- `kubeconfig.nix`: Kubeconfig management for k3s hosts
+- `teleport-node.nix`: Teleport node agent for remote access
+- `prometheus-rules.nix`: Shared Prometheus alerting rules
+- `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
+- `protonvpn.nix`: ProtonVPN client configuration
+- `vibectl.nix`: AI-powered kubectl wrapper
+- `veil/`: Veil cluster-specific modules
+  - `k3s-common.nix`: Common k3s flags, drain/uncordon hooks
+  - `firewall.nix`: Firewall defaults for meteors
+  - `kubeconfig.nix`: Veil-specific kubeconfig handling
 
-- `/var/lib/registry`: Storage path for the local Docker registry configured via
-  `services.dockerRegistry` (backed by ZFS dataset `slowdisk/registry`).  This
-  directory is created manually during cold-start and is **not** part of the
-  git repository, but it is essential to system operation and therefore noted
-  here.
-- `/home/dlk/.cache`: User cache directory mounted as its own ZFS dataset
-  (`fastdisk/user/home/dlk-cache`) with autosnapshots disabled. This prevents
-  large, low-value cache data from being captured in snapshots and reduces
-  churn. The dataset is created during cold-start and mounted via
-  `fileSystems."/home/dlk/.cache"` on host `skaia`.
+### `home/`
 
-## Directory Purposes
+Home Manager user configuration:
 
-- `modules/`: Shared modules for NixOS and Home Manager
-- `hosts/`: Per-host configuration (e.g., `skaia/`, `server-common`, `meteor-*/`)
-- `home/`: User-level configuration
-- `docs/`: Documentation for setup, cold start, observability, and network/site
+- `default.nix`: Main user config (packages, Git, direnv, etc.)
+- `sway.nix`: Sway window manager configuration
+- `zsh.nix`: Zsh shell configuration with Powerlevel10k
+- `tmux.nix`: Tmux configuration
+- `keyboard.nix`: Keyboard layout settings
+- `helm.nix`: Helm/Kubernetes tooling
+
+### `docs/`
+
+Project documentation:
+
+- `COLD-START.md`: Manual steps for new hosts and services
+- `OBSERVABILITY.md`: Metrics, logs, dashboards, backup/restore
+- `VEIL-PLAN.md`: Veil cluster rollout plan
+- `residence-1/ADDRESSING.md`: LAN addressing and DNS for home network
+
+### Other Directories
+
+- `assets/`: Static assets (certs, config snippets, scripts)
+- `private-assets/`: Private assets submodule (fonts, wallpapers)
+- `secrets/`: Encrypted secrets managed by git-secret
 - `gitops-veil/`: GitOps manifests for veil cluster (private submodule)
 - `flux-snapshot/`: Public snapshots of GitOps manifests (illustrative)
-- `assets/`: Static assets (fonts, images)
-- `private-assets/`: Private assets (submodule)
-- `secrets/`: Encrypted secrets (git-secret)
+- `.cursor/rules/`: Cursor AI assistant rules
 
-## Updating Structure
+## Key Files
 
-This document should be updated whenever:
+- `flake.nix`: Main Nix flake entrypoint
+- `flake.lock`: Flake lock file for reproducible builds
+- `Makefile`: Automation for common tasks
+  - `apply-host HOST=x`: Apply config (with hostname safety check)
+  - `build-host HOST=x`: Build without applying
+  - `reveal-secrets`: Decrypt git-secret files
+  - `check-unbound`: Validate Unbound DNS config
+
+## Runtime State (not in repo)
+
+These directories are created during cold-start and are essential to operation:
+
+- `/var/lib/prometheus2`: Prometheus data (ZFS dataset `fastdisk/prometheus`)
+- `/var/lib/registry`: Docker registry storage (ZFS dataset `slowdisk/registry`)
+- `/var/cache/netdata/dbengine`: Netdata metrics storage
+- `/fastcache/dlk`: User cache (ZFS dataset, autosnapshots disabled)
+
+## Updating This Document
+
+Update this document when:
 
 - Adding, removing, or renaming directories
-- Moving files between directories
-- Changing the purpose of a directory
-- Adding new major components
-
-## Documentation
-
-- [Observability Stack](docs/OBSERVABILITY.md): Details on the observability
-  setup, including metrics, logs, dashboards, storage, retention, backup, and
-  DR.
-- [Veil Cluster Plan](docs/VEIL-PLAN.md): Working plan for the veil cluster
-  rollout.
-- [Residence-1 Addressing](docs/residence-1/ADDRESSING.md): Addressing/DNS for
-  the home network.
+- Adding new hosts or modules
+- Changing the purpose of a component

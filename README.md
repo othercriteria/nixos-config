@@ -4,23 +4,22 @@ Personal NixOS configuration managed with flakes.
 
 ## Project Structure
 
-```console
+```text
 .
-├── flake.nix             # Flake configuration
+├── flake.nix             # Flake entrypoint
 ├── hosts/                # Host-specific configurations
-│   ├── common/           # Shared configuration
-│   │   └── default.nix   # Base configuration
-│   ├── laptop/           # Host-specific configs
-│   │   └── default.nix
-│   ├── desktop/          # Host-specific configs
-│   │   └── default.nix
-│   └── default.nix       # Host selector
+│   ├── common/           # Shared desktop workstation config
+│   ├── server-common/    # Shared headless server config
+│   ├── skaia/            # Primary workstation + k3s control plane
+│   ├── meteor-{1,2,3,4}/ # Veil cluster k3s nodes
+│   └── hive/             # Headless server (Urbit, etc.)
 ├── modules/              # Reusable NixOS modules
-├── home/                 # Home-manager configurations
-├── secrets/              # Encrypted secrets (using git-secret)
-├── assets/               # Static assets (fonts, images, etc.) - managed with Git LFS
-├── private-assets/       # Private assets submodule (fonts, etc.)
-└── gitops-veil/          # GitOps submodule for veil cluster (private)
+├── home/                 # Home Manager configuration
+├── docs/                 # Documentation (cold start, observability, etc.)
+├── secrets/              # Encrypted secrets (git-secret)
+├── assets/               # Static assets (certs, configs)
+├── private-assets/       # Private assets submodule (fonts, wallpapers)
+└── gitops-veil/          # GitOps submodule for veil cluster
 ```
 
 ## Quick Start
@@ -32,6 +31,12 @@ Personal NixOS configuration managed with flakes.
    cd nixos-config
    ```
 
+1. Enter the dev shell (provides tools like git-secret, nixpkgs-fmt, etc.):
+
+   ```bash
+   nix develop
+   ```
+
 1. Initialize submodules (as needed):
 
    ```bash
@@ -39,74 +44,60 @@ Personal NixOS configuration managed with flakes.
    make add-gitops-veil       # GitOps for veil cluster (optional)
    ```
 
-1. Initialize Git LFS:
+1. Initialize Git LFS and reveal secrets:
 
    ```bash
    git lfs install
    git lfs pull
+   make reveal-secrets        # Requires GPG key - see docs/COLD-START.md
    ```
 
-1. Initialize security tools:
+## Usage
 
-   ```bash
-   make init-security
-   ```
+Apply configuration to a host:
 
-1. Set up your email for git-secret:
+```bash
+make apply-host HOST=skaia
+```
 
-   ```bash
-   git secret tell your@email.com
-   ```
+The `apply-host` target includes a safety check - if the current hostname
+doesn't match `HOST`, you'll be prompted to confirm before applying.
+
+Build without applying (useful for testing or cross-host builds):
+
+```bash
+make build-host HOST=hive
+```
+
+## Hosts
+
+| Host | Type | Purpose |
+| ---- | ---- | ------- |
+| `skaia` | Desktop + Server | Primary workstation, k3s control plane, DNS, observability |
+| `meteor-1..4` | Server | Veil cluster k3s nodes |
+| `hive` | Server | Headless server for Urbit and misc services |
 
 ## Security Notes
 
 - Never commit unencrypted secrets
-- Use `.gitignore` for temporary files and local overrides
-- All secrets must be encrypted using git-secret before committing
-- Pre-commit hooks will scan for accidental secret exposure
+- All secrets are encrypted with git-secret before committing
+- Pre-commit hooks scan for accidental secret exposure
 - Run `make scan-secrets` to check for exposed secrets
-
-## Usage
-
-1. Make changes to configuration
-1. Sync changes to system:
-   - Sync changes: `make sync-to-system`
-1. Apply configuration:
-   - Apply: `make apply-host HOST=hostname`
 
 ## Maintenance
 
 - Update flake inputs: `make flake-update` (use `make flake-restore` to undo)
 - Run all checks: `make check-all`
-- Manage secrets:
-  - Reveal encrypted files: `make reveal-secrets`
-  - Keep secrets list in `.gitsecret/paths/mapping.cfg` up to date
-  - Easy to do this with `git secret add <file>`
-- System management:
-  - List recent generations: `make list-generations`
-  - Rollback to previous state: `make rollback`
+- List recent generations: `make list-generations`
+- Rollback to previous state: `make rollback`
+- Reveal secrets: `make reveal-secrets`
 
-## Asset Management
+## Documentation
 
-Large files in the `assets/` directory are managed using Git LFS. The following
-file types are automatically tracked:
-
-- Font files (`*.ttf`, `*.otf`)
-- Images (`*.png`, `*.jpg`)
-- Archives (`*.zip`)
-
-When adding new large files:
-
-1. Ensure they are in the `assets/` directory
-1. Verify they match the patterns in `.gitattributes`
-1. Run `git lfs status` to confirm tracking
-
-### Private Submodules
-
-- `private-assets/`: Non-redistributable assets (fonts, etc.)
-- `gitops-veil/`: GitOps manifests for the veil Kubernetes cluster
-
-Initialize with `make add-private-assets` or `make add-gitops-veil`.
+- [Cold Start Guide](docs/COLD-START.md) - Manual steps for new hosts
+- [Observability](docs/OBSERVABILITY.md) - Metrics, logs, dashboards
+- [Addressing](docs/residence-1/ADDRESSING.md) - LAN/DNS configuration
+- [Project Structure](STRUCTURE.md) - Detailed directory documentation
 
 ## License
 
