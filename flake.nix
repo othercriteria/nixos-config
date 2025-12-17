@@ -136,6 +136,16 @@
             ./hosts/hive
           ];
         };
+
+        # Demo VM for portfolio exploration (no hardware deps, no secrets)
+        # Build: nixos-rebuild build-vm --flake .#demo
+        # Run:   ./result/bin/run-demo-vm
+        demo = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./hosts/demo
+          ];
+        };
       };
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let

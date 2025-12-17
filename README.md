@@ -76,6 +76,7 @@ make build-host HOST=hive
 | `skaia` | Desktop + Server | Primary workstation, k3s control plane, DNS, observability |
 | `meteor-1..4` | Server | Veil cluster k3s nodes |
 | `hive` | Server | Headless server for Urbit and misc services |
+| `demo` | VM | Standalone observability demo (no secrets required) |
 
 ## Security Notes
 
@@ -83,6 +84,28 @@ make build-host HOST=hive
 - All secrets are encrypted with git-secret before committing
 - Pre-commit hooks scan for accidental secret exposure
 - Run `make scan-secrets` to check for exposed secrets
+
+## Demo & Testing
+
+Try the observability stack without any setup:
+
+```bash
+make demo
+```
+
+This builds and runs a self-contained VM with Prometheus, Grafana, and Loki.
+Access the services from your host:
+
+- Prometheus: <http://localhost:9090>
+- Grafana: <http://localhost:3000> (anonymous access enabled)
+- Loki: <http://localhost:3100>
+
+Run the integration test suite:
+
+```bash
+make test                  # All tests
+make test-observability    # Just the observability stack test
+```
 
 ## Maintenance
 

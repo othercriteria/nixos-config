@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all test test-observability rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
+.PHONY: help check init-security scan-secrets check-all test test-observability demo rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -76,6 +76,20 @@ test: ## Run all NixOS integration tests (requires kvm)
 
 test-observability: ## Run the observability stack integration test
 	nix build .#checks.x86_64-linux.observability --print-build-logs
+
+demo: ## Build and run the demo VM (observability stack showcase)
+	@echo "Building demo VM..."
+	nixos-rebuild build-vm --flake .#demo
+	@echo ""
+	@echo "Starting demo VM with port forwarding:"
+	@echo "  Prometheus: http://localhost:9090"
+	@echo "  Grafana:    http://localhost:3000"
+	@echo "  Loki:       http://localhost:3100"
+	@echo ""
+	@echo "Login: demo / demo"
+	@echo "Press Ctrl+A then X to exit QEMU"
+	@echo ""
+	./result/bin/run-demo-vm
 
 rollback: ## Rollback to the previous generation
 	sudo nixos-rebuild switch --rollback
