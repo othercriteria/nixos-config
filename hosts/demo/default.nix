@@ -10,10 +10,10 @@
 #   ./result/bin/run-demo-vm
 #
 # Login: user "demo" with password "demo"
-# Services available:
-#   - Prometheus: http://localhost:9090
-#   - Grafana: http://localhost:3000 (anonymous access enabled)
-#   - Loki: http://localhost:3100
+# Services available (from host, using offset ports to avoid conflicts):
+#   - Prometheus: http://localhost:19090
+#   - Grafana: http://localhost:13000 (anonymous access enabled)
+#   - Loki: http://localhost:13100
 
 { config, lib, pkgs, ... }:
 
@@ -104,10 +104,11 @@
       memorySize = 2048;
       cores = 2;
       # Forward ports for web access from host
+      # Use 10xxx offset to avoid conflicts with host services
       forwardPorts = [
-        { from = "host"; host.port = 9090; guest.port = 9090; } # Prometheus
-        { from = "host"; host.port = 3000; guest.port = 3000; } # Grafana
-        { from = "host"; host.port = 3100; guest.port = 3100; } # Loki
+        { from = "host"; host.port = 19090; guest.port = 9090; } # Prometheus
+        { from = "host"; host.port = 13000; guest.port = 3000; } # Grafana
+        { from = "host"; host.port = 13100; guest.port = 3100; } # Loki
       ];
     };
   };
@@ -121,10 +122,15 @@
     ║                                                              ║
     ║  This demo uses the SAME modules as production configs!      ║
     ║                                                              ║
-    ║  Services (accessible from host via port forwarding):        ║
+    ║  Services inside VM (use these from the VM console):         ║
     ║    • Prometheus:  http://localhost:9090                      ║
     ║    • Grafana:     http://localhost:3000 (no login needed)    ║
     ║    • Loki:        http://localhost:3100                      ║
+    ║                                                              ║
+    ║  From host (offset ports to avoid conflicts):                ║
+    ║    • Prometheus:  http://localhost:19090                     ║
+    ║    • Grafana:     http://localhost:13000                     ║
+    ║    • Loki:        http://localhost:13100                     ║
     ║                                                              ║
     ║  Try these commands:                                         ║
     ║    systemctl status prometheus                               ║

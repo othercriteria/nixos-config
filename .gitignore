@@ -5,6 +5,9 @@
 result
 result-*
 
+# VM disk images
+*.qcow2
+
 # git-secret random seed (see https://sobolevn.me/git-secret/)
 .gitsecret/keys/random_seed
 
