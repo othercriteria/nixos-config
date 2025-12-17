@@ -98,6 +98,9 @@
     '';
   };
 
+  # Disable firewall for demo - QEMU port forwarding comes from virtual network
+  networking.firewall.enable = false;
+
   # ============================================================
   # VM Configuration
   # ============================================================
