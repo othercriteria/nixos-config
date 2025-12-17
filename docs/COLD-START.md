@@ -10,6 +10,82 @@ remove a cold start step, update this document and the relevant code comments.
 
 ---
 
+## 0. GPG Key Setup (prerequisite for secrets)
+
+**Context:** Many cold start steps require `make reveal-secrets` which uses
+git-secret to decrypt sensitive files. git-secret requires the GPG private key
+to be available on the host. This step must be completed before any step that
+needs revealed secrets.
+
+**Applies to:** All hosts that need access to encrypted secrets (meteors, hive,
+any new server).
+
+**Preparation (on a trusted host with your GPG key):**
+
+1. Export GPG keys if not already done:
+
+   ```sh
+   gpg --export -a othercriteria@gmail.com > ~/gnupg-public.asc
+   gpg --export-secret-keys -a othercriteria@gmail.com > ~/gnupg-secret.asc
+   gpg --export-ownertrust > ~/gnupg-ownertrust.txt
+   ```
+
+1. Copy to the target host:
+
+   ```sh
+   scp ~/gnupg-*.asc ~/gnupg-ownertrust.txt <target-host>:~/
+   ```
+
+**On the target host (headless/SSH session):**
+
+1. Enter a nix-shell with pinentry for terminal use:
+
+   ```sh
+   nix-shell -p gnupg pinentry-tty
+   ```
+
+1. Configure gpg-agent to use terminal pinentry and import keys:
+
+   ```sh
+   mkdir -p ~/.gnupg
+   echo "pinentry-program $(which pinentry-tty)" > ~/.gnupg/gpg-agent.conf
+   gpgconf --kill gpg-agent
+   export GPG_TTY=$(tty)
+   gpg --import ~/gnupg-public.asc
+   gpg --import ~/gnupg-secret.asc
+   gpg --import-ownertrust ~/gnupg-ownertrust.txt
+   ```
+
+   You will be prompted for your GPG passphrase when importing the secret key.
+
+1. Verify the key is available:
+
+   ```sh
+   gpg --list-secret-keys
+   ```
+
+1. Exit the nix-shell and test secret reveal:
+
+   ```sh
+   exit
+   cd /etc/nixos && make reveal-secrets
+   ```
+
+1. Clean up exported keys from the target host:
+
+   ```sh
+   rm ~/gnupg-*.asc ~/gnupg-ownertrust.txt
+   ```
+
+**Notes:**
+
+- The `pinentry-tty` configuration persists in `~/.gnupg/gpg-agent.conf`
+- If you later use a graphical session, you may want to switch to
+  `pinentry-gtk-2` or `pinentry-gnome3`
+- The GPG agent caches the passphrase, so subsequent operations won't prompt
+
+---
+
 ## 1. Create ZFS Dataset for Prometheus
 
 **Context:** Prometheus stores its data in `/var/lib/prometheus2` by default.
