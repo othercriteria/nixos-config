@@ -1,6 +1,10 @@
 # direnv
 .direnv
 
+# nix build output symlinks
+result
+result-*
+
 # git-secret random seed (see https://sobolevn.me/git-secret/)
 .gitsecret/keys/random_seed
 

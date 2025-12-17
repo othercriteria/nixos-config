@@ -1,9 +1,10 @@
 # NixOS integration test for the observability stack
 #
-# This test verifies that the core observability components work together:
+# This test uses the SAME modules as production, validating that:
 # - Prometheus starts and can scrape its own node exporter
+# - Prometheus alerting rules (from prometheus-rules.nix) are loaded
 # - Loki starts and can receive logs from Promtail
-# - Grafana is reachable
+# - Grafana is reachable with provisioned datasources
 #
 # Run with: nix flake check
 # Or directly: nix build .#checks.x86_64-linux.observability
@@ -14,129 +15,33 @@ pkgs.testers.nixosTest {
   name = "observability-stack";
 
   nodes.monitor = { config, pkgs, lib, ... }: {
-    # Import the prometheus-rules module to test it's well-formed
+    # Use the SAME modules as production hosts
     imports = [
+      ../modules/loki.nix
+      ../modules/promtail.nix
+      ../modules/grafana.nix
+      ../modules/prometheus-base.nix
       ../modules/prometheus-rules.nix
     ];
 
-    services = {
-      # Prometheus with node exporter
-      prometheus = {
-        enable = true;
-        port = 9090;
-
-        exporters.node = {
-          enable = true;
-          port = 9100;
-          enabledCollectors = [ "systemd" ];
-        };
-
-        scrapeConfigs = [
-          {
-            job_name = "node";
-            scrape_interval = "5s";
-            static_configs = [{
-              targets = [ "localhost:9100" ];
-            }];
-          }
-          {
-            job_name = "prometheus";
-            scrape_interval = "5s";
-            static_configs = [{
-              targets = [ "localhost:9090" ];
-            }];
-          }
-        ];
-
-        # Use the rules from our module
-        rules = config.prometheusRules;
-      };
-
-      # Grafana
+    # Enable observability stack via shared modules
+    custom = {
+      loki.enable = true;
+      promtail.enable = true;
       grafana = {
         enable = true;
-        settings = {
-          server = {
-            http_port = 3000;
-            http_addr = "0.0.0.0";
-          };
-          # Enable anonymous access for testing
-          "auth.anonymous" = {
-            enabled = true;
-            org_role = "Admin";
-          };
-        };
-        # Provision Prometheus as a data source
-        provision.datasources.settings.datasources = [
-          {
-            name = "Prometheus";
-            type = "prometheus";
-            url = "http://localhost:9090";
-            isDefault = true;
-          }
-          {
-            name = "Loki";
-            type = "loki";
-            url = "http://localhost:3100";
-          }
-        ];
+        addr = "0.0.0.0";
+        anonymousAccess = true; # For test API access
       };
-
-      # Loki for log aggregation
-      loki = {
+      prometheus = {
         enable = true;
-        configuration = {
-          server.http_listen_port = 3100;
-          auth_enabled = false;
-
-          common = {
-            ring = {
-              instance_addr = "127.0.0.1";
-              kvstore.store = "inmemory";
-            };
-            path_prefix = "/var/lib/loki";
-            storage.filesystem = {
-              chunks_directory = "/var/lib/loki/chunks";
-              rules_directory = "/var/lib/loki/rules";
-            };
-            replication_factor = 1;
-          };
-
-          schema_config.configs = [{
-            from = "2020-10-24";
-            store = "tsdb";
-            object_store = "filesystem";
-            schema = "v13";
-            index = {
-              prefix = "index_";
-              period = "24h";
-            };
-          }];
-        };
-      };
-
-      # Promtail to ship logs to Loki
-      promtail = {
-        enable = true;
-        configuration = {
-          server.disable = true;
-          clients = [{ url = "http://localhost:3100/loki/api/v1/push"; }];
-          scrape_configs = [{
-            job_name = "journal";
-            journal = {
-              labels = {
-                job = "systemd-journal";
-                host = "monitor";
-              };
-            };
-            relabel_configs = [{
-              source_labels = [ "__journal__systemd_unit" ];
-              target_label = "unit";
-            }];
-          }];
-        };
+        scrapeInterval = "5s"; # Fast scrapes for testing
+        nodeExporter.enabledCollectors = [ "systemd" ];
       };
     };
+
+    # Set hostname for promtail labels
+    networking.hostName = "monitor";
 
     # Ensure we have curl for testing
     environment.systemPackages = [ pkgs.curl pkgs.jq ];

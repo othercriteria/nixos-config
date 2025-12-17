@@ -1,7 +1,7 @@
 # Demo VM configuration for portfolio exploration
 #
-# This is a self-contained NixOS configuration that demonstrates the
-# observability stack without requiring real hardware or secrets.
+# This uses the SAME observability modules as production, demonstrating
+# that the config actually works without requiring real hardware or secrets.
 #
 # Build and run:
 #   make demo
@@ -19,14 +19,44 @@
 
 {
   imports = [
+    ../../modules/loki.nix
+    ../../modules/promtail.nix
+    ../../modules/grafana.nix
+    ../../modules/prometheus-base.nix
     ../../modules/prometheus-rules.nix
   ];
 
-  # Basic system settings
+  # ============================================================
+  # Observability stack via shared modules (same as production!)
+  # ============================================================
+
+  custom = {
+    loki.enable = true;
+    promtail.enable = true;
+    grafana = {
+      enable = true;
+      addr = "0.0.0.0"; # Allow access from host
+      anonymousAccess = true; # Easy exploration without login
+    };
+    prometheus = {
+      enable = true;
+      nodeExporter.enabledCollectors = [ "systemd" ];
+    };
+  };
+
+  # ============================================================
+  # Basic VM configuration
+  # ============================================================
+
   system.stateVersion = "24.11";
   networking.hostName = "demo";
 
-  # Use QEMU/virtio for VM
+  # Minimal filesystem for VM (qemu-vm module handles the rest)
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  };
+
   boot.loader.grub.device = "nodev";
 
   # Time and locale
@@ -65,127 +95,6 @@
   };
 
   # ============================================================
-  # Observability Stack
-  # ============================================================
-
-  services = {
-    # Prometheus with node exporter
-    prometheus = {
-      enable = true;
-      port = 9090;
-
-      exporters.node = {
-        enable = true;
-        port = 9100;
-        enabledCollectors = [ "systemd" ];
-      };
-
-      scrapeConfigs = [
-        {
-          job_name = "node";
-          scrape_interval = "15s";
-          static_configs = [{
-            targets = [ "localhost:9100" ];
-          }];
-        }
-        {
-          job_name = "prometheus";
-          scrape_interval = "15s";
-          static_configs = [{
-            targets = [ "localhost:9090" ];
-          }];
-        }
-      ];
-
-      # Use alerting rules from our module
-      rules = config.prometheusRules;
-    };
-
-    # Grafana with anonymous access for easy exploration
-    grafana = {
-      enable = true;
-      settings = {
-        server = {
-          http_port = 3000;
-          http_addr = "0.0.0.0";
-        };
-        "auth.anonymous" = {
-          enabled = true;
-          org_role = "Admin";
-        };
-      };
-      provision.datasources.settings.datasources = [
-        {
-          name = "Prometheus";
-          type = "prometheus";
-          url = "http://localhost:9090";
-          isDefault = true;
-        }
-        {
-          name = "Loki";
-          type = "loki";
-          url = "http://localhost:3100";
-        }
-      ];
-    };
-
-    # Loki for log aggregation
-    loki = {
-      enable = true;
-      configuration = {
-        server.http_listen_port = 3100;
-        auth_enabled = false;
-
-        common = {
-          ring = {
-            instance_addr = "127.0.0.1";
-            kvstore.store = "inmemory";
-          };
-          path_prefix = "/var/lib/loki";
-          storage.filesystem = {
-            chunks_directory = "/var/lib/loki/chunks";
-            rules_directory = "/var/lib/loki/rules";
-          };
-          replication_factor = 1;
-        };
-
-        schema_config.configs = [{
-          from = "2020-10-24";
-          store = "tsdb";
-          object_store = "filesystem";
-          schema = "v13";
-          index = {
-            prefix = "index_";
-            period = "24h";
-          };
-        }];
-      };
-    };
-
-    # Promtail to ship journal logs to Loki
-    promtail = {
-      enable = true;
-      configuration = {
-        server.disable = true;
-        clients = [{ url = "http://localhost:3100/loki/api/v1/push"; }];
-        scrape_configs = [{
-          job_name = "journal";
-          journal = {
-            labels = {
-              job = "systemd-journal";
-              host = "demo";
-            };
-          };
-          relabel_configs = [{
-            source_labels = [ "__journal__systemd_unit" ];
-            target_label = "unit";
-          }];
-        }];
-      };
-    };
-  };
-
-  # ============================================================
   # VM Configuration
   # ============================================================
 
@@ -209,6 +118,8 @@
     ╔══════════════════════════════════════════════════════════════╗
     ║           NixOS Observability Stack Demo                     ║
     ╠══════════════════════════════════════════════════════════════╣
+    ║                                                              ║
+    ║  This demo uses the SAME modules as production configs!      ║
     ║                                                              ║
     ║  Services (accessible from host via port forwarding):        ║
     ║    • Prometheus:  http://localhost:9090                      ║
