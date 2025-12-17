@@ -78,8 +78,20 @@ test-observability: ## Run the observability stack integration test
 	nix build .#checks.x86_64-linux.observability --print-build-logs
 
 demo: ## Build and run the demo VM (observability stack showcase)
+	@# Check if demo VM is already running
+	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
+		echo "⚠️  A demo VM appears to be already running!"; \
+		echo "   Stop it first (Ctrl+A, X in QEMU) or run: make demo-stop"; \
+		exit 1; \
+	fi
 	@echo "Building demo VM..."
 	nixos-rebuild build-vm --flake .#demo
+	@# Check if disk image exists and warn about stale state
+	@if [ -f demo.qcow2 ]; then \
+		echo ""; \
+		echo "ℹ️  Existing disk image found (demo.qcow2)"; \
+		echo "   VM will reuse previous state. Run 'make demo-clean' for fresh start."; \
+	fi
 	@echo ""
 	@echo "Starting demo VM with port forwarding (offset to avoid conflicts):"
 	@echo "  Prometheus: http://localhost:19090"
@@ -90,6 +102,52 @@ demo: ## Build and run the demo VM (observability stack showcase)
 	@echo "Press Ctrl+A then X to exit QEMU"
 	@echo ""
 	./result/bin/run-demo-vm
+
+demo-clean: ## Remove demo VM disk image (forces fresh start)
+	@if [ -f demo.qcow2 ]; then \
+		rm -f demo.qcow2; \
+		echo "Removed demo.qcow2 - next 'make demo' will start fresh"; \
+	else \
+		echo "No demo.qcow2 found"; \
+	fi
+
+demo-stop: ## Stop any running demo VM
+	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
+		pkill -f "qemu.*run-demo-vm"; \
+		echo "Demo VM stopped"; \
+	else \
+		echo "No demo VM running"; \
+	fi
+
+demo-fresh: demo-clean demo ## Clean and run demo VM with fresh state
+	@# This target chains demo-clean then demo
+
+demo-status: ## Show demo VM status and diagnostics
+	@echo "Demo VM Status"
+	@echo "=============="
+	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
+		echo "VM: Running (PID $$(pgrep -f 'qemu.*run-demo-vm'))"; \
+		echo ""; \
+		echo "Port forwarding (from host):"; \
+		echo "  Prometheus: http://localhost:19090"; \
+		echo "  Grafana:    http://localhost:13000"; \
+		echo "  Loki:       http://localhost:13100"; \
+	else \
+		echo "VM: Not running"; \
+	fi
+	@echo ""
+	@if [ -f demo.qcow2 ]; then \
+		echo "Disk image: demo.qcow2 ($$(du -h demo.qcow2 | cut -f1))"; \
+		echo "  Last modified: $$(stat -c '%y' demo.qcow2 | cut -d. -f1)"; \
+	else \
+		echo "Disk image: None (will be created on first run)"; \
+	fi
+	@echo ""
+	@if [ -L result ]; then \
+		echo "Build: $$(readlink result)"; \
+	else \
+		echo "Build: Not built (run 'make demo' first)"; \
+	fi
 
 rollback: ## Rollback to the previous generation
 	sudo nixos-rebuild switch --rollback
