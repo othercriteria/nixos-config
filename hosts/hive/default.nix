@@ -55,6 +55,7 @@
       allowPing = true;
       allowedTCPPorts = [
         22 # SSH
+        3022 # Teleport SSH
         8080 # Urbit web interface (proxied through skaia nginx)
       ];
       allowedUDPPorts = [
