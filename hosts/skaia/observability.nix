@@ -33,6 +33,7 @@
     grafana = {
       enable = true;
       port = 2342;
+      prometheusUrl = "http://localhost:9001"; # skaia uses non-default port
       # Production: no anonymous access, bind to localhost only
     };
     prometheus = {
