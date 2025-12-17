@@ -114,9 +114,15 @@ demo-clean: ## Remove demo VM disk image (forces fresh start)
 demo-stop: ## Stop any running demo VM
 	@pid=$$(pgrep -f "qemu-system.*-name demo" 2>/dev/null); \
 	if [ -n "$$pid" ]; then \
-		kill $$pid 2>/dev/null || true; \
-		echo "Demo VM stopped (PID $$pid)"; \
+		echo "Stopping demo VM (PID $$pid)..."; \
+		(kill $$pid 2>/dev/null &); \
 		sleep 1; \
+		if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
+			echo "VM still running, sending SIGKILL..."; \
+			(kill -9 $$pid 2>/dev/null &); \
+			sleep 1; \
+		fi; \
+		echo "Demo VM stopped"; \
 	else \
 		echo "No demo VM running"; \
 	fi
