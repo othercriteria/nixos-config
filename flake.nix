@@ -123,6 +123,19 @@
             ./hosts/meteor-4
           ];
         };
+
+        hive = nixpkgs.lib.nixosSystem rec{
+          system = "x86_64-linux";
+          specialArgs = {
+            pkgs-stable = import nixpkgs-stable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          };
+          modules = [
+            ./hosts/hive
+          ];
+        };
       };
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let

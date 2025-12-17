@@ -20,13 +20,15 @@
 
     # Netdata: real-time monitoring with PSI support and intelligent correlation
     # Addresses io_uring iowait misreporting by showing actual pressure metrics
+    # Configured as parent node - receives streams from child nodes (e.g., hive)
     netdata = {
       enable = true;
       # Enable cloud UI (requires unfree license acceptance)
       package = pkgs.netdata.override { withCloudUi = true; };
       config = {
         global = {
-          "bind to" = "127.0.0.1";
+          # Bind to LAN interface to receive streams from child nodes
+          "bind to" = "127.0.0.1 192.168.0.160";
           "update every" = 1; # 1-second granularity
           "memory mode" = "dbengine"; # Efficient tiered storage
         };
@@ -39,12 +41,22 @@
           "/sys/class/powercap" = "yes";
         };
       };
-      # Enable nvidia-smi collector for GPU metrics
+      # Enable nvidia-smi collector for GPU metrics + streaming config
       configDir = {
         "go.d/nvidia_smi.conf" = pkgs.writeText "nvidia_smi.conf" ''
           jobs:
             - name: gpu0
               binary_path: ${pkgs.linuxPackages.nvidia_x11.bin}/bin/nvidia-smi
+        '';
+        # Parent node streaming configuration - accept streams from child nodes
+        # The stream key is just an identifier (security is via firewall allow from)
+        "stream.conf" = pkgs.writeText "stream.conf" ''
+          # Parent configuration: accept streams from child nodes (e.g., hive)
+          [336169ef-6efc-448d-9174-88ea697e1b3d]
+              enabled = yes
+              default memory mode = dbengine
+              health enabled by default = auto
+              allow from = 192.168.0.*
         '';
       };
     };
@@ -155,6 +167,13 @@
             scrape_interval = "30s";
             static_configs = [{
               targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ];
+            }];
+          }
+          {
+            job_name = "hive";
+            scrape_interval = "30s";
+            static_configs = [{
+              targets = [ "hive.home.arpa:9002" ];
             }];
           }
           {

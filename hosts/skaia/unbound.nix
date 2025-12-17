@@ -37,6 +37,7 @@
           "\"registry.veil.home.arpa. A 192.168.0.220\""
 
           # home (LAN hosts)
+          "\"router.home.arpa. A 192.168.0.1\""
           "\"skaia.home.arpa. A 192.168.0.160\""
           "\"netdata.home.arpa. A 192.168.0.160\""
           "\"cache.home.arpa. A 192.168.0.160\""

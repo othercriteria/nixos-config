@@ -7,6 +7,7 @@ hosts reside.
 ## Addressing
 
 - LAN: 192.168.0.0/24
+- Router: 192.168.0.1 (TP-Link AC2300)
 - DHCP pool (router-managed): 192.168.0.100–192.168.0.219
 - Static DHCP reservations:
   - `skaia` → 192.168.0.160 (MAC F0-2F-74-CA-3E-AA)
@@ -16,7 +17,6 @@ hosts reside.
   - `meteor-4` → 192.168.0.124 (MAC 38-05-25-31-86-AE)
   - `hive` → 192.168.0.144 (MAC E0-D5-5E-2B-FB-72)
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
-  - (Add MAC↔IP mapping here for auditability)
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
@@ -27,24 +27,31 @@ hosts reside.
 
 - Private zones:
 
-  - `veil.home.arpa` (cluster services)
+  - `veil.home.arpa` (cluster services, all via ingress-nginx at 192.168.0.220)
 
     - `ingress.veil.home.arpa` → 192.168.0.220 (ingress-nginx)
-    - `grafana.veil.home.arpa` → 192.168.0.220 (Grafana via Ingress)
+    - `grafana.veil.home.arpa` → 192.168.0.220 (Grafana)
     - `prometheus.veil.home.arpa` → 192.168.0.220
     - `alertmanager.veil.home.arpa` → 192.168.0.220
-    - `s3.veil.home.arpa` → 192.168.0.220 (MinIO S3 API via Ingress)
-    - `s3-console.veil.home.arpa` → 192.168.0.220 (MinIO console via Ingress)
+    - `s3.veil.home.arpa` → 192.168.0.220 (MinIO S3 API)
+    - `s3-console.veil.home.arpa` → 192.168.0.220 (MinIO console)
+    - `argocd.veil.home.arpa` → 192.168.0.220
+    - `argo-workflows.veil.home.arpa` → 192.168.0.220
+    - `argo-rollouts.veil.home.arpa` → 192.168.0.220
+    - `registry.veil.home.arpa` → 192.168.0.220 (Docker registry)
 
   - `home.arpa` (LAN hosts)
 
+    - `router.home.arpa` → 192.168.0.1
     - `skaia.home.arpa` → 192.168.0.160
+    - `netdata.home.arpa` → 192.168.0.160 (Netdata dashboard on skaia)
+    - `cache.home.arpa` → 192.168.0.160 (Harmonia nix binary cache)
     - `meteor-1.home.arpa` → 192.168.0.121
     - `meteor-2.home.arpa` → 192.168.0.122
     - `meteor-3.home.arpa` → 192.168.0.123
     - `meteor-4.home.arpa` → 192.168.0.124
     - `hive.home.arpa` → 192.168.0.144
-  - `homeassistant.home.arpa` → 192.168.0.184
+    - `homeassistant.home.arpa` → 192.168.0.184
 
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)

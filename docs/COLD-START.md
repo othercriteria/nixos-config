@@ -842,3 +842,98 @@ corresponding public key.
 - `hosts/server-common/default.nix` — substituter config for meteor nodes
 - `assets/harmonia-cache-public-key.txt` — public key (plain text, committed)
 - `secrets/harmonia-cache-private-key` — private key (git-secret encrypted)
+
+---
+
+## 19. Hive Migration and Bootstrap
+
+**Context:** `hive` is a headless server running Urbit. It streams metrics and
+logs to `skaia` for centralized observability.
+
+**Prerequisites:**
+
+- Existing hive system with LUKS-encrypted root, storage mounts
+- Old config archived at `~/configuration.nix.old` on hive
+
+**Migration steps:**
+
+1. Clone the config repo on hive:
+
+   ```sh
+   sudo git clone https://github.com/othercriteria/nixos-config.git /etc/nixos
+   cd /etc/nixos && sudo make reveal-secrets
+   ```
+
+1. Create the Teleport token directory and generate a join token on skaia:
+
+   ```sh
+   # On skaia
+   sudo tctl tokens add --type=node --ttl=1h --format=text > /tmp/hive.token
+
+   # Copy to hive
+   ssh hive.home.arpa 'sudo mkdir -p /etc/nixos/secrets/teleport'
+   scp /tmp/hive.token hive.home.arpa:/tmp/
+   ssh hive.home.arpa 'sudo mv /tmp/hive.token /etc/nixos/secrets/teleport/ && \
+     sudo chmod 600 /etc/nixos/secrets/teleport/hive.token'
+   rm /tmp/hive.token
+   ```
+
+1. Build and switch on hive:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#hive
+   ```
+
+1. Verify services:
+
+   ```sh
+   # SSH and Teleport
+   systemctl status sshd teleport-node
+
+   # Observability (metrics stream to skaia)
+   systemctl status prometheus-node-exporter netdata promtail
+
+   # Check netdata is streaming to skaia
+   journalctl -u netdata | grep -i stream
+   ```
+
+1. Verify in skaia's observability:
+
+   ```sh
+   # Prometheus should show hive target
+   curl -s localhost:9001/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="hive")'
+
+   # Netdata dashboard should show hive as a child node
+   # Visit netdata.home.arpa and look for hive in the node list
+   ```
+
+1. Truncate the Teleport token after successful join:
+
+   ```sh
+   ssh hive.home.arpa 'sudo truncate -s0 /etc/nixos/secrets/teleport/hive.token'
+   ```
+
+### Urbit
+
+Urbit ships/fakes are stored under `~/workspace/urbit/` on hive:
+
+- `taptev-donwyx` — main ship
+- `zod` — local fakeship for testing
+- `zod-backup-*` — backups
+
+Urbit is run manually (not as a systemd service) via:
+
+```sh
+cd ~/workspace/urbit/taptev-donwyx
+./urbit .
+```
+
+The web interface is exposed on port 8080 and proxied through skaia's nginx at
+`https://urbit.valueof.info`.
+
+**In config:**
+
+- `hosts/hive/default.nix` — main configuration
+- `hosts/hive/observability.nix` — metrics/logs streaming to skaia
+- `hosts/skaia/observability.nix` — netdata parent + prometheus scrape for hive
+- `hosts/skaia/nginx.nix` — urbit.valueof.info proxy to hive:8080
