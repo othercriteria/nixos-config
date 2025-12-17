@@ -78,12 +78,6 @@ test-observability: ## Run the observability stack integration test
 	nix build .#checks.x86_64-linux.observability --print-build-logs
 
 demo: ## Build and run the demo VM (observability stack showcase)
-	@# Check if demo VM is already running
-	@if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
-		echo "⚠️  A demo VM appears to be already running!"; \
-		echo "   Stop it first (Ctrl+A, X in QEMU) or run: make demo-stop"; \
-		exit 1; \
-	fi
 	@echo "Building demo VM..."
 	nixos-rebuild build-vm --flake .#demo
 	@# Check if disk image exists and warn about stale state
@@ -111,20 +105,15 @@ demo-clean: ## Remove demo VM disk image (forces fresh start)
 		echo "No demo.qcow2 found"; \
 	fi
 
-demo-stop: ## Stop any running demo VM
-	@pid=$$(pgrep -f "qemu-system.*-name demo" 2>/dev/null); \
+demo-stop: ## Stop any running demo VM (finds process listening on demo ports)
+	@pid=$$(lsof -ti :19090 2>/dev/null | head -1); \
 	if [ -n "$$pid" ]; then \
-		echo "Stopping demo VM (PID $$pid)..."; \
-		(kill $$pid 2>/dev/null &); \
+		echo "Found process on port 19090 (PID $$pid), stopping..."; \
+		kill $$pid 2>/dev/null || true; \
 		sleep 1; \
-		if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
-			echo "VM still running, sending SIGKILL..."; \
-			(kill -9 $$pid 2>/dev/null &); \
-			sleep 1; \
-		fi; \
 		echo "Demo VM stopped"; \
 	else \
-		echo "No demo VM running"; \
+		echo "No demo VM detected (port 19090 not in use)"; \
 	fi
 
 demo-fresh: demo-stop demo-clean ## Stop, clean, and run demo VM with fresh state
@@ -133,15 +122,16 @@ demo-fresh: demo-stop demo-clean ## Stop, clean, and run demo VM with fresh stat
 demo-status: ## Show demo VM status and diagnostics
 	@echo "Demo VM Status"
 	@echo "=============="
-	@if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
-		echo "VM: Running (PID $$(pgrep -f 'qemu-system.*-name demo'))"; \
+	@pid=$$(lsof -ti :19090 2>/dev/null | head -1); \
+	if [ -n "$$pid" ]; then \
+		echo "VM: Running (process on port 19090: PID $$pid)"; \
 		echo ""; \
 		echo "Port forwarding (from host):"; \
 		echo "  Prometheus: http://localhost:19090"; \
 		echo "  Grafana:    http://localhost:13000"; \
 		echo "  Loki:       http://localhost:13100"; \
 	else \
-		echo "VM: Not running"; \
+		echo "VM: Not running (port 19090 not in use)"; \
 	fi
 	@echo ""
 	@if [ -f demo.qcow2 ]; then \
