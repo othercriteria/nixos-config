@@ -23,6 +23,12 @@ in
       description = "HTTP port for Prometheus server.";
     };
 
+    listenAddress = lib.mkOption {
+      type = lib.types.str;
+      default = "127.0.0.1";
+      description = "Address to bind Prometheus to. Use 0.0.0.0 for VM/container access.";
+    };
+
     nodeExporter = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -77,7 +83,7 @@ in
   config = lib.mkIf cfg.enable {
     services.prometheus = {
       enable = true;
-      inherit (cfg) port extraFlags checkConfig;
+      inherit (cfg) port listenAddress extraFlags checkConfig;
 
       exporters.node = lib.mkIf cfg.nodeExporter.enable {
         enable = true;

@@ -31,7 +31,10 @@
   # ============================================================
 
   custom = {
-    loki.enable = true;
+    loki = {
+      enable = true;
+      listenAddress = "0.0.0.0"; # Allow access from host
+    };
     promtail.enable = true;
     grafana = {
       enable = true;
@@ -40,6 +43,7 @@
     };
     prometheus = {
       enable = true;
+      listenAddress = "0.0.0.0"; # Allow access from host
       nodeExporter.enabledCollectors = [ "systemd" ];
     };
   };

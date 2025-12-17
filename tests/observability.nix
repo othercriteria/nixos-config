@@ -26,7 +26,10 @@ pkgs.testers.nixosTest {
 
     # Enable observability stack via shared modules
     custom = {
-      loki.enable = true;
+      loki = {
+        enable = true;
+        listenAddress = "0.0.0.0"; # For test API access
+      };
       promtail.enable = true;
       grafana = {
         enable = true;
@@ -35,6 +38,7 @@ pkgs.testers.nixosTest {
       };
       prometheus = {
         enable = true;
+        listenAddress = "0.0.0.0"; # For test API access
         scrapeInterval = "5s"; # Fast scrapes for testing
         nodeExporter.enabledCollectors = [ "systemd" ];
       };

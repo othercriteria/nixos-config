@@ -22,6 +22,12 @@ in
       description = "HTTP listen port for Loki server.";
     };
 
+    listenAddress = lib.mkOption {
+      type = lib.types.str;
+      default = "127.0.0.1";
+      description = "Address to bind Loki to. Use 0.0.0.0 for VM/container access.";
+    };
+
     dataDir = lib.mkOption {
       type = lib.types.path;
       default = "/var/lib/loki";
@@ -33,7 +39,10 @@ in
     services.loki = {
       enable = true;
       configuration = {
-        server.http_listen_port = cfg.port;
+        server = {
+          http_listen_port = cfg.port;
+          http_listen_address = cfg.listenAddress;
+        };
         auth_enabled = false;
 
         common = {
