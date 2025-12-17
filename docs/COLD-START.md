@@ -940,13 +940,22 @@ logs to `skaia` for centralized observability.
    cd /etc/nixos && sudo make reveal-secrets
    ```
 
-1. Create the Teleport token directory and generate a join token on skaia:
+1. Build and switch on hive:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#hive
+   ```
+
+   Note: This syncs `/etc/nixos/` from the repo, so any manually-placed files
+   (like Teleport tokens) must be added *after* this step.
+
+1. Generate Teleport join token on skaia and deploy to hive:
 
    ```sh
    # On skaia
    sudo tctl tokens add --type=node --ttl=1h --format=text > /tmp/hive.token
 
-   # Copy to hive
+   # Copy to hive (after nixos-rebuild, so the sync doesn't overwrite it)
    ssh hive.home.arpa 'sudo mkdir -p /etc/nixos/secrets/teleport'
    scp /tmp/hive.token hive.home.arpa:/tmp/
    ssh hive.home.arpa 'sudo mv /tmp/hive.token /etc/nixos/secrets/teleport/ && \
@@ -954,18 +963,22 @@ logs to `skaia` for centralized observability.
    rm /tmp/hive.token
    ```
 
-1. Build and switch on hive:
+1. Restart teleport-node on hive to pick up the token:
 
    ```sh
-   sudo nixos-rebuild switch --flake /etc/nixos#hive
+   ssh hive.home.arpa 'sudo systemctl restart teleport-node'
    ```
 
-1. Verify services:
+1. Verify Teleport joined (on skaia):
 
    ```sh
-   # SSH and Teleport
-   systemctl status sshd teleport-node
+   tsh ls
+   # Should show: hive  192.168.0.144:3022  role=urbit,site=residence-1
+   ```
 
+1. Verify other services on hive:
+
+   ```sh
    # Observability (metrics stream to skaia)
    systemctl status prometheus-node-exporter netdata promtail
 
