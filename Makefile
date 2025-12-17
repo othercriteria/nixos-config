@@ -79,7 +79,7 @@ test-observability: ## Run the observability stack integration test
 
 demo: ## Build and run the demo VM (observability stack showcase)
 	@# Check if demo VM is already running
-	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
+	@if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
 		echo "⚠️  A demo VM appears to be already running!"; \
 		echo "   Stop it first (Ctrl+A, X in QEMU) or run: make demo-stop"; \
 		exit 1; \
@@ -112,21 +112,23 @@ demo-clean: ## Remove demo VM disk image (forces fresh start)
 	fi
 
 demo-stop: ## Stop any running demo VM
-	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
-		pkill -f "qemu.*run-demo-vm"; \
-		echo "Demo VM stopped"; \
+	@pid=$$(pgrep -f "qemu-system.*-name demo" 2>/dev/null); \
+	if [ -n "$$pid" ]; then \
+		kill $$pid 2>/dev/null || true; \
+		echo "Demo VM stopped (PID $$pid)"; \
+		sleep 1; \
 	else \
 		echo "No demo VM running"; \
 	fi
 
-demo-fresh: demo-clean demo ## Clean and run demo VM with fresh state
-	@# This target chains demo-clean then demo
+demo-fresh: demo-stop demo-clean ## Stop, clean, and run demo VM with fresh state
+	@$(MAKE) demo
 
 demo-status: ## Show demo VM status and diagnostics
 	@echo "Demo VM Status"
 	@echo "=============="
-	@if pgrep -f "qemu.*run-demo-vm" > /dev/null 2>&1; then \
-		echo "VM: Running (PID $$(pgrep -f 'qemu.*run-demo-vm'))"; \
+	@if pgrep -f "qemu-system.*-name demo" > /dev/null 2>&1; then \
+		echo "VM: Running (PID $$(pgrep -f 'qemu-system.*-name demo'))"; \
 		echo ""; \
 		echo "Port forwarding (from host):"; \
 		echo "  Prometheus: http://localhost:19090"; \
