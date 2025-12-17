@@ -24,6 +24,9 @@ Per-host NixOS configurations:
 - `hive/`: Headless server for Urbit and misc services
   - Streams metrics/logs to skaia (node exporter, Netdata child, Promtail)
   - LUKS-encrypted root, bulk storage mounts
+- `demo/`: Standalone demo VM for portfolio showcase
+  - Self-contained observability stack (no secrets required)
+  - Uses same modules as production hosts
 
 ### `modules/`
 
@@ -35,8 +38,12 @@ Reusable NixOS modules:
 - `harmonia.nix`: Nix binary cache server (skaia only)
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
 - `teleport-node.nix`: Teleport node agent for remote access
+- `prometheus-base.nix`: Core Prometheus + node exporter module
 - `prometheus-rules.nix`: Shared Prometheus alerting rules
 - `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
+- `grafana.nix`: Grafana with datasource provisioning
+- `loki.nix`: Loki log aggregation server
+- `promtail.nix`: Promtail log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
 - `vibectl.nix`: AI-powered kubectl wrapper
 - `veil/`: Veil cluster-specific modules
@@ -71,6 +78,8 @@ Project documentation:
 - `secrets/`: Encrypted secrets managed by git-secret
 - `gitops-veil/`: GitOps manifests for veil cluster (private submodule)
 - `flux-snapshot/`: Public snapshots of GitOps manifests (illustrative)
+- `tests/`: NixOS integration tests
+  - `observability.nix`: Tests the observability stack modules
 - `.cursor/rules/`: Cursor AI assistant rules
 
 ## Key Files

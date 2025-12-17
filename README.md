@@ -94,11 +94,20 @@ make demo
 ```
 
 This builds and runs a self-contained VM with Prometheus, Grafana, and Loki.
-Access the services from your host:
+Access the services from your host (ports offset to avoid conflicts):
 
-- Prometheus: <http://localhost:9090>
-- Grafana: <http://localhost:3000> (anonymous access enabled)
-- Loki: <http://localhost:3100>
+- Prometheus: <http://localhost:19090>
+- Grafana: <http://localhost:13000> (anonymous access enabled)
+- Loki: <http://localhost:13100/ready>
+
+Demo VM management:
+
+```bash
+make demo-status    # Show VM status and port info
+make demo-stop      # Stop the running VM
+make demo-clean     # Remove disk image for fresh start
+make demo-fresh     # Stop, clean, and restart in one command
+```
 
 Run the integration test suite:
 
