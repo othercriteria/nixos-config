@@ -53,6 +53,12 @@ in
         default = false;
         description = "Open firewall for node exporter (for remote scraping).";
       };
+
+      defaultScrapeJob = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Create default 'node' scrape job. Disable if defining custom job in extraScrapeConfigs.";
+      };
     };
 
     scrapeInterval = lib.mkOption {
@@ -90,22 +96,23 @@ in
         inherit (cfg.nodeExporter) port enabledCollectors openFirewall;
       };
 
-      scrapeConfigs = [
-        {
+      scrapeConfigs =
+        (lib.optional cfg.nodeExporter.defaultScrapeJob {
           job_name = "node";
           scrape_interval = cfg.scrapeInterval;
           static_configs = [{
             targets = [ "localhost:${toString cfg.nodeExporter.port}" ];
           }];
-        }
-        {
-          job_name = "prometheus";
-          scrape_interval = cfg.scrapeInterval;
-          static_configs = [{
-            targets = [ "localhost:${toString cfg.port}" ];
-          }];
-        }
-      ] ++ cfg.extraScrapeConfigs;
+        })
+        ++ [
+          {
+            job_name = "prometheus";
+            scrape_interval = cfg.scrapeInterval;
+            static_configs = [{
+              targets = [ "localhost:${toString cfg.port}" ];
+            }];
+          }
+        ] ++ cfg.extraScrapeConfigs;
 
       # Use rules from prometheus-rules.nix if imported
       rules = lib.mkIf (config ? prometheusRules) config.prometheusRules;

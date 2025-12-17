@@ -42,6 +42,7 @@
       nodeExporter = {
         port = 9002;
         enabledCollectors = [ "perf" "sysctl" "systemd" "tcpstat" ];
+        defaultScrapeJob = false; # skaia defines custom 'skaia' job in extraScrapeConfigs
       };
       extraFlags = [ "--storage.tsdb.retention.time=30d" ];
       # Can't do build-time validation, since k3s token is generated at runtime
