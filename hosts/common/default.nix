@@ -25,14 +25,15 @@
       keep-derivations = true
       # Maximum number of parallel jobs during builds
       max-jobs = auto
-      # Allow up to 8 concurrent tasks during builds
-      system-features = [ "big-parallel" ]
     '';
 
-    # Optimize store by hard linking identical files
     settings = {
       download-buffer-size = 1000000000; # 1GB instead of default 1MB
       auto-optimise-store = true;
+      # System features for builds
+      # - big-parallel: enable parallel builds
+      # - kvm, nixos-test: enable NixOS VM integration tests
+      system-features = [ "big-parallel" "kvm" "nixos-test" ];
     };
 
     gc = {

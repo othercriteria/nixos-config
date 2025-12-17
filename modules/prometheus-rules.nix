@@ -1,10 +1,11 @@
 # Prometheus alerting rules module
 #
-# Provides a list of Prometheus alerting rules as JSON strings.
-# Import and merge into your host config to supply rules to services.prometheus.rules.
+# Provides Prometheus alerting rules as a single JSON string with multiple groups.
+# Import and use with services.prometheus.rules = config.prometheusRules;
+#
 # Example usage in host config:
-#   (import ../../modules/prometheus-rules.nix) { inherit config; } //
-
+#   imports = [ ../../modules/prometheus-rules.nix ];
+#   services.prometheus.rules = config.prometheusRules;
 
 { config, lib, ... }:
 
@@ -12,14 +13,14 @@
   options.prometheusRules = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
-    description = "Extra Prometheus alerting rules as JSON strings.";
+    description = "Prometheus alerting rules as JSON strings.";
   };
 
   config = {
     prometheusRules = [
-      # Node disk space low
       (builtins.toJSON {
         groups = [
+          # Self-monitoring rules for Prometheus infrastructure
           {
             name = "self-monitoring.rules";
             rules = [
@@ -34,7 +35,6 @@
                   description = "Less than 15% free on /zfs/prometheus for 5m.";
                 };
               }
-              # Prometheus process health
               {
                 alert = "PrometheusDown";
                 expr = "up{job=\"skaia\"} == 0";
@@ -45,7 +45,6 @@
                   description = "Prometheus is not responding to scrapes.";
                 };
               }
-              # Scrape failures
               {
                 alert = "PrometheusScrapeFailures";
                 expr = "increase(prometheus_target_scrapes_failed_total[5m]) > 0";
@@ -58,11 +57,7 @@
               }
             ];
           }
-        ];
-      })
-      # Node rules from original config
-      (builtins.toJSON {
-        groups = [
+          # Node-level monitoring rules
           {
             name = "node.rules";
             rules = [

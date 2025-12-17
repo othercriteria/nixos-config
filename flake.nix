@@ -142,6 +142,13 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        # Integration tests
+        # Run with: nix flake check
+        # Or build specific test: nix build .#checks.x86_64-linux.observability
+        checks = {
+          observability = import ./tests/observability.nix { inherit pkgs; };
+        };
+
         # Development environment
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [

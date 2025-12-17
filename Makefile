@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
+.PHONY: help check init-security scan-secrets check-all test test-observability rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -70,6 +70,12 @@ scan-secrets: ## Scan for secrets in the codebase
 
 check-all: check scan-secrets ## Run all checks
 	pre-commit run --all-files
+
+test: ## Run all NixOS integration tests (requires kvm)
+	nix flake check
+
+test-observability: ## Run the observability stack integration test
+	nix build .#checks.x86_64-linux.observability --print-build-logs
 
 rollback: ## Rollback to the previous generation
 	sudo nixos-rebuild switch --rollback
