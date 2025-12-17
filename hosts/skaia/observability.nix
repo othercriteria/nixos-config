@@ -32,6 +32,19 @@
           "update every" = 1; # 1-second granularity
           "memory mode" = "dbengine"; # Efficient tiered storage
         };
+        # DB engine storage allocation (parent node with children)
+        # Data stored in /var/cache/netdata/dbengine
+        db = {
+          "mode" = "dbengine";
+          # Tier 0: 1s resolution, ~1 week retention at 4GB
+          "dbengine tier 0 disk space MB" = 4096;
+          # Tier 1: 1m resolution, ~3 months retention at 4GB
+          "dbengine tier 1 disk space MB" = 4096;
+          # Tier 2: 1h resolution, ~2 years retention at 2GB
+          "dbengine tier 2 disk space MB" = 2048;
+          # Page cache for hot data (default 32MB is low for parent)
+          "dbengine page cache size MB" = 128;
+        };
         # PSI metrics - the "correct" signal for resource pressure
         "plugin:proc:/proc/pressure" = {
           "enable collecting pressure metrics" = "yes";
