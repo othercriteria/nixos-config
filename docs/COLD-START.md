@@ -1078,9 +1078,16 @@ built-in NixOS `services.github-runners` module.
 
    ```sh
    systemctl status github-runner-skaia
+   # Should show: Active: active (running)
+   # And: Listening for Jobs
    ```
 
-   Also check GitHub → Settings → Actions → Runners — it should show as "Idle".
+1. Verify in GitHub UI:
+
+   - Go to: `https://github.com/othercriteria/nixos-config/settings/actions/runners`
+   - (Or: Repository → Settings → Actions → Runners)
+   - Should show: `skaia` with status **Idle** and labels
+     `self-hosted`, `Linux`, `X64`, `nixos`, `kvm`
 
 **Updating the runner:**
 
