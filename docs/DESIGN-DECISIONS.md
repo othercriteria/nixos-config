@@ -11,7 +11,7 @@ Format inspired by [Architecture Decision Records (ADRs)](https://adr.github.io/
 
 ## Using Nix Flakes
 
-**Date:** Pre-2024 (inherited) | **Status:** Active | **Last reviewed:** Dec 2024
+**Date:** Pre-2024 (inherited) | **Status:** Active | **Last reviewed:** Dec 2025
 
 **Problem:** Need reproducible, composable NixOS configuration management.
 
@@ -41,7 +41,7 @@ adoption). Some tools/docs still assume non-flake setups.
 
 ## Host NVIDIA Drivers for Kubernetes
 
-**Date:** ~2024 | **Status:** Active | **Last reviewed:** Dec 2024
+**Date:** ~2025 | **Status:** Active | **Last reviewed:** Dec 2025
 
 **Problem:** GPU workloads in Kubernetes typically use the NVIDIA GPU Operator,
 which assumes FHS-compliant filesystem layout (`/usr/lib`, etc.) and manages
@@ -86,7 +86,7 @@ NixOS packaging, or multi-distro cluster standardization becomes important.
 
 ## CI on Push Only (No PR Triggers)
 
-**Date:** Dec 2024 | **Status:** Active | **Last reviewed:** Dec 2024
+**Date:** Dec 2025 | **Status:** Active | **Last reviewed:** Dec 2025
 
 **Problem:** GitHub Actions CI can trigger on `push` and `pull_request`. This
 repo uses a self-hosted runner on `skaia` with KVM access for NixOS VM tests.
