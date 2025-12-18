@@ -98,7 +98,7 @@ in
         # Linting tools (so workflows don't need to nix run each time)
         statix
         deadnix
-        nixfmt-rfc-style
+        nixpkgs-fmt
       ];
 
       # Environment for nix commands

@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Nix formatting (nixfmt)
+      - name: Check Nix formatting (nixpkgs-fmt)
         run: |
-          nixfmt --check \
+          nixpkgs-fmt --check \
             $(find . -name '*.nix' -not -path './result*' -not -path './.git/*')
 
       - name: Static analysis (statix)
