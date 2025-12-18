@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: [self-hosted, nixos]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Nix formatting (nixfmt)
+        run: |
+          nixfmt --check \
+            $(find . -name '*.nix' -not -path './result*' -not -path './.git/*')
+
+      - name: Static analysis (statix)
+        run: statix check .
+
+      - name: Deadnix (unused code)
+        run: deadnix --fail .
+
+  build:
+    name: Build Configurations
+    runs-on: [self-hosted, nixos]
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - skaia
+          - hive
+          - meteor-1
+          - meteor-2
+          - meteor-3
+          - meteor-4
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.host }}
+        run: |
+          nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel \
+            --no-link \
+            --print-build-logs
+
+  test:
+    name: Integration Tests
+    runs-on: [self-hosted, nixos, kvm]
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run observability integration test
+        run: |
+          nix build .#checks.x86_64-linux.observability \
+            --print-build-logs
+
+  # Summary job for branch protection rules
+  ci-success:
+    name: CI Success
+    runs-on: [self-hosted, nixos]
+    needs: [lint, build, test]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.build.result }}" != "success" ]] || \
+             [[ "${{ needs.test.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"

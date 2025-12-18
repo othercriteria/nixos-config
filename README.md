@@ -116,6 +116,21 @@ make test                  # All tests
 make test-observability    # Just the observability stack test
 ```
 
+## Continuous Integration
+
+CI runs on a self-hosted GitHub Actions runner (on `skaia`), which provides:
+
+- **Lint & format checks** — nixfmt, statix, deadnix
+- **Build validation** — All host configurations built in parallel
+- **Integration tests** — NixOS VM tests with KVM
+
+Builds automatically populate the [Harmonia](modules/harmonia.nix) binary cache
+(`cache.home.arpa`), so other hosts benefit from cached derivations.
+
+See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for the workflow
+definition and [`docs/COLD-START.md`](docs/COLD-START.md#20-github-actions-self-hosted-runner)
+for runner setup.
+
 ## Maintenance
 
 - Update flake inputs: `make flake-update` (use `make flake-restore` to undo)

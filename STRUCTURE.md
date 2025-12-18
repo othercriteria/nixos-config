@@ -35,6 +35,7 @@ Reusable NixOS modules:
 - `desktop-common.nix`: Shared desktop settings (Thunar, XDG portals, polkit)
 - `greetd.nix`: TTY greeter using tuigreet to launch Sway
 - `fonts.nix`: System font configuration
+- `github-runner.nix`: GitHub Actions self-hosted runner (declarative)
 - `harmonia.nix`: Nix binary cache server (skaia only)
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
 - `teleport-node.nix`: Teleport node agent for remote access
@@ -73,6 +74,8 @@ Project documentation:
 
 ### Other Directories
 
+- `.github/workflows/`: GitHub Actions CI workflows
+  - `ci.yml`: Lint, build, and integration tests (self-hosted runner)
 - `assets/`: Static assets (certs, config snippets, scripts)
 - `private-assets/`: Private assets submodule (fonts, wallpapers)
 - `secrets/`: Encrypted secrets managed by git-secret
@@ -91,6 +94,8 @@ Project documentation:
   - `build-host HOST=x`: Build without applying
   - `reveal-secrets`: Decrypt git-secret files
   - `check-unbound`: Validate Unbound DNS config
+  - `test`: Run all integration tests
+  - `demo`: Launch interactive observability demo VM
 
 ## Runtime State (not in repo)
 
