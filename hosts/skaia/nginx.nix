@@ -111,11 +111,21 @@ in
         };
       };
 
-      "stiletto-demo.valueof.info" = {
+      "stiletto.valueof.info" = {
         forceSSL = true;
         enableACME = true;
         locations."/" = {
-          proxyPass = "http://127.0.0.1:32081";
+          # Use raw config instead of proxyPass to avoid recommendedProxySettings
+          # overwriting our custom Host header needed for cluster ingress routing
+          extraConfig = ''
+            proxy_pass http://192.168.0.220;
+            proxy_http_version 1.1;
+            proxy_set_header Host stiletto-lite.veil.home.arpa;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+          '';
         };
         extraConfig = ''
           add_header Strict-Transport-Security "max-age=31536000" always;
