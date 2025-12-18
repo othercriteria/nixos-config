@@ -32,3 +32,4 @@ secrets/home-ca.key
 secrets/argocd-repo-key
 secrets/huggingface-token-2025-12-14
 secrets/harmonia-cache-private-key
+secrets/github-runner-token

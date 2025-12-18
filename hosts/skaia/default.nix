@@ -10,6 +10,7 @@
     ./ddclient.nix
     ./email-alerts.nix
     ./firewall.nix
+    ../../modules/github-runner.nix
     ./graphics.nix
     ../../modules/harmonia.nix
     ./k3s
@@ -24,6 +25,9 @@
     ./unbound.nix
     ./virtualisation.nix
   ];
+
+  # GitHub Actions self-hosted runner for CI
+  custom.githubRunner.enable = true;
 
   boot = {
     loader = {
