@@ -68,6 +68,7 @@ Home Manager user configuration:
 Project documentation:
 
 - `COLD-START.md`: Manual steps for new hosts and services
+- `DESIGN-DECISIONS.md`: Architecture decisions with rationale and trade-offs
 - `OBSERVABILITY.md`: Metrics, logs, dashboards, backup/restore
 - `VEIL-PLAN.md`: Veil cluster rollout plan
 - `residence-1/ADDRESSING.md`: LAN addressing and DNS for home network

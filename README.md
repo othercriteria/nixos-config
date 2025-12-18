@@ -142,6 +142,7 @@ for runner setup.
 ## Documentation
 
 - [Cold Start Guide](docs/COLD-START.md) - Manual steps for new hosts
+- [Design Decisions](docs/DESIGN-DECISIONS.md) - Architecture choices and rationale
 - [Observability](docs/OBSERVABILITY.md) - Metrics, logs, dashboards
 - [Addressing](docs/residence-1/ADDRESSING.md) - LAN/DNS configuration
 - [Project Structure](STRUCTURE.md) - Detailed directory documentation

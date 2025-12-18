@@ -1,9 +1,10 @@
 name: CI
 
+# SECURITY: Only trigger on push to main, NOT on pull_request.
+# Self-hosted runners on public repos risk arbitrary code execution from fork PRs.
+# See: docs/DESIGN-DECISIONS.md#ci-on-push-only
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
 
 # Cancel in-progress runs for the same branch

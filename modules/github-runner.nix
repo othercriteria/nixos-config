@@ -121,13 +121,13 @@ in
 
       # Allow access to nix daemon and (optionally) KVM
       serviceOverrides = {
-        # Nix daemon socket access
-        SupplementaryGroups = [ "nix-users" ] ++ lib.optionals cfg.kvmAccess [ "kvm" ];
+        # KVM group access for NixOS VM tests
+        SupplementaryGroups = lib.optionals cfg.kvmAccess [ "kvm" ];
 
         # Allow /dev/kvm access for NixOS VM tests
         DeviceAllow = lib.optionals cfg.kvmAccess [ "/dev/kvm rw" ];
 
-        # Relax sandbox slightly for nix builds
+        # Relax sandbox for nix builds
         ProtectHome = "read-only";
         ProtectSystem = "strict";
         ReadWritePaths = [
