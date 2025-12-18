@@ -21,14 +21,14 @@ jobs:
 
       - name: Check Nix formatting (nixpkgs-fmt)
         run: |
-          nixpkgs-fmt --check \
+          nix run nixpkgs#nixpkgs-fmt -- --check \
             $(find . -name '*.nix' -not -path './result*' -not -path './.git/*')
 
       - name: Static analysis (statix)
-        run: statix check .
+        run: nix run nixpkgs#statix -- check .
 
       - name: Deadnix (unused code)
-        run: deadnix --fail .
+        run: nix run nixpkgs#deadnix -- --fail .
 
   build:
     name: Build Configurations
