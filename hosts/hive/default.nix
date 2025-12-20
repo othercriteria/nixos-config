@@ -81,6 +81,13 @@
     };
   };
 
+  # Ignore short power button press (cat-proof mode)
+  # Long press (4+ seconds) still triggers shutdown for intentional use
+  services.logind.settings.Login = {
+    HandlePowerKey = "ignore";
+    HandlePowerKeyLongPress = "poweroff";
+  };
+
   environment.systemPackages = with pkgs; [
     # Storage and filesystem tools
     cryptsetup
