@@ -28,7 +28,11 @@
   # ============================================================
 
   custom = {
-    loki.enable = true;
+    loki = {
+      enable = true;
+      # Listen on all interfaces to accept logs from LAN hosts (hive, etc.)
+      listenAddress = "0.0.0.0";
+    };
     promtail.enable = true;
     grafana = {
       enable = true;
