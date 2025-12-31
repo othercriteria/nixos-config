@@ -3,7 +3,11 @@
 {
   imports = [
     ../../modules/teleport-node.nix
+    ../../modules/shutdown-visibility.nix
   ];
+
+  # Enable shutdown visibility for better crash diagnostics
+  custom.shutdownVisibility.enable = true;
 
   # Headless server baseline (no GUI)
   # Imports: none of the desktop modules

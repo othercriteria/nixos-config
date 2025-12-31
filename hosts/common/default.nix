@@ -7,13 +7,19 @@
     ../../modules/greetd.nix
     ../../modules/printing.nix
     ../../modules/protonvpn.nix
+    ../../modules/shutdown-visibility.nix
     ../../modules/vibectl.nix
-
   ];
 
-  # Enable vibectl for any host with kubectl
-  custom.vibectl.enable = true;
-  custom.vibectl.anthropicApiKeyFile = "/etc/nixos/secrets/anthropic-2025-04-10-vibectl-personal-usage";
+  custom = {
+    # Enable shutdown visibility for better crash diagnostics
+    shutdownVisibility.enable = true;
+    # Enable vibectl for any host with kubectl
+    vibectl = {
+      enable = true;
+      anthropicApiKeyFile = "/etc/nixos/secrets/anthropic-2025-04-10-vibectl-personal-usage";
+    };
+  };
 
   nix = {
     package = pkgs.nixVersions.stable;
