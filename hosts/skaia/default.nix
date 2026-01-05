@@ -146,7 +146,7 @@
 
     steam.enable = true;
 
-    # Configure OBS Studio with plugins
+    # Configure OBS Studio with plugins and NVENC support
     obs-studio = {
       enable = true;
       enableVirtualCamera = true;
@@ -155,8 +155,8 @@
         obs-pipewire-audio-capture
         obs-vkcapture
       ];
-      # Use stock OBS without CUDA toolchain to ensure we don't evaluate CUDA 12.8
-      package = pkgs.obs-studio;
+      # Enable CUDA for NVENC hardware encoding on NVIDIA GPUs
+      package = pkgs.obs-studio.override { cudaSupport = true; };
     };
   };
 
