@@ -209,10 +209,21 @@ in
     8000 # SRS WebRTC media (ICE/DTLS/SRTP)
   ];
 
-  # Future: coturn integration
+  # Future: coturn integration (TURN relay server)
+  #
+  # TURN is needed when viewers can't establish direct WebRTC connections due to:
+  # - Symmetric NAT (common in corporate networks)
+  # - Strict firewalls blocking UDP
+  # - Some mobile carrier networks
+  #
+  # Testing: Mobile data viewing works (tested 2026-01-05), suggesting most
+  # viewers won't need TURN. Add only if viewers report connection failures.
+  # Check chrome://webrtc-internals for ICE state = "failed" as indicator.
+  #
   # When adding TURN server support:
   # 1. Enable services.coturn with appropriate realm and credentials
-  # 2. Update srsConfig to include TURN server URLs
-  # 3. Open coturn ports (3478 TCP/UDP, relay range)
+  # 2. Update srsConfig to include TURN server URLs in rtc_server block
+  # 3. Open coturn ports (3478 TCP/UDP, relay range 49152-65535)
+  # 4. Consider bandwidth: TURN relays all media through server
   # See: https://ossrs.net/lts/en-us/docs/v5/doc/webrtc#coturn
 }
