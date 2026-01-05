@@ -120,6 +120,7 @@ in
   virtualisation.oci-containers.containers.srs = {
     image = "ossrs/srs:5";
     ports = [
+      "127.0.0.1:1935:1935" # RTMP ingest - localhost only (for obs-multi-rtmp)
       "127.0.0.1:1985:1985" # HTTP API (WHIP/WHEP signaling) - localhost only
       "127.0.0.1:8080:8080" # HTTP server (demo players) - localhost only
       "8000:8000/udp" # WebRTC media - must be public

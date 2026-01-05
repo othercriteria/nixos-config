@@ -154,6 +154,7 @@
         wlrobs
         obs-pipewire-audio-capture
         obs-vkcapture
+        obs-multi-rtmp # Secondary stream output to SRS failover
       ];
       # Enable CUDA for NVENC hardware encoding on NVIDIA GPUs
       package = pkgs.obs-studio.override { cudaSupport = true; };
