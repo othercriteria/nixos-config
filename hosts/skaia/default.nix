@@ -19,6 +19,7 @@
     ./minidlna.nix
     ./observability.nix
     ./samba.nix
+    ./streaming.nix
     ./thermal.nix
     ./teleport.nix
     ./unbound-rpz.nix

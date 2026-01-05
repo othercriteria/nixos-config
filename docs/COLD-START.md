@@ -617,6 +617,7 @@ the TP-Link AC2300 router. The router must forward specific TCP ports to
 1. Add or update entries so that:
    - TCP `80` → `192.168.0.160` (`skaia`, nginx HTTP)
    - TCP `443` → `192.168.0.160` (`skaia`, nginx HTTPS)
+   - UDP `8000` → `192.168.0.160` (`skaia`, SRS WebRTC media)
    - TCP `3023` → `192.168.0.160` (`skaia`, Teleport proxy)
    - TCP `3024` → `192.168.0.160` (`skaia`, Teleport reverse tunnel)
 1. Save changes and confirm the new rules are active. The router may require a
@@ -1100,3 +1101,119 @@ the `github-runner` package. No manual intervention needed.
 - `.github/workflows/ci.yml` — CI workflow using `runs-on: self-hosted`
 - Runner runs as dedicated `github-runner` user with KVM access
 - Builds populate `/nix/store`, served by Harmonia to other hosts
+
+---
+
+## 21. SRS WebRTC Streaming Failover
+
+**Context:** Self-hosted WebRTC streaming via SRS provides a failover for Twitch
+streams. OBS publishes via WHIP to `stream.valueof.info`, and viewers connect
+via WHEP for low-latency (<2-3s) playback.
+
+**Prerequisites:**
+
+- DNS A record for `stream.valueof.info` pointing to `skaia`'s public IP
+- Router UDP port forward (see section 14)
+- Docker/containerd running on `skaia`
+- Bearer token secret for WHIP authentication
+
+**Step-by-step:**
+
+1. Create the WHIP bearer token secret:
+
+   ```sh
+   # Generate a secure random token
+   openssl rand -base64 32 > secrets/srs-whip-bearer-token
+
+   # Add to git-secret and encrypt
+   git secret add secrets/srs-whip-bearer-token
+   git secret hide
+
+   # Commit the encrypted secret
+   git add secrets/srs-whip-bearer-token.secret .gitignore
+   git commit -m "feat: add SRS WHIP bearer token secret"
+   ```
+
+1. Ensure the DNS A record exists. If using dynamic DNS (ddclient), add
+   `stream.valueof.info` to the ddclient configuration:
+
+   ```nix
+   # In hosts/skaia/ddclient.nix, add to the domains list:
+   "stream.valueof.info"
+   ```
+
+1. Verify the router forwards UDP `8000` to `skaia` (see section 14).
+
+1. After deploying the config, verify the SRS container is running:
+
+   ```sh
+   docker ps | grep srs
+   # Should show ossrs/srs:5 container
+   ```
+
+1. Verify the nginx vhost responds:
+
+   ```sh
+   curl -I https://stream.valueof.info/
+   # Should return 200 OK
+   ```
+
+1. Verify the auth service is running:
+
+   ```sh
+   systemctl status srs-auth
+   ```
+
+1. Test WHIP publishing from OBS:
+   - Settings → Stream → Service: WHIP
+   - Server: `https://stream.valueof.info/rtc/v1/whip/?app=live&stream=main`
+   - Bearer Token: contents of `/etc/nixos/secrets/srs-whip-bearer-token`
+   - Start streaming and check for errors
+
+1. Test WHEP playback from a browser:
+   - Open `https://stream.valueof.info/players/whep.html`
+   - Or use the SRS console at `/console/`
+
+**Dynamic DNS resilience:**
+
+The SRS configuration uses `stream.valueof.info` as the WebRTC candidate rather
+than a hardcoded IP. This means IP changes are handled gracefully since SRS
+resolves the hostname at connection time. Note that Firefox may have issues with
+DNS-based candidates (prefers IP addresses), but Chrome, Edge, and Safari work
+correctly.
+
+**Troubleshooting:**
+
+- **ICE connection failures**: Usually firewall/NAT issues. Verify UDP 8000 is
+  reachable from outside the LAN:
+
+  ```sh
+  # From external host
+  nc -vzu stream.valueof.info 8000
+  ```
+
+- **Container won't start**: Check Docker logs:
+
+  ```sh
+  docker logs docker-srs.service
+  ```
+
+- **OBS WHIP errors**: Ensure you're using OBS 30+ which has native WHIP
+  support. Check the OBS log for connection details.
+
+- **401 Unauthorized from WHIP**: Check that the bearer token in OBS matches
+  the secret file exactly. Verify the auth service is running:
+
+  ```sh
+  systemctl status srs-auth
+  journalctl -u srs-auth -f  # Watch auth attempts
+  ```
+
+- **Future coturn TURN server**: For viewers behind restrictive NATs (symmetric
+  NAT, enterprise firewalls), add coturn as a relay server. NixOS provides
+  `services.coturn` module. Update the SRS config to include TURN credentials
+  when implemented.
+
+**In config:**
+
+- `hosts/skaia/streaming.nix` — SRS container, nginx vhost, firewall rules
