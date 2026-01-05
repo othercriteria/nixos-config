@@ -10,9 +10,8 @@
 #   /etc/nixos/secrets/srs-whip-bearer-token
 #
 # Endpoints:
+#   - Viewer: https://stream.valueof.info/ (auto-connecting player)
 #   - WHIP ingest: https://stream.valueof.info/rtc/v1/whip/?app=live&stream=main
-#   - WHEP playback: https://stream.valueof.info/rtc/v1/whep/?app=live&stream=main
-#   - Demo player: https://stream.valueof.info/players/whep.html
 #
 # OBS Configuration:
 #   Settings > Stream > Service: WHIP
@@ -61,6 +60,13 @@ let
     server = http.server.HTTPServer(("127.0.0.1", 8086), AuthHandler)
     server.serve_forever()
   '';
+
+  # Simple WHEP player page - auto-connects to the stream
+  playerPage = pkgs.writeTextFile {
+    name = "stream-player";
+    destination = "/index.html";
+    text = builtins.readFile ../../assets/stream-player.html;
+  };
 
   srsConfig = pkgs.writeText "srs.conf" ''
     listen 1935;
@@ -183,29 +189,10 @@ in
         '';
       };
 
-      # SRS HTTP API (for stats, etc.)
-      "/api/" = {
-        proxyPass = "http://127.0.0.1:1985";
-        extraConfig = ''
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-        '';
-      };
-
-      # Demo players and static content from SRS
-      "/players/" = {
-        proxyPass = "http://127.0.0.1:8080";
-        extraConfig = ''
-          proxy_set_header Host $host;
-        '';
-      };
-
-      # Root serves a simple status/instructions page
+      # Root serves the auto-connecting player
       "/" = {
-        return = ''200 "SRS Streaming Server\n\nWHEP Player: /players/whep.html\nAPI: /api/v1/versions\n"'';
-        extraConfig = ''
-          default_type text/plain;
-        '';
+        root = playerPage;
+        index = "index.html";
       };
     };
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Stream</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Mono", "Fira Code", monospace;
+      background: #0a0a0b;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      padding: 1rem;
+    }
+    video {
+      width: 100%;
+      background: #111;
+      border-radius: 8px;
+      aspect-ratio: 16/9;
+    }
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: #151518;
+      border-radius: 6px;
+      border-left: 3px solid #333;
+      font-size: 0.875rem;
+    }
+    .status.connecting { border-color: #f59e0b; color: #fbbf24; }
+    .status.live { border-color: #10b981; color: #34d399; }
+    .status.offline { border-color: #ef4444; color: #f87171; }
+    .status::before {
+      content: "●";
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <video id="player" autoplay playsinline muted></video>
+    <div id="status" class="status connecting">Connecting...</div>
+  </div>
+  <script>
+    const WHEP_URL = "/rtc/v1/whep/?app=live&stream=main";
+    const video = document.getElementById("player");
+    const status = document.getElementById("status");
+
+    async function connect() {
+      status.className = "status connecting";
+      status.textContent = "Connecting...";
+
+      try {
+        const pc = new RTCPeerConnection();
+
+        pc.ontrack = (e) => {
+          video.srcObject = e.streams[0];
+          status.className = "status live";
+          status.textContent = "Live";
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          if (pc.iceConnectionState === "disconnected" ||
+              pc.iceConnectionState === "failed") {
+            status.className = "status offline";
+            status.textContent = "Stream offline - retrying...";
+            setTimeout(connect, 3000);
+          }
+        };
+
+        pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const res = await fetch(WHEP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/sdp" },
+          body: offer.sdp
+        });
+
+        if (!res.ok) throw new Error("WHEP request failed");
+
+        const answer = await res.text();
+        await pc.setRemoteDescription({ type: "answer", sdp: answer });
+
+      } catch (err) {
+        status.className = "status offline";
+        status.textContent = "Stream offline - retrying...";
+        setTimeout(connect, 3000);
+      }
+    }
+
+    // Unmute on click (browser autoplay policy)
+    video.onclick = () => { video.muted = false; };
+
+    connect();
+  </script>
+</body>
+</html>
