@@ -168,6 +168,19 @@
     kubectl
     k9s
 
+    # Home Assistant CLI for agent access
+    # Use 'hass' wrapper which auto-loads token from secrets
+    home-assistant-cli
+    (pkgs.writeShellScriptBin "hass" ''
+      export HASS_SERVER="http://assistant.home.arpa"
+      export HASS_TOKEN="$(cat /etc/nixos/secrets/homeassistant-token 2>/dev/null)"
+      if [ -z "$HASS_TOKEN" ]; then
+        echo "Error: Cannot read Home Assistant token from /etc/nixos/secrets/homeassistant-token" >&2
+        exit 1
+      fi
+      exec ${pkgs.home-assistant-cli}/bin/hass-cli "$@"
+    '')
+
     amp-cli # TODO: migrate to ampcode
     claude-code
 
