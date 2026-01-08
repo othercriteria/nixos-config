@@ -17,7 +17,8 @@ Per-host NixOS configurations:
   - k3s control plane, Unbound DNS, nginx reverse proxy
   - Observability stack (Prometheus, Grafana, Loki, Netdata parent)
   - Teleport auth server, Harmonia nix cache
-  - Samba, MiniDLNA, thermal management
+  - Samba, MiniDLNA, thermal management, SRS streaming
+  - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
 - `meteor-{1,2,3,4}/`: Veil cluster k3s server nodes
   - GPU support on meteor-4
   - Node exporter for Prometheus scraping

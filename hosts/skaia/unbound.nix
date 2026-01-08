@@ -48,7 +48,10 @@
           "\"meteor-3.home.arpa. A 192.168.0.123\""
           "\"meteor-4.home.arpa. A 192.168.0.124\""
           "\"hive.home.arpa. A 192.168.0.144\""
-          "\"homeassistant.home.arpa. A 192.168.0.184\""
+          # Home Assistant accessed via nginx proxy on skaia (not direct to HA Yellow)
+          "\"assistant.home.arpa. A 192.168.0.160\""
+          # Direct access to HA Yellow (for SSH, bypasses proxy)
+          "\"assistant-direct.home.arpa. A 192.168.0.184\""
         ];
 
         include = "/var/lib/unbound/rpz-local-zones.conf";

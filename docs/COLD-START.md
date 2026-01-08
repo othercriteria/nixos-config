@@ -1217,3 +1217,287 @@ correctly.
 **In config:**
 
 - `hosts/skaia/streaming.nix` — SRS container, nginx vhost, firewall rules
+
+---
+
+## 22. Home Assistant Integration
+
+**Context:** Home Assistant Yellow (or similar) runs on the LAN at `192.168.0.184`.
+Integration with skaia provides secure external access via nginx, metrics in
+Prometheus/Grafana, and fail2ban protection against brute-force attacks.
+
+### HA Integration Prerequisites
+
+- Home Assistant is running and accessible at `http://192.168.0.184:8123`
+- You have admin access to Home Assistant
+
+### HA Integration Steps
+
+1. **Enable 2FA/TOTP in Home Assistant** (strongly recommended before external
+   access):
+
+   - Go to Settings → People → [your user]
+   - Click "Enable Multi-factor Authentication"
+   - Set up TOTP with your authenticator app
+
+1. **Configure trusted proxies in Home Assistant** (required for nginx proxy):
+
+   Edit `configuration.yaml` via the File Editor add-on and add:
+
+   ```yaml
+   http:
+     use_x_forwarded_for: true
+     trusted_proxies:
+       - 192.168.0.160  # skaia (nginx proxy)
+   ```
+
+   Without this, HA returns `400 Bad Request` for proxied requests.
+
+1. **Enable Prometheus integration in Home Assistant** (requires YAML config):
+
+   SSH into your Home Assistant or use the File Editor add-on to edit
+   `configuration.yaml`. Add:
+
+   ```yaml
+   # Enable Prometheus metrics endpoint at /api/prometheus
+   prometheus:
+   ```
+
+   For more control over what's exported, you can filter entities:
+
+   ```yaml
+   prometheus:
+     namespace: hass
+     filter:
+       include_domains:
+         - sensor
+         - binary_sensor
+         - light
+         - switch
+         - climate
+       exclude_entity_globs:
+         - sensor.* _battery  # Exclude noisy battery sensors if desired
+   ```
+
+   After saving, restart Home Assistant (Settings → System → Restart).
+
+   Verify it's working:
+
+   ```sh
+   curl -s http://192.168.0.184:8123/api/prometheus
+   # Should return Prometheus metrics text
+   ```
+
+1. **Create a long-lived access token for Prometheus scraping:**
+
+   - Click your username in the HA sidebar (bottom left)
+   - Scroll to "Long-Lived Access Tokens"
+   - Click "Create Token"
+   - Name it `nixos-prometheus` (or similar)
+   - Copy the token immediately (you won't see it again)
+
+1. **Store the token as a secret:**
+
+   ```sh
+   # IMPORTANT: Use -n to avoid trailing newline
+   echo -n 'eyJ0eXAi...' > secrets/homeassistant-token
+   git secret add secrets/homeassistant-token
+   git secret hide
+   git add secrets/homeassistant-token.secret
+   git commit -m "feat: add homeassistant prometheus token"
+   ```
+
+1. **Deploy to skaia:**
+
+   ```sh
+   make reveal-secrets
+   make apply-host HOST=skaia
+   ```
+
+1. **Fix token permissions for Prometheus:**
+
+   Prometheus runs as the `prometheus` user and needs to read the token:
+
+   ```sh
+   sudo chown prometheus:prometheus /etc/nixos/secrets/homeassistant-token
+   sudo chmod 400 /etc/nixos/secrets/homeassistant-token
+   ```
+
+1. **Trigger ACME certificate issuance** (first time only):
+
+   The initial deploy creates a self-signed placeholder. Trigger the real
+   Let's Encrypt certificate:
+
+   ```sh
+   sudo systemctl start acme-assistant.valueof.info.service
+   sudo systemctl reload nginx
+   ```
+
+1. **Verify the nginx proxy is working:**
+
+   ```sh
+   # LAN access
+   curl -I http://assistant.home.arpa/
+
+   # External access (after DNS propagates)
+   curl -I https://assistant.valueof.info/
+   ```
+
+1. **Verify Prometheus is scraping HA metrics:**
+
+   ```sh
+   curl -s localhost:9001/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="homeassistant")'
+   ```
+
+### Security measures in place
+
+- **Rate limiting**: 10 req/min on `/auth/` endpoints, 60 req/s general
+- **Fail2ban**: 5 auth failures in 10 minutes = 1 hour IP ban
+- **HSTS**: Forces TLS with long max-age
+- **Security headers**: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+- **Alerting**: Prometheus alert on auth failure spikes (>10 in 5 minutes)
+
+### Agent/CLI access
+
+With the token stored, agents can interact with Home Assistant:
+
+```sh
+# Set up environment (add to .zshrc or use direnv)
+export HASS_SERVER=http://assistant.home.arpa:8123
+export HASS_TOKEN=$(cat /etc/nixos/secrets/homeassistant-token)
+
+# List all entities
+curl -s -H "Authorization: Bearer $HASS_TOKEN" \
+  $HASS_SERVER/api/states | jq '.[].entity_id'
+
+# Get specific entity state
+curl -s -H "Authorization: Bearer $HASS_TOKEN" \
+  $HASS_SERVER/api/states/sensor.temperature | jq
+
+# Call a service (e.g., turn on a light)
+curl -X POST -H "Authorization: Bearer $HASS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"entity_id": "light.living_room"}' \
+  $HASS_SERVER/api/services/light/turn_on
+```
+
+### Troubleshooting
+
+- **Rate limited (429)**: Wait 1 minute, or check if automation is hammering
+  the API
+- **Banned by fail2ban**: Check `fail2ban-client status homeassistant` and
+  unban with `fail2ban-client set homeassistant unbanip <IP>`
+- **Prometheus scrape failing**: Verify the token is correct and the Prometheus
+  integration is enabled in HA
+- **WebSocket issues**: Ensure `proxyWebsockets = true` in nginx config
+
+**In config:**
+
+- `hosts/skaia/homeassistant.nix` — nginx proxy, fail2ban, prometheus scrape
+- `hosts/skaia/unbound.nix` — DNS `assistant.home.arpa` → skaia (for port 80
+  proxy, not direct to HA)
+- `hosts/skaia/ddclient.nix` — Dynamic DNS for `assistant.valueof.info`
+- `modules/prometheus-rules.nix` — alerting rules for auth failures
+
+---
+
+## 23. Home Assistant SSH Access (Agent Configuration)
+
+**Context:** SSH access to the Home Assistant Yellow allows agents (AI
+assistants) to directly edit `configuration.yaml` and other files without
+manual intervention.
+
+### HA Integration Steps for SSH
+
+1. **Install the Terminal & SSH add-on** in Home Assistant:
+
+   - Settings → Add-ons → Add-on Store
+   - Search for "Terminal & SSH" and install it
+
+1. **Add your SSH public key** to the add-on configuration:
+
+   ```yaml
+   authorized_keys:
+     - ssh-ed25519 AAAAC3... your-key-here
+   ```
+
+   Get your public key from skaia: `cat ~/.ssh/id_ed25519.pub`
+
+1. **Enable SSH server** in the add-on config (ensure port is set, e.g., `22`)
+
+1. **Start the add-on**
+
+1. **Test SSH access** (use direct IP, not proxied hostname):
+
+   ```sh
+   ssh root@assistant-direct.home.arpa
+   # or: ssh root@192.168.0.184
+   ```
+
+**In config:**
+
+- `hosts/skaia/unbound.nix` — DNS `assistant-direct.home.arpa` → HA Yellow IP
+  (bypasses nginx proxy for SSH)
+
+---
+
+## 24. MQTT Broker for NixOS ↔ Home Assistant Integration
+
+**Context:** Mosquitto MQTT broker on skaia enables bidirectional state sharing
+between NixOS infrastructure and Home Assistant.
+
+### MQTT Integration Steps
+
+1. **Generate MQTT passwords** (already done if following this guide):
+
+   ```sh
+   head -c 24 /dev/urandom | base64 > secrets/mqtt-homeassistant-password
+   head -c 24 /dev/urandom | base64 > secrets/mqtt-nixos-password
+   git secret add secrets/mqtt-homeassistant-password secrets/mqtt-nixos-password
+   git secret hide
+   ```
+
+1. **Deploy to skaia:**
+
+   ```sh
+   make reveal-secrets
+   make apply-host HOST=skaia
+   ```
+
+1. **Copy MQTT passwords to runtime location:**
+
+   ```sh
+   sudo cp ~/workspace/nixos-config/secrets/mqtt-*.password /etc/nixos/secrets/
+   sudo chmod 600 /etc/nixos/secrets/mqtt-*.password
+   ```
+
+1. **Add MQTT integration in Home Assistant via UI:**
+
+   - Settings → Devices & Services → Add Integration → MQTT
+   - Broker: `192.168.0.160`
+   - Port: `1883`
+   - Username: `homeassistant`
+   - Password: contents of `secrets/mqtt-homeassistant-password`
+
+1. **Verify sensors appear** in Home Assistant:
+
+   - Skaia GPU Temperature
+   - Skaia GPU Utilization
+   - Skaia GPU Memory Used
+   - Skaia Status
+   - Skaia Streaming
+   - Skaia VPN
+
+**Published MQTT topics:**
+
+- `nixos/skaia/status` — online/offline
+- `nixos/skaia/gpu/temperature` — GPU temp in °C
+- `nixos/skaia/gpu/utilization` — GPU utilization %
+- `nixos/skaia/gpu/memory_used` — GPU memory in MiB
+- `nixos/skaia/streaming` — on/off (SRS WebRTC status)
+- `nixos/skaia/vpn` — connected/disconnected
+
+**In config:**
+
+- `hosts/skaia/mqtt.nix` — Mosquitto broker configuration
+- `hosts/skaia/mqtt-state-publisher.nix` — NixOS state publisher service

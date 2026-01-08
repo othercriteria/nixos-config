@@ -13,6 +13,9 @@
     ../../modules/github-runner.nix
     ./graphics.nix
     ../../modules/harmonia.nix
+    ./homeassistant.nix
+    ./mqtt.nix
+    ./mqtt-state-publisher.nix
     ./k3s
     ../../modules/kubeconfig.nix
     ./nginx.nix

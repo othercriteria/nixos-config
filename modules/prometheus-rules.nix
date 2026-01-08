@@ -57,6 +57,34 @@
               }
             ];
           }
+          # Home Assistant security monitoring
+          {
+            name = "homeassistant.rules";
+            rules = [
+              {
+                alert = "HomeAssistantAuthFailureSpike";
+                expr = ''
+                  sum(increase(nginx_http_requests_total{server="assistant.valueof.info", status=~"401|403"}[5m])) > 10
+                '';
+                "for" = "2m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "High rate of Home Assistant auth failures";
+                  description = "More than 10 failed auth attempts in 5 minutes. Possible brute-force attack.";
+                };
+              }
+              {
+                alert = "HomeAssistantDown";
+                expr = "up{job=\"homeassistant\"} == 0";
+                "for" = "5m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "Home Assistant is unreachable";
+                  description = "Cannot scrape Home Assistant metrics for 5 minutes.";
+                };
+              }
+            ];
+          }
           # Node-level monitoring rules
           {
             name = "node.rules";

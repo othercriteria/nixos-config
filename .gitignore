@@ -34,3 +34,6 @@ secrets/huggingface-token-2025-12-14
 secrets/harmonia-cache-private-key
 secrets/github-runner-token
 secrets/srs-whip-bearer-token
+secrets/homeassistant-token
+secrets/mqtt-homeassistant-password
+secrets/mqtt-nixos-password

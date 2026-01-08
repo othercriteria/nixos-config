@@ -8,7 +8,7 @@
     usev4 = "webv4, webv4=dynamicdns.park-your-domain.com/getip";
     usev6 = "";
     server = "dynamicdns.park-your-domain.com";
-    domains = [ "@" "teleport" "urbit" "stiletto-demo" "stream" ];
+    domains = [ "@" "teleport" "urbit" "stiletto-demo" "stream" "assistant" ];
     username = "valueof.info";
     passwordFile = "/etc/nixos/secrets/ddclient-password";
     protocol = "namecheap";
