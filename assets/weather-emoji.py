@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Weather + time vibe as three emojis for Waybar.
+Weather vibe as four emojis for Waybar.
 
-Uses Open-Meteo API for weather data, local Ollama LLM for creative emoji selection.
+Uses METAR data from nearby airports + local Ollama LLM for creative emoji selection.
 This is a tiny art project - quirkiness and creativity are features.
 
 Output: JSON with "text" (emojis) and "tooltip" (raw context the LLM saw)
@@ -17,33 +17,9 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError
 
 # Configuration
-LAT = os.environ.get("WEATHER_LAT", "40.7831")
-LON = os.environ.get("WEATHER_LON", "-73.9712")
+AIRPORTS = os.environ.get("METAR_AIRPORTS", "KLGA,KTEB")  # LaGuardia, Teterboro
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama.home.arpa")
 MODEL = os.environ.get("OLLAMA_DEFAULT_MODEL", "qwen2.5:14b-instruct-q8_0")
-
-# Weather code descriptions (WMO codes)
-WEATHER_CODES = {
-    0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-    45: "Foggy", 48: "Depositing rime fog",
-    51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
-    56: "Light freezing drizzle", 57: "Dense freezing drizzle",
-    61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
-    66: "Light freezing rain", 67: "Heavy freezing rain",
-    71: "Slight snow", 73: "Moderate snow", 75: "Heavy snow",
-    77: "Snow grains",
-    80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers",
-    85: "Slight snow showers", 86: "Heavy snow showers",
-    95: "Thunderstorm", 96: "Thunderstorm with slight hail", 99: "Thunderstorm with heavy hail",
-}
-
-
-def output(text: str, tooltip: str) -> None:
-    """Output JSON for Waybar."""
-    # ensure_ascii=False to properly handle emoji without escaping
-    print(json.dumps({"text": text, "tooltip": tooltip}, ensure_ascii=False))
-    sys.exit(0)
-
 
 # Regex to match emoji characters (for filtering non-emoji from LLM output)
 EMOJI_PATTERN = re.compile(
@@ -65,18 +41,20 @@ EMOJI_PATTERN = re.compile(
 PADDING_EMOJIS = ["✨", "🌟", "💫", "⭐"]
 
 
-def fetch_weather() -> dict | None:
-    """Fetch current weather from Open-Meteo API."""
-    url = (
-        f"https://api.open-meteo.com/v1/forecast?"
-        f"latitude={LAT}&longitude={LON}"
-        f"&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,relative_humidity_2m"
-        f"&temperature_unit=fahrenheit&timezone=auto"
-    )
+def output(text: str, tooltip: str) -> None:
+    """Output JSON for Waybar."""
+    # ensure_ascii=False to properly handle emoji without escaping
+    print(json.dumps({"text": text, "tooltip": tooltip}, ensure_ascii=False))
+    sys.exit(0)
+
+
+def fetch_metar() -> str | None:
+    """Fetch METAR data from NOAA Aviation Weather API."""
+    url = f"https://aviationweather.gov/api/data/metar?ids={AIRPORTS}&format=raw"
     try:
-        with urlopen(url, timeout=5) as resp:
-            return json.load(resp)
-    except (URLError, json.JSONDecodeError):
+        with urlopen(url, timeout=10) as resp:
+            return resp.read().decode("utf-8").strip()
+    except (URLError, UnicodeDecodeError):
         return None
 
 
@@ -84,12 +62,14 @@ def call_ollama(context: str) -> list[str]:
     """Call Ollama to generate emojis for the given context. Returns list of emoji strings."""
     system_msg = (
         "You output JSON with emoji arrays. "
-        "Use ONLY Unicode emoji symbols like ☀️🌧️❄️🏙️🚶🧥🌙. "
+        "Use ONLY Unicode emoji symbols like ☀️🌧️❄️🏙️🚶🧥🌙💨🌫️⛈️. "
         "NEVER use Chinese characters, English words, or text of any kind. "
         "Only graphical emoji symbols."
     )
     user_msg = (
-        f"Pick 6 emojis that capture the vibe of this moment (most evocative first):\n\n"
+        f"You are a tiny emoji artist. Given METAR aviation weather observations, "
+        f"pick 6 emojis that capture the vibe of this moment (most evocative first). "
+        f"Consider wind, visibility, clouds, precipitation, temperature, time of day.\n\n"
         f"{context}\n\n"
         f"Reply with: {{\"emojis\": [\"☀️\", \"🌧️\", ...]}}"
     )
@@ -132,36 +112,18 @@ def call_ollama(context: str) -> list[str]:
 
 
 def main():
-    # Fetch weather
-    weather = fetch_weather()
-    if not weather:
-        output("❓❓❓", "Weather API unavailable")
+    # Fetch METAR
+    metar = fetch_metar()
+    if not metar:
+        output("❓❓❓❓", "METAR unavailable")
 
-    # Parse weather data
-    current = weather.get("current", {})
-    temp = current.get("temperature_2m", "?")
-    feels_like = current.get("apparent_temperature", "?")
-    humidity = current.get("relative_humidity_2m", "?")
-    wind = current.get("wind_speed_10m", "?")
-    code = current.get("weather_code", 0)
-    is_day = current.get("is_day", 1)
-
-    weather_desc = WEATHER_CODES.get(code, f"Unknown ({code})")
-    daynight = "daytime" if is_day else "nighttime"
-
-    # Build context
+    # Build context with current time
     now = datetime.now()
     datetime_str = now.strftime("%A, %B %-d, %Y at %-I:%M %p")
 
-    context = f"""Location: Manhattan, New York
-Date and time: {datetime_str}
-Time of day: {daynight}
-Weather: {weather_desc}
-Temperature: {temp}°F (feels like {feels_like}°F)
-Humidity: {humidity}%
-Wind: {wind} mph"""
+    context = f"Date/time: {datetime_str}\nLocation: Manhattan area\n\n{metar}"
 
-    # Get emojis from LLM (returns list of emoji strings)
+    # Get emojis from LLM
     emoji_list = call_ollama(context)
 
     # Clip to first 4 (most important)
