@@ -17,6 +17,7 @@ hosts reside.
   - `meteor-4` → 192.168.0.124 (MAC 38-05-25-31-86-AE)
   - `hive` → 192.168.0.144 (MAC E0-D5-5E-2B-FB-72)
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
+  - `projector` → 192.168.0.146 (MAC 7C-D5-66-55-F5-86, Fire TV Stick ~2020)
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
@@ -52,6 +53,9 @@ hosts reside.
     - `meteor-4.home.arpa` → 192.168.0.124
     - `hive.home.arpa` → 192.168.0.144
     - `homeassistant.home.arpa` → 192.168.0.184
+    - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy)
+    - `assistant-direct.home.arpa` → 192.168.0.184 (HA direct/SSH)
+    - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick)
 
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
