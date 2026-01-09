@@ -15,8 +15,12 @@
 
 let
   # Default model for preloading and scripts
-  # qwen2.5:32b fits well in 24GB VRAM with good quality
-  defaultModel = "qwen2.5:32b";
+  # qwen2.5:14b-instruct-q8_0: best latency/quality tradeoff for automation
+  # - 14.9GB VRAM (no CPU offload), 52 tok/s, 1.3s MCP latency
+  # - "GPT-4o-mini class" quality, q8_0 is essentially lossless
+  # - Leaves ~9GB headroom for desktop/streaming workloads
+  # For complex reasoning tasks, pull qwen2.5:32b and use ASK_MODEL override
+  defaultModel = "qwen2.5:14b-instruct-q8_0";
 in
 {
   services.ollama = {
