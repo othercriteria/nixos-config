@@ -1,6 +1,10 @@
 { config, pkgs, ... }:
 
 {
+  imports = [
+    ./waybar.nix
+  ];
+
   home = {
     packages = with pkgs; [
       blueman # Bluetooth manager
@@ -127,86 +131,9 @@
     '';
   };
 
-  programs = {
-    waybar = {
-      enable = true;
-      # Disabled: we start waybar via sway's startup config instead of systemd
-      # because UWSM manages our Wayland session and home-manager's systemd
-      # targets don't activate properly with UWSM.
-      systemd.enable = false;
-      style = builtins.readFile ../assets/waybar.css;
-      settings = {
-        mainBar = {
-          layer = "top";
-          position = "top";
-          height = 34;
-
-          modules-left = [ "sway/workspaces" "wlr/taskbar" "tray" ];
-          modules-center = [ "sway/window" ];
-          modules-right = [ "pulseaudio" "custom/vpn-status" "network" "memory" "cpu" "temperature" "clock" ];
-
-          "sway/workspaces" = {
-            disable-scroll = true;
-            all-outputs = true;
-          };
-
-          "wlr/taskbar" = {
-            "format" = "{icon}";
-            "icon-size" = 16;
-            "icon-theme" = "hicolor";
-            "tooltip-format" = "{title}";
-            "on-click" = "activate";
-            "on-click-middle" = "close";
-          };
-
-          "pulseaudio" = {
-            "interval" = 5;
-            "format" = "{volume}% {icon}";
-            "format-bluetooth" = "{volume}% {icon}";
-            "format-muted" = "";
-            "format-icons" = {
-              "headphone" = "";
-              "default" = [ "" "" ];
-            };
-            "scroll-step" = 1;
-            "on-click" = "${pkgs.pavucontrol}/bin/pavucontrol";
-          };
-
-          "tray" = {
-            "icon-size" = 16;
-            "spacing" = 10;
-          };
-
-          "custom/vpn-status" = {
-            "exec" = "${pkgs.zsh}/bin/zsh -c '/etc/nixos/assets/nm-vpn-status.zsh'";
-            "interval" = 5;
-            "return-type" = "json";
-          };
-
-          "network" = {
-            "format" = "{bandwidthUpBytes}↑{ifname}↓{bandwidthDownBytes}";
-            "interface" = "enp67s0";
-            "interval" = 5;
-          };
-
-          "cpu" = {
-            "format" = "{usage}% ";
-            "hwmon-path" = "/sys/devices/platform/nct6775.656/hwmon/hwmon14/temp2_input";
-            "interval" = 5;
-          };
-
-          "memory" = {
-            "format" = "{avail:0.1f} GiB ";
-            "interval" = 5;
-          };
-        };
-      };
-    };
-
-    wofi = {
-      enable = true;
-      style = builtins.readFile ../assets/wofi.css;
-    };
+  programs.wofi = {
+    enable = true;
+    style = builtins.readFile ../assets/wofi.css;
   };
 
   services.mako = {
