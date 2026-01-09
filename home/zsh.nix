@@ -18,6 +18,11 @@
 
       h = "helm";
       k = "kubectl";
+
+      # Ollama shortcuts (oll wrapper handles OLLAMA_HOST)
+      "oll-models" = "oll list";
+      "oll-pull" = "oll pull";
+      "oll-ps" = "oll ps";
     };
 
     history = {

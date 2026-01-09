@@ -21,6 +21,7 @@
     ./nginx.nix
     ./minidlna.nix
     ./observability.nix
+    ./ollama.nix
     ./samba.nix
     ./streaming.nix
     ./thermal.nix

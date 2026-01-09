@@ -160,6 +160,31 @@ in
           '';
         };
       };
+
+      # Ollama LLM API (LAN only)
+      # OpenAI-compatible endpoint at /v1/chat/completions for MCP integration
+      "ollama.home.arpa" = {
+        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        locations."/" = {
+          # Use raw config to avoid recommendedProxySettings overriding Host header
+          # (Ollama rejects requests with Host != localhost for DNS rebinding protection)
+          extraConfig = ''
+            proxy_pass http://127.0.0.1:11434;
+            proxy_http_version 1.1;
+            proxy_set_header Host localhost;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            # Streaming: disable buffering for real-time token delivery
+            proxy_buffering off;
+            # Long inference: 10 minute timeout for large generations
+            proxy_read_timeout 600s;
+            proxy_send_timeout 600s;
+            # Large context windows can produce big requests/responses
+            client_max_body_size 100M;
+          '';
+        };
+      };
     };
   };
 

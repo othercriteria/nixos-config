@@ -50,6 +50,8 @@
           "\"hive.home.arpa. A 192.168.0.144\""
           # Home Assistant accessed via nginx proxy on skaia (not direct to HA Yellow)
           "\"assistant.home.arpa. A 192.168.0.160\""
+          # Ollama LLM API (nginx proxy to localhost:11434)
+          "\"ollama.home.arpa. A 192.168.0.160\""
           # Direct access to HA Yellow (for SSH, bypasses proxy)
           "\"assistant-direct.home.arpa. A 192.168.0.184\""
           # Fire TV Stick attached to living room projector

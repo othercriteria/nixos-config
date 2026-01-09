@@ -181,6 +181,26 @@
       exec ${pkgs.home-assistant-cli}/bin/hass-cli "$@"
     '')
 
+    # Ollama CLI wrapper - auto-configures for network access
+    # Uses OLLAMA_DEFAULT_MODEL from system config (set in ollama.nix)
+    (pkgs.writeShellScriptBin "oll" ''
+      export OLLAMA_HOST="http://ollama.home.arpa"
+      exec ${pkgs.ollama}/bin/ollama "$@"
+    '')
+
+    # Quick chat helper for interactive use
+    # Usage: ask "your question here"
+    # Override model with ASK_MODEL env var
+    (pkgs.writeShellScriptBin "ask" ''
+      MODEL="''${ASK_MODEL:-$OLLAMA_DEFAULT_MODEL}"
+      if [ -z "$MODEL" ]; then
+        echo "Error: No model specified. Set OLLAMA_DEFAULT_MODEL or ASK_MODEL." >&2
+        exit 1
+      fi
+      export OLLAMA_HOST="http://ollama.home.arpa"
+      exec ${pkgs.ollama}/bin/ollama run "$MODEL" "$@"
+    '')
+
     amp-cli # TODO: migrate to ampcode
     claude-code
 

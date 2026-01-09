@@ -55,6 +55,7 @@ hosts reside.
     - `homeassistant.home.arpa` → 192.168.0.184
     - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy)
     - `assistant-direct.home.arpa` → 192.168.0.184 (HA direct/SSH)
+    - `ollama.home.arpa` → 192.168.0.160 (Ollama LLM API via nginx)
     - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick)
 
 - mDNS (`*.local`): optional for direct host discovery on L2
