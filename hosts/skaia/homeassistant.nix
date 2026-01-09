@@ -191,12 +191,13 @@ in
 
     # Prometheus scrape configuration for Home Assistant metrics
     # Requires: Enable Prometheus integration in HA first
+    # Note: Token is copied to /run/prometheus/ with correct permissions at service start
     prometheus.scrapeConfigs = [
       {
         job_name = "homeassistant";
         scrape_interval = "60s";
         metrics_path = "/api/prometheus";
-        bearer_token_file = "/etc/nixos/secrets/homeassistant-token";
+        bearer_token_file = "/run/prometheus/homeassistant-token";
         static_configs = [{
           targets = [ haUpstream ];
           labels = {
@@ -216,8 +217,20 @@ in
     ignoreregex =
   '';
 
-  # Ensure log directory exists for fail2ban
-  systemd.tmpfiles.rules = [
-    "f /var/log/nginx/homeassistant-access.log 0640 nginx nginx -"
-  ];
+  systemd = {
+    # Ensure log directory exists for fail2ban
+    tmpfiles.rules = [
+      "f /var/log/nginx/homeassistant-access.log 0640 nginx nginx -"
+    ];
+
+    # Ensure Prometheus can read the Home Assistant token
+    # The token file is decrypted by git-secret with user ownership,
+    # but Prometheus runs as its own user and needs read access.
+    services.prometheus.serviceConfig = {
+      ExecStartPre = [
+        "+${pkgs.coreutils}/bin/install -m 0400 -o prometheus -g prometheus /etc/nixos/secrets/homeassistant-token /run/prometheus/homeassistant-token"
+      ];
+      RuntimeDirectory = "prometheus";
+    };
+  };
 }
