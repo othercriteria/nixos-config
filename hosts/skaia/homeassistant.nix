@@ -182,6 +182,8 @@ in
           filter = "homeassistant";
           action = "iptables-multiport[name=homeassistant, port=\"http,https\"]";
           logpath = "/var/log/nginx/homeassistant-access.log";
+          # Must use polling/auto backend, not systemd (default), to read nginx logs
+          backend = "polling";
           maxretry = 5;
           findtime = 600; # 10 minutes
           bantime = 3600; # 1 hour
@@ -209,11 +211,23 @@ in
   };
 
   # Fail2ban filter for Home Assistant
-  # Matches 401 responses to auth endpoints
+  # Matches:
+  # - 401/403 responses on auth/api endpoints (credential stuffing)
+  # - Scanning for sensitive files (.env, .git, .sql, etc.)
   environment.etc."fail2ban/filter.d/homeassistant.conf".text = ''
     [Definition]
     failregex = ^<HOST> .* "(POST|GET) /auth/.*" (401|403)
                 ^<HOST> .* "(POST|GET) /api/.*" (401|403)
+                ^<HOST> .* "(GET) /\.env.*" \d+
+                ^<HOST> .* "(GET) /\.git.*" \d+
+                ^<HOST> .* "(GET) /.*\.sql" \d+
+                ^<HOST> .* "(GET) /.*\.php" \d+
+                ^<HOST> .* "(GET) /\.aws.*" \d+
+                ^<HOST> .* "(GET) /\.docker.*" \d+
+                ^<HOST> .* "(GET) /docker-compose.*" \d+
+                ^<HOST> .* "(GET) /\.secrets" \d+
+                ^<HOST> .* "(GET) /credentials.*" \d+
+                ^<HOST> .* "(GET) /phpinfo" \d+
     ignoreregex =
   '';
 

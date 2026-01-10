@@ -73,6 +73,7 @@ Project documentation:
 - `OBSERVABILITY.md`: Metrics, logs, dashboards, backup/restore
 - `VEIL-PLAN.md`: Veil cluster rollout plan
 - `residence-1/ADDRESSING.md`: LAN addressing and DNS for home network
+- `retro/`: Security incident retrospectives (YYYY-MM-DD-description.md)
 
 ### Other Directories
 

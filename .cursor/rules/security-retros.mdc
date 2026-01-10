@@ -1,0 +1,82 @@
+---
+description: Guidelines for documenting security incidents with retrospective documents
+globs: ["docs/retro/**/*.md"]
+alwaysApply: false
+---
+# Security Incident Retrospectives
+
+Document security incidents to capture lessons learned and improve defenses.
+
+<rule>
+name: security_retros
+description: Standards for security incident retrospective documents
+
+filters:
+  - type: content
+    pattern: "(?i)\\b(security|incident|attack|breach|scan|intrusion|suspicious)\\b"
+  - type: intent
+    pattern: "security_incident"
+
+actions:
+  - type: suggest
+    message: |
+      When a security incident occurs (even minor ones like scans), create a
+      retrospective document in `docs/retro/` with:
+
+      ## File Naming
+
+      `YYYY-MM-DD-short-description.md`
+
+      Examples:
+      - `2026-01-09-ha-vulnerability-scanner.md`
+      - `2026-02-15-ssh-brute-force.md`
+      - `2026-03-01-suspicious-api-access.md`
+
+      ## Required Sections
+
+      1. **Summary** - What happened, when, severity, impact
+      2. **Attack Details** - Source IPs, methods, targets
+      3. **What Worked** - Defenses that succeeded
+      4. **What Failed** - Gaps in defenses
+      5. **Root Cause** - Why the gaps existed
+      6. **Fixes Applied** - Changes made to address gaps
+      7. **Lessons Learned** - Key takeaways
+      8. **Follow-up Actions** - TODO items (with checkboxes)
+
+      ## Severity Levels
+
+      - **Critical**: Active breach, data exfiltration, system compromise
+      - **High**: Successful unauthorized access, near-miss
+      - **Medium**: Blocked attack that revealed defense gaps
+      - **Low**: Routine scanning, blocked probes (document if novel)
+
+      ## When to Write a Retro
+
+      - Any successful unauthorized access (always)
+      - Defense failures discovered during attacks
+      - Novel attack patterns not previously seen
+      - Near-misses that reveal gaps
+      - Optional: Routine scans if they reveal interesting patterns
+
+criteria:
+  required:
+    - Document is placed in docs/retro/
+    - Filename follows YYYY-MM-DD-description.md format
+    - Contains severity and impact assessment
+    - Documents both what worked and what failed
+    - Includes actionable follow-up items
+
+examples:
+  - input: "We received a notification about a suspicious login attempt"
+    output: |
+      1. Investigate the incident (check logs, identify source)
+      2. Assess impact and severity
+      3. Apply any immediate fixes needed
+      4. Create docs/retro/YYYY-MM-DD-description.md
+      5. Document findings, fixes, and lessons learned
+      6. Commit retro with security fixes
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
