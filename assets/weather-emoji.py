@@ -19,8 +19,9 @@ from urllib.error import URLError
 # Configuration
 AIRPORTS = os.environ.get("METAR_AIRPORTS", "KLGA,KTEB")  # LaGuardia, Teterboro
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama.home.arpa")
-# Use lightweight model for waybar (fast, low VRAM) with fallback to default
-MODEL = os.environ.get("WAYBAR_VIBE_MODEL", "qwen2.5:3b-instruct-q8_0")
+# Use lightweight model for waybar (fast, low VRAM)
+# llama3.2:3b: 2.8GB VRAM, ~0.27s, no Chinese character issues
+MODEL = os.environ.get("WAYBAR_VIBE_MODEL", "llama3.2:3b")
 
 # Regex to match emoji characters (for filtering non-emoji from LLM output)
 EMOJI_PATTERN = re.compile(
@@ -61,21 +62,25 @@ def fetch_metar() -> str | None:
 
 def call_ollama(context: str) -> list[str]:
     """Call Ollama to generate emojis for the given context. Returns list of emoji strings."""
-    # Simple, direct prompt works better with 3b model
+    # Few-shot prompt: show different weather -> different emojis to prevent copying
     user_msg = (
-        f"{context}\n\n"
-        f"Pick 4-6 weather emojis ONLY. Output: {{\"emojis\":[\"🌧️\",\"💨\",\"🌙\",\"❄️\"]}}\n\n"
-        f"Rules:\n"
-        f"- ONLY emoji like 🌧️💨🌙❄️☔🌫️☁️🌃🏙️☀️🌤️⛅🌬️🌪️🌨️\n"
-        f"- NO words, NO Chinese\n"
-        f"- Just JSON"
+        "You translate weather into emoji. Examples:\n\n"
+        "Heavy rain, strong winds, night: {\"emojis\": [\"🌧️\", \"💨\", \"🌙\", \"⛈️\"]}\n"
+        "Sunny, calm, warm afternoon: {\"emojis\": [\"☀️\", \"😎\", \"🌡️\", \"🏙️\"]}\n"
+        "Foggy, cold, morning: {\"emojis\": [\"🌫️\", \"🥶\", \"☁️\", \"🌅\"]}\n"
+        "Overcast, cool, breezy: {\"emojis\": [\"🌥️\", \"🌬️\", \"🍂\", \"☁️\"]}\n"
+        "Clear skies, light wind, chilly: {\"emojis\": [\"🌤️\", \"❄️\", \"🌡️\", \"✨\"]}\n\n"
+        f"Now for THIS weather:\n{context}\n\n"
+        "Pick 4 emoji matching the actual conditions. "
+        "Only Unicode emoji like ☀️🌤️⛅🌥️☁️🌧️❄️🌬️💨🌡️🥶😎. No Chinese. No text.\n"
+        "Output JSON:"
     )
 
     payload = json.dumps({
         "model": MODEL,
         "messages": [{"role": "user", "content": user_msg}],
         "response_format": {"type": "json_object"},
-        "temperature": 0.5,  # Balance consistency with variety
+        "temperature": 0.7,  # Allow creativity within examples
         "max_tokens": 60,
     }).encode()
 

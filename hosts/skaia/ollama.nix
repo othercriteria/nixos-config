@@ -22,10 +22,10 @@ let
   defaultModel = "qwen2.5:14b-instruct-q8_0";
 
   # Lightweight model for periodic/background tasks (waybar, automation)
-  # qwen2.5:3b-instruct-q8_0: minimal VRAM, very fast
-  # - 3.7GB VRAM, ~0.31s response
-  # - Good instruction-following, sufficient for structured output tasks
-  vibeModel = "qwen2.5:3b-instruct-q8_0";
+  # llama3.2:3b: smallest VRAM, fast, no Chinese character issues
+  # - 2.8GB VRAM, ~0.27s response
+  # - Better instruction-following for emoji-only output than Qwen
+  vibeModel = "llama3.2:3b";
 in
 {
   services.ollama = {
