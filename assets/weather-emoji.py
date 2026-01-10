@@ -19,7 +19,8 @@ from urllib.error import URLError
 # Configuration
 AIRPORTS = os.environ.get("METAR_AIRPORTS", "KLGA,KTEB")  # LaGuardia, Teterboro
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama.home.arpa")
-MODEL = os.environ.get("OLLAMA_DEFAULT_MODEL", "qwen2.5:14b-instruct-q8_0")
+# Use lightweight model for waybar (fast, low VRAM) with fallback to default
+MODEL = os.environ.get("WAYBAR_VIBE_MODEL", "qwen2.5:3b-instruct-q8_0")
 
 # Regex to match emoji characters (for filtering non-emoji from LLM output)
 EMOJI_PATTERN = re.compile(
@@ -60,29 +61,22 @@ def fetch_metar() -> str | None:
 
 def call_ollama(context: str) -> list[str]:
     """Call Ollama to generate emojis for the given context. Returns list of emoji strings."""
-    system_msg = (
-        "You output JSON with emoji arrays. "
-        "Use ONLY Unicode emoji symbols like ☀️🌧️❄️🏙️🚶🧥🌙💨🌫️⛈️. "
-        "NEVER use Chinese characters, English words, or text of any kind. "
-        "Only graphical emoji symbols."
-    )
+    # Simple, direct prompt works better with 3b model
     user_msg = (
-        f"You are a tiny emoji artist. Given METAR aviation weather observations, "
-        f"pick 6 emojis that capture the vibe of this moment (most evocative first). "
-        f"Consider wind, visibility, clouds, precipitation, temperature, time of day.\n\n"
         f"{context}\n\n"
-        f"Reply with: {{\"emojis\": [\"☀️\", \"🌧️\", ...]}}"
+        f"Pick 4-6 weather emojis ONLY. Output: {{\"emojis\":[\"🌧️\",\"💨\",\"🌙\",\"❄️\"]}}\n\n"
+        f"Rules:\n"
+        f"- ONLY emoji like 🌧️💨🌙❄️☔🌫️☁️🌃🏙️☀️🌤️⛅🌬️🌪️🌨️\n"
+        f"- NO words, NO Chinese\n"
+        f"- Just JSON"
     )
 
     payload = json.dumps({
         "model": MODEL,
-        "messages": [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
-        ],
+        "messages": [{"role": "user", "content": user_msg}],
         "response_format": {"type": "json_object"},
-        "temperature": 0.7,
-        "max_tokens": 80,
+        "temperature": 0.5,  # Balance consistency with variety
+        "max_tokens": 60,
     }).encode()
 
     req = Request(

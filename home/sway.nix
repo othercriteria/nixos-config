@@ -73,6 +73,8 @@
         {
           # Status bar - started via sway rather than systemd since we use
           # UWSM for session management (see systemd.enable comment above)
+          # NOTE: 2025-01-10 saw 5 waybar surfaces from 1 process after overnight
+          # run - cause unknown, killing waybar resolved. Monitor for recurrence.
           command = "waybar";
           always = false;
         }

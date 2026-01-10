@@ -1,7 +1,7 @@
 # Waybar: Status bar configuration
 #
 # Factored out of sway.nix for maintainability.
-# Includes weather+time emoji module using Open-Meteo API.
+# Includes weather+time emoji module using METAR aviation data + local LLM.
 
 { config, pkgs, ... }:
 
@@ -87,11 +87,11 @@
           "interval" = 5;
         };
 
-        # Weather + time-of-day vibe as three emojis
-        # Uses Open-Meteo API + local Ollama LLM for creative emoji selection
+        # Weather + time-of-day vibe as four emojis
+        # Uses METAR aviation data + lightweight Ollama model (qwen2.5:3b)
         "custom/vibe" = {
           "exec" = "${pkgs.python3}/bin/python3 /etc/nixos/assets/weather-emoji.py";
-          "interval" = 120; # Update every 2 minutes
+          "interval" = 120; # 2 min keeps model warm (~5min Ollama default unload)
           "return-type" = "json";
           "tooltip" = true;
         };
