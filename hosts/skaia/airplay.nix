@@ -38,11 +38,10 @@ let
   };
 
   # Fixed ports for firewall configuration
-  # Main service uses legacy ports (7000 range)
-  # Audio service uses shifted ports (7200 range)
+  # Using ports in 7000 range (AirPlay traditional range)
   airplayPorts = {
-    tcp = [ 7000 7001 7100 7200 7201 7300 ];
-    udp = [ 6000 6001 7011 6200 6201 7211 ];
+    tcp = [ 7000 7001 7100 ];
+    udp = [ 6000 6001 7011 ];
   };
 in
 {
@@ -107,33 +106,6 @@ in
           "-fps 60" # Smooth video for DJI/gaming
           "-vd vaapih264dec" # Hardware-accelerated H.264 decode
           "-vs waylandsink" # Wayland video output
-          "-as pipewiresink" # PipeWire audio output
-          "-reset 0" # Don't auto-reset on client silence
-        ];
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-
-      # Auto-start when graphical session is available
-      wantedBy = [ "graphical-session.target" ];
-    };
-
-    # Audio-only AirPlay receiver (like AirPlay speakers)
-    # Usage: systemctl --user start uxplay-audio
-    # On iPhone: AirPlay audio destination > "skaia-audio"
-    uxplay-audio = {
-      description = "UxPlay AirPlay Audio Receiver";
-      after = [ "graphical-session.target" ];
-      environment = serviceEnv;
-
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = lib.concatStringsSep " " [
-          "${pkgs.uxplay}/bin/uxplay"
-          "-n skaia-audio" # Distinct name for audio-only
-          "-nh" # Don't append hostname
-          "-p 7200" # Shifted ports to avoid conflict with main service
-          "-no" # Audio only, no video
           "-as pipewiresink" # PipeWire audio output
           "-reset 0" # Don't auto-reset on client silence
         ];
