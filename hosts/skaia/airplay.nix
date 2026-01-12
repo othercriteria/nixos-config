@@ -104,7 +104,6 @@ in
           "-nh" # Don't append hostname
           "-p" # Use legacy ports (7000/7001/7100, 6000/6001/7011)
           "-fps 60" # Smooth video for DJI/gaming
-          "-vd vaapih264dec" # Hardware-accelerated H.264 decode
           "-vs waylandsink" # Wayland video output
           "-as pipewiresink" # PipeWire audio output
           "-reset 0" # Don't auto-reset on client silence
