@@ -6,6 +6,7 @@
     ../../modules/desktop-common.nix
     ./hardware-configuration.nix # Generated hardware config
 
+    ./airplay.nix
     ./audio.nix
     ./ddclient.nix
     ./email-alerts.nix

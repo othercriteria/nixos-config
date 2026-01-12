@@ -1501,3 +1501,84 @@ between NixOS infrastructure and Home Assistant.
 
 - `hosts/skaia/mqtt.nix` — Mosquitto broker configuration
 - `hosts/skaia/mqtt-state-publisher.nix` — NixOS state publisher service
+
+---
+
+## 25. Printer Configuration (Brother HL-L2350DW)
+
+**Context:** Printer configuration in NixOS is inherently imperative — CUPS stores
+printer definitions in its own database (`/var/lib/cups/`). The brlaser driver is
+installed declaratively, but adding the printer and setting options requires
+manual steps.
+
+### Printer Requirements
+
+- Avahi/mDNS enabled (provided by `hosts/skaia/airplay.nix` with `nssmdns4 = true`)
+- brlaser driver installed (provided by `modules/printing.nix`)
+- Printer powered on and connected to LAN
+
+### Step-by-step (first-time setup)
+
+1. **Discover the printer via mDNS:**
+
+   ```sh
+   avahi-browse -rt _pdl-datastream._tcp
+   # Note the hostname (e.g., BRWD89C672FCCC5)
+   ```
+
+1. **Add the printer via CUPS web UI:**
+
+   Open `http://localhost:631/admin` and add a new printer:
+
+   - URI: `lpd://BRWD89C672FCCC5.local/BINARY_P1`
+   - Driver: `Brother HL-L2350DW series (brlaser)`
+
+   Alternatively via CLI:
+
+   ```sh
+   lpadmin -p Brother_HL-L2350DW_series \
+     -v "lpd://BRWD89C672FCCC5.local/BINARY_P1" \
+     -m drv:///brlaser.drv/brl2350dw.ppd \
+     -E
+   ```
+
+1. **Set as default printer:**
+
+   ```sh
+   lpoptions -d Brother_HL-L2350DW_series
+   ```
+
+1. **Test printing:**
+
+   ```sh
+   echo "Test page from $(hostname) at $(date)" | lp -
+   lpstat -t  # Verify job completed
+   ```
+
+### Important: Use `.local` suffix
+
+The printer URI **must** use the `.local` mDNS suffix (e.g.,
+`lpd://BRWD89C672FCCC5.local/...`) for name resolution to work. Without the
+suffix, CUPS cannot resolve the hostname.
+
+### After printer IP changes
+
+If the printer gets a new IP (DHCP), mDNS handles it automatically. No
+reconfiguration needed as long as the hostname remains the same.
+
+### Home Assistant integration
+
+The Brother printer integration in Home Assistant auto-discovers via SNMP and
+tracks:
+
+- Printer status (idle/printing/stopped)
+- Toner level (%)
+- Drum unit remaining (%)
+
+No configuration needed on the NixOS side for this.
+
+**In config:**
+
+- `modules/printing.nix` — CUPS service and brlaser driver (declarative)
+- `hosts/skaia/airplay.nix` — Avahi/mDNS with `nssmdns4 = true` (declarative)
+- CUPS printer definition — stored in `/var/lib/cups/` (imperative)
