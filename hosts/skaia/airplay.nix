@@ -95,6 +95,8 @@ in
 
     serviceConfig = {
       Type = "simple";
+      # Inherit Wayland display environment from session
+      PassEnvironment = [ "WAYLAND_DISPLAY" "XDG_RUNTIME_DIR" ];
       ExecStart = lib.concatStringsSep " " [
         "${pkgs.uxplay}/bin/uxplay"
         "-n skaia" # Network name shown on iPhone
@@ -108,7 +110,7 @@ in
       RestartSec = "5s";
     };
 
-    # Don't auto-start - user starts manually when needed
-    wantedBy = [ ];
+    # Auto-start when graphical session is available
+    wantedBy = [ "graphical-session.target" ];
   };
 }
