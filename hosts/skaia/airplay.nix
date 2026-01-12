@@ -17,11 +17,32 @@
 #   3. Video feed now visible on skaia's display
 
 let
+  # GStreamer plugin path shared between services
+  gstPluginPath = lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [
+    gst_all_1.gstreamer
+    gst_all_1.gst-plugins-base
+    gst_all_1.gst-plugins-good
+    gst_all_1.gst-plugins-bad
+    gst_all_1.gst-plugins-ugly
+    gst_all_1.gst-vaapi
+    pipewire
+  ]);
+
+  # Common environment for user services
+  serviceEnv = {
+    GST_PLUGIN_SYSTEM_PATH_1_0 = gstPluginPath;
+    # Wayland display access - hardcoded since greetd→zsh→sway doesn't
+    # propagate these to the systemd user manager environment
+    WAYLAND_DISPLAY = "wayland-1";
+    XDG_RUNTIME_DIR = "/run/user/1000";
+  };
+
   # Fixed ports for firewall configuration
-  # Using ports in 7000 range (AirPlay traditional range)
+  # Main service uses legacy ports (7000 range)
+  # Audio service uses shifted ports (7200 range)
   airplayPorts = {
-    tcp = [ 7000 7001 7100 ];
-    udp = [ 6000 6001 7011 ];
+    tcp = [ 7000 7001 7100 7200 7201 7300 ];
+    udp = [ 6000 6001 7011 6200 6201 7211 ];
   };
 in
 {
@@ -54,15 +75,7 @@ in
 
   # Set GStreamer plugin path system-wide so uxplay can find all plugins
   # including pipewiresink from the pipewire package
-  environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [
-    gst_all_1.gstreamer
-    gst_all_1.gst-plugins-base
-    gst_all_1.gst-plugins-good
-    gst_all_1.gst-plugins-bad
-    gst_all_1.gst-plugins-ugly
-    gst_all_1.gst-vaapi
-    pipewire # Provides pipewiresink element
-  ]);
+  environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = gstPluginPath;
 
   # Open firewall ports for AirPlay
   # These are the legacy ports that uxplay uses with -p option
@@ -71,48 +84,65 @@ in
     allowedUDPPorts = airplayPorts.udp;
   };
 
-  # User service for uxplay - defined via NixOS (not home-manager) so it gets
+  # User services for uxplay - defined via NixOS (not home-manager) so they get
   # placed in /etc/profiles/per-user/*/share/systemd/user/ which systemd
   # actually scans. Home-manager's ~/.config/systemd/user/ isn't scanned
   # when using the greetd→zsh→sway login workaround.
-  #
-  # Start with: systemctl --user start uxplay
-  systemd.user.services.uxplay = {
-    description = "UxPlay AirPlay Mirroring Server";
-    after = [ "graphical-session.target" ];
+  systemd.user.services = {
+    # Main screen mirroring service
+    # Usage: systemctl --user start uxplay
+    # On iPhone: Screen Mirroring > "skaia"
+    uxplay = {
+      description = "UxPlay AirPlay Screen Mirroring";
+      after = [ "graphical-session.target" ];
+      environment = serviceEnv;
 
-    environment = {
-      GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [
-        gst_all_1.gstreamer
-        gst_all_1.gst-plugins-base
-        gst_all_1.gst-plugins-good
-        gst_all_1.gst-plugins-bad
-        gst_all_1.gst-plugins-ugly
-        gst_all_1.gst-vaapi
-        pipewire
-      ]);
-      # Wayland display access - hardcoded since greetd→zsh→sway doesn't
-      # propagate these to the systemd user manager environment
-      WAYLAND_DISPLAY = "wayland-1";
-      XDG_RUNTIME_DIR = "/run/user/1000";
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = lib.concatStringsSep " " [
+          "${pkgs.uxplay}/bin/uxplay"
+          "-n skaia" # Network name shown on iPhone
+          "-nh" # Don't append hostname
+          "-p" # Use legacy ports (7000/7001/7100, 6000/6001/7011)
+          "-fps 60" # Smooth video for DJI/gaming
+          "-vd vaapih264dec" # Hardware-accelerated H.264 decode
+          "-vs waylandsink" # Wayland video output
+          "-as pipewiresink" # PipeWire audio output
+          "-reset 0" # Don't auto-reset on client silence
+        ];
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+
+      # Auto-start when graphical session is available
+      wantedBy = [ "graphical-session.target" ];
     };
 
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = lib.concatStringsSep " " [
-        "${pkgs.uxplay}/bin/uxplay"
-        "-n skaia" # Network name shown on iPhone
-        "-nh" # Don't append hostname
-        "-p" # Use legacy ports (7000/7001/7100, 6000/6001/7011)
-        "-vs waylandsink" # Wayland video output
-        "-as pipewiresink" # PipeWire audio output
-        "-reset 0" # Don't auto-reset on client silence
-      ];
-      Restart = "on-failure";
-      RestartSec = "5s";
-    };
+    # Audio-only AirPlay receiver (like AirPlay speakers)
+    # Usage: systemctl --user start uxplay-audio
+    # On iPhone: AirPlay audio destination > "skaia-audio"
+    uxplay-audio = {
+      description = "UxPlay AirPlay Audio Receiver";
+      after = [ "graphical-session.target" ];
+      environment = serviceEnv;
 
-    # Auto-start when graphical session is available
-    wantedBy = [ "graphical-session.target" ];
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = lib.concatStringsSep " " [
+          "${pkgs.uxplay}/bin/uxplay"
+          "-n skaia-audio" # Distinct name for audio-only
+          "-nh" # Don't append hostname
+          "-p 7200" # Shifted ports to avoid conflict with main service
+          "-no" # Audio only, no video
+          "-as pipewiresink" # PipeWire audio output
+          "-reset 0" # Don't auto-reset on client silence
+        ];
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+
+      # Auto-start when graphical session is available
+      wantedBy = [ "graphical-session.target" ];
+    };
   };
 }
