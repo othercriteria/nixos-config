@@ -91,12 +91,14 @@ in
         gst_all_1.gst-vaapi
         pipewire
       ]);
+      # Wayland display access - hardcoded since greetd→zsh→sway doesn't
+      # propagate these to the systemd user manager environment
+      WAYLAND_DISPLAY = "wayland-1";
+      XDG_RUNTIME_DIR = "/run/user/1000";
     };
 
     serviceConfig = {
       Type = "simple";
-      # Inherit Wayland display environment from session
-      PassEnvironment = [ "WAYLAND_DISPLAY" "XDG_RUNTIME_DIR" ];
       ExecStart = lib.concatStringsSep " " [
         "${pkgs.uxplay}/bin/uxplay"
         "-n skaia" # Network name shown on iPhone
