@@ -110,11 +110,9 @@ pkgs.testers.nixosTest {
         monitor.wait_for_open_port(3100)
 
         # Wait for Loki to be fully ready (may take a moment to initialize)
-        def check_loki_ready(last_attempt):
-            status = monitor.execute("curl -s -o /dev/null -w '%{http_code}' localhost:3100/ready")[1].strip()
-            return status == "200"
-
-        retry(check_loki_ready, timeout=30)
+        # Use polling_condition for newer NixOS test driver API
+        with monitor.nested("waiting for Loki ready endpoint"):
+            monitor.wait_until_succeeds("curl -sf localhost:3100/ready", timeout=30)
 
     with subtest("Promtail is configured to ship logs to Loki"):
         monitor.wait_for_unit("promtail.service")
