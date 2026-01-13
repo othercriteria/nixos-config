@@ -87,10 +87,7 @@ in
         exit 1
       fi
 
-      # Capture and trim letterboxing (black borders from tiled window)
-      # Use fuzz tolerance since letterboxing may not be perfectly black
-      ${grim}/bin/grim -g "$GEOM" - | \
-        ${imagemagick}/bin/magick - -fuzz 5% -trim +repage "$OUT"
+      ${grim}/bin/grim -g "$GEOM" "$OUT"
       echo "$OUT"
     '')
   ];

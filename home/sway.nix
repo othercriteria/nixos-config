@@ -130,6 +130,8 @@
       # Alacritty fallback (Mod+Shift+Return) for comparison
       bindsym Mod4+Shift+Return exec alacritty
 
+      # Float uxplay window so it maintains video aspect ratio
+      for_window [app_id="uxplay"] floating enable
     '';
   };
 
