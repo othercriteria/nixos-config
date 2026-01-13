@@ -87,7 +87,9 @@ in
         exit 1
       fi
 
-      ${grim}/bin/grim -g "$GEOM" "$OUT"
+      # Capture and trim letterboxing (black borders from tiled window)
+      ${grim}/bin/grim -g "$GEOM" - | \
+        ${imagemagick}/bin/convert - -trim +repage "$OUT"
       echo "$OUT"
     '')
   ];

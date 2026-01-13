@@ -130,9 +130,6 @@
       # Alacritty fallback (Mod+Shift+Return) for comparison
       bindsym Mod4+Shift+Return exec alacritty
 
-      # Float uxplay window so it maintains video aspect ratio
-      # (tiling causes letterboxing which breaks airplay-snapshot)
-      for_window [app_id="uxplay"] floating enable
     '';
   };
 
