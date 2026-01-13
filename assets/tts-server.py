@@ -37,18 +37,21 @@ import gc
 import io
 import logging
 import os
+import struct
 import subprocess
 import tempfile
 import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
+import numpy as np
 import soundfile as sf
 import torch
+import torchaudio
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 # Configuration from environment
@@ -82,6 +85,7 @@ class SpeechRequest(BaseModel):
     voice: str = Field(default=DEFAULT_VOICE, description="Voice name")
     response_format: str = Field(default="mp3", description="Output format")
     speed: float = Field(default=1.0, ge=0.25, le=4.0, description="Speed multiplier")
+    stream: bool = Field(default=False, description="Stream audio chunks (pcm only)")
 
 
 class F5TTSManager:
@@ -264,6 +268,82 @@ def synthesize_speech(
         Path(wav_path).unlink(missing_ok=True)
 
 
+def synthesize_speech_streaming(
+    text: str,
+    voice: str,
+    speed: float = 1.0,
+) -> Generator[bytes, None, None]:
+    """
+    Synthesize speech using F5-TTS with streaming output.
+
+    Yields raw PCM chunks (16-bit signed, mono, 24kHz) as they're generated.
+    """
+    from f5_tts.infer.utils_infer import (
+        chunk_text,
+        infer_batch_process,
+        preprocess_ref_audio_text,
+    )
+
+    ref_audio_path, ref_text_orig = get_voice_files(voice)
+    model = model_manager.get_model()
+
+    log.info(f"Streaming synthesis: {len(text)} chars with voice '{voice}'")
+
+    # Preprocess reference audio (clips to ~12s, adds silence)
+    # Also processes ref_text (adds punctuation if needed)
+    ref_audio_processed, ref_text = preprocess_ref_audio_text(
+        str(ref_audio_path), ref_text_orig, show_info=lambda x: None
+    )
+    audio, sr = torchaudio.load(ref_audio_processed)
+
+    # Calculate chunk sizes based on reference audio duration
+    # Formula from F5-TTS socket_server.py
+    ref_duration = audio.shape[-1] / sr
+    ref_text_len = len(ref_text.encode("utf-8"))
+    max_chars = int(ref_text_len / ref_duration * (25 - ref_duration))
+
+    # Chunk the input text
+    text_batches = chunk_text(text, max_chars=max_chars)
+
+    log.info(f"Streaming {len(text_batches)} text chunks, max_chars={max_chars}")
+
+    # Must use no_grad context for streaming in thread pool
+    # (inference_mode doesn't work across thread boundaries)
+    with torch.no_grad():
+        # Stream audio chunks
+        audio_stream = infer_batch_process(
+            (audio, sr),
+            ref_text,
+            text_batches,
+            model.ema_model,
+            model.vocoder,
+            mel_spec_type=model.mel_spec_type,
+            progress=None,
+            device=model.device,
+            streaming=True,
+            chunk_size=8192,  # ~340ms chunks for smoother playback
+            speed=speed,
+        )
+
+        # Ratcheting normalizer: track max peak, only reduce gain (never increase)
+        # This prevents clipping without volume pumping
+        peak_seen = 1.0
+
+        for audio_chunk, _ in audio_stream:
+            if len(audio_chunk) > 0:
+                # Update peak tracker (ratchet up only)
+                chunk_peak = np.abs(audio_chunk).max()
+                if chunk_peak > peak_seen:
+                    peak_seen = chunk_peak
+
+                # Apply gain reduction based on worst peak seen
+                if peak_seen > 1.0:
+                    audio_chunk = audio_chunk / peak_seen
+
+                pcm = np.int16(audio_chunk * 32767)
+                yield pcm.tobytes()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
@@ -291,6 +371,26 @@ async def create_speech(request: SpeechRequest) -> Response:
     if not request.input.strip():
         raise HTTPException(status_code=400, detail="Input text cannot be empty")
 
+    # Streaming mode - return raw PCM chunks
+    if request.stream:
+        def generate():
+            yield from synthesize_speech_streaming(
+                request.input,
+                request.voice,
+                request.speed,
+            )
+
+        return StreamingResponse(
+            generate(),
+            media_type="audio/pcm",
+            headers={
+                "X-Audio-Sample-Rate": "24000",
+                "X-Audio-Channels": "1",
+                "X-Audio-Format": "s16le",
+            },
+        )
+
+    # Non-streaming mode
     if request.response_format not in CONTENT_TYPES:
         raise HTTPException(
             status_code=400,

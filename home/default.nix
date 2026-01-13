@@ -201,6 +201,107 @@
       exec ${pkgs.ollama}/bin/ollama run "$MODEL" "$@"
     '')
 
+    # TTS helper - speak text via F5-TTS with streaming
+    # Usage: echo "Hello" | catsay
+    #        catsay file.txt
+    #        tail -f log | catsay --line-buffered
+    #        echo "Hello" | tee /dev/stderr | catsay  # show + speak
+    (pkgs.writeShellScriptBin "catsay" ''
+      set -euo pipefail
+      TTS_URL="''${TTS_URL:-http://tts.home.arpa}"
+      TTS_VOICE="''${TTS_VOICE:-nature}"
+      STREAM=true
+      LINE_BUFFERED=false
+
+      # Parse flags
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --voice|-v) TTS_VOICE="$2"; shift 2 ;;
+          --no-stream) STREAM=false; shift ;;
+          --line-buffered|-l) LINE_BUFFERED=true; shift ;;
+          --help|-h)
+            echo "Usage: catsay [OPTIONS] [FILE]"
+            echo "Speak text via TTS with streaming playback."
+            echo ""
+            echo "Options:"
+            echo "  -v, --voice NAME   Voice to use (default: nature)"
+            echo "  -l, --line-buffered  Speak each line as it arrives (for tail -f)"
+            echo "  --no-stream        Wait for full audio before playing"
+            echo ""
+            echo "Use 'tee /dev/stderr' for simultaneous text display."
+            exit 0 ;;
+          -*) echo "Unknown option: $1" >&2; exit 1 ;;
+          *) INPUT_FILE="$1"; shift ;;
+        esac
+      done
+
+      # Helper function to speak a single piece of text
+      speak_text() {
+        local text="$1"
+        [[ -z "''${text// /}" ]] && return 0
+
+        if [[ "$STREAM" == "true" ]]; then
+          echo "$text" | ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
+              '{input: ., voice: $voice, stream: true}' \
+            | ${pkgs.curl}/bin/curl -sN "''${TTS_URL}/v1/audio/speech" \
+                -H "Content-Type: application/json" -d @- \
+            | ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit -infbuf -probesize 32 -analyzeduration 0 \
+                -f s16le -ar 24000 -ch_layout mono -i pipe:0 >/dev/null 2>&1
+        else
+          echo "$text" | ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
+              '{input: ., voice: $voice, response_format: "wav"}' \
+            | ${pkgs.curl}/bin/curl -s "''${TTS_URL}/v1/audio/speech" \
+                -H "Content-Type: application/json" -d @- \
+            | ${pkgs.pulseaudio}/bin/paplay --file-format=wav /dev/stdin 2>/dev/null
+        fi
+      }
+
+      # Line-buffered mode: speak each line as it arrives
+      if [[ "$LINE_BUFFERED" == "true" ]]; then
+        if [[ -n "''${INPUT_FILE:-}" ]]; then
+          exec < "$INPUT_FILE"
+        fi
+        while IFS= read -r line || [[ -n "$line" ]]; do
+          speak_text "$line"
+        done
+        exit 0
+      fi
+
+      # Batch mode: read all input then speak
+      TMPFILE=$(mktemp)
+      trap "rm -f '$TMPFILE'" EXIT
+
+      if [[ -n "''${INPUT_FILE:-}" ]]; then
+        cat "$INPUT_FILE" > "$TMPFILE"
+      else
+        cat > "$TMPFILE"
+      fi
+
+      # Skip if empty
+      [[ ! -s "$TMPFILE" ]] && exit 0
+
+      # Build JSON payload using jq with file input (no arg length limit)
+      if [[ "$STREAM" == "true" ]]; then
+        ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
+            '{input: ., voice: $voice, stream: true}' "$TMPFILE" \
+          | ${pkgs.curl}/bin/curl -sN "''${TTS_URL}/v1/audio/speech" \
+              -H "Content-Type: application/json" -d @- \
+          | ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit -infbuf -probesize 32 -analyzeduration 0 \
+              -f s16le -ar 24000 -ch_layout mono -i pipe:0 2>/dev/null
+      else
+        ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
+            '{input: ., voice: $voice, response_format: "wav"}' "$TMPFILE" \
+          | ${pkgs.curl}/bin/curl -s "''${TTS_URL}/v1/audio/speech" \
+              -H "Content-Type: application/json" -d @- \
+          | ${pkgs.pulseaudio}/bin/paplay --file-format=wav /dev/stdin
+      fi
+    '')
+
+    # tailsay - alias for catsay --line-buffered
+    (pkgs.writeShellScriptBin "tailsay" ''
+      exec catsay --line-buffered "$@"
+    '')
+
     amp-cli # TODO: migrate to ampcode
     claude-code
 
