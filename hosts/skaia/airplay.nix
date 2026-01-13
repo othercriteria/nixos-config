@@ -70,6 +70,26 @@ in
 
     # For hardware-accelerated decoding on NVIDIA
     gst_all_1.gst-vaapi
+
+    # Snapshot tool for capturing frames from AirPlay stream
+    # Usage: airplay-snapshot [output.png]
+    (writeShellScriptBin "airplay-snapshot" ''
+      set -euo pipefail
+      OUT="''${1:-/tmp/airplay-$(date +%s).png}"
+
+      # Find uxplay window geometry from sway tree
+      GEOM=$(${sway}/bin/swaymsg -t get_tree | \
+        ${jq}/bin/jq -r '.. | select(.name? | test("uxplay|skaia"; "i")) | "\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"' | \
+        head -1)
+
+      if [ -z "$GEOM" ]; then
+        echo "Error: No uxplay window found. Is AirPlay streaming?" >&2
+        exit 1
+      fi
+
+      ${grim}/bin/grim -g "$GEOM" "$OUT"
+      echo "$OUT"
+    '')
   ];
 
   # Set GStreamer plugin path system-wide so uxplay can find all plugins
