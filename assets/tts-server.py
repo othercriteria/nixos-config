@@ -4,6 +4,7 @@ OpenAI-compatible TTS server with Ollama-style model lifecycle management.
 
 Features:
 - OpenAI API compatible: POST /v1/audio/speech
+- WebSocket streaming: ws://host/v1/audio/stream
 - F5-TTS backend (high-quality neural TTS)
 - Lazy model loading on first request
 - Automatic GPU VRAM unloading after configurable idle timeout
@@ -27,16 +28,23 @@ API:
   }
   -> Returns audio bytes with appropriate Content-Type
 
+  WebSocket /v1/audio/stream?voice=nature&speed=1.0
+  - Client sends: text chunks (string messages)
+  - Server sends: raw PCM audio (binary, s16le mono 24kHz)
+  - Buffers until sentence boundaries for coherent synthesis
+
 Voice format:
   Each voice requires two files in TTS_VOICES_DIR:
     - {voice}.wav  - reference audio (5-15 seconds recommended)
     - {voice}.txt  - transcript of the reference audio
 """
 
+import asyncio
 import gc
 import io
 import logging
 import os
+import re
 import struct
 import subprocess
 import tempfile
@@ -50,7 +58,7 @@ import numpy as np
 import soundfile as sf
 import torch
 import torchaudio
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -360,7 +368,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="TTS Server",
     description="OpenAI-compatible TTS with F5-TTS backend and Ollama-style model management",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -418,6 +426,195 @@ async def create_speech(request: SpeechRequest) -> Response:
     )
 
 
+class StreamingSession:
+    """
+    Manages a WebSocket TTS streaming session.
+
+    Buffers incoming text until boundaries, then synthesizes
+    and streams audio back. Maintains voice context for coherent generation.
+
+    Modes:
+    - line_mode=True: Split on newlines only (for log tailing)
+    - line_mode=False: Split on sentence boundaries (.!?) for natural prose
+    """
+
+    # Sentence boundary pattern: period, exclamation, question mark
+    # followed by space or end of string
+    SENTENCE_END = re.compile(r'[.!?](?:\s|$)')
+    # Line boundary: newline
+    LINE_END = re.compile(r'\n')
+
+    def __init__(self, voice: str, speed: float = 1.0, line_mode: bool = False):
+        self.voice = voice
+        self.speed = speed
+        self.line_mode = line_mode
+        self.buffer = ""
+        self.peak_seen = 1.0  # Ratcheting normalizer state
+
+        # Preload reference audio for the session
+        from f5_tts.infer.utils_infer import preprocess_ref_audio_text
+
+        ref_audio_path, ref_text_orig = get_voice_files(voice)
+        self.ref_audio_processed, self.ref_text = preprocess_ref_audio_text(
+            str(ref_audio_path), ref_text_orig, show_info=lambda x: None
+        )
+        self.audio, self.sr = torchaudio.load(self.ref_audio_processed)
+
+        # Calculate max chars for chunking
+        ref_duration = self.audio.shape[-1] / self.sr
+        ref_text_len = len(self.ref_text.encode("utf-8"))
+        self.max_chars = int(ref_text_len / ref_duration * (25 - ref_duration))
+
+        log.info(f"WebSocket session started: voice={voice}, max_chars={self.max_chars}")
+
+    def add_text(self, text: str) -> list[str]:
+        """
+        Add text to buffer and return complete chunks ready for synthesis.
+
+        Returns list of complete chunks (may be empty if no boundary yet).
+        In line_mode, splits on newlines. Otherwise, splits on sentence boundaries.
+        """
+        self.buffer += text
+
+        # Choose boundary pattern based on mode
+        pattern = self.LINE_END if self.line_mode else self.SENTENCE_END
+
+        # Find all complete chunks
+        sentences = []
+        while True:
+            match = pattern.search(self.buffer)
+            if not match:
+                break
+            # Extract chunk up to and including the boundary
+            end_pos = match.end()
+            sentence = self.buffer[:end_pos].strip()
+            self.buffer = self.buffer[end_pos:]
+            if sentence:
+                sentences.append(sentence)
+
+        return sentences
+
+    def flush(self) -> list[str]:
+        """Flush any remaining text in the buffer."""
+        remaining = self.buffer.strip()
+        self.buffer = ""
+        return [remaining] if remaining else []
+
+    def synthesize(self, text: str) -> Generator[bytes, None, None]:
+        """Synthesize a sentence and yield PCM chunks."""
+        from f5_tts.infer.utils_infer import chunk_text, infer_batch_process
+
+        model = model_manager.get_model()
+        text_batches = chunk_text(text, max_chars=self.max_chars)
+
+        log.info(f"WebSocket synthesizing: {len(text)} chars, {len(text_batches)} batches")
+
+        with torch.no_grad():
+            audio_stream = infer_batch_process(
+                (self.audio, self.sr),
+                self.ref_text,
+                text_batches,
+                model.ema_model,
+                model.vocoder,
+                mel_spec_type=model.mel_spec_type,
+                progress=None,
+                device=model.device,
+                streaming=True,
+                chunk_size=8192,
+                speed=self.speed,
+            )
+
+            for audio_chunk, _ in audio_stream:
+                if len(audio_chunk) > 0:
+                    # Ratcheting normalizer (shared across session)
+                    chunk_peak = np.abs(audio_chunk).max()
+                    if chunk_peak > self.peak_seen:
+                        self.peak_seen = chunk_peak
+
+                    if self.peak_seen > 1.0:
+                        audio_chunk = audio_chunk / self.peak_seen
+
+                    pcm = np.int16(audio_chunk * 32767)
+                    yield pcm.tobytes()
+
+
+@app.websocket("/v1/audio/stream")
+async def websocket_stream(
+    websocket: WebSocket,
+    voice: str = DEFAULT_VOICE,
+    speed: float = 1.0,
+    line_mode: bool = False,
+):
+    """
+    WebSocket endpoint for bidirectional TTS streaming.
+
+    Connect with query params: ws://host/v1/audio/stream?voice=nature&speed=1.0
+
+    Query parameters:
+    - voice: Voice name (default: nature)
+    - speed: Speed multiplier (default: 1.0)
+    - line_mode: If true, split on newlines instead of sentences (default: false)
+
+    Protocol:
+    - Client sends: text chunks (string messages)
+    - Server sends: raw PCM audio (binary messages, s16le mono 24kHz)
+    - Client sends: empty string or closes connection to end session
+
+    The server buffers text until boundaries (sentences or newlines), then
+    synthesizes and streams audio. Voice context is maintained for coherent output.
+    """
+    await websocket.accept()
+
+    try:
+        session = StreamingSession(voice=voice, speed=speed, line_mode=line_mode)
+
+        # Send session info
+        await websocket.send_json({
+            "type": "session_start",
+            "voice": voice,
+            "speed": speed,
+            "line_mode": line_mode,
+            "sample_rate": 24000,
+            "channels": 1,
+            "format": "s16le",
+        })
+
+        while True:
+            # Receive text from client
+            try:
+                message = await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+
+            # Empty message signals flush and end
+            if not message:
+                sentences = session.flush()
+                for sentence in sentences:
+                    for chunk in session.synthesize(sentence):
+                        await websocket.send_bytes(chunk)
+                break
+
+            # Add text and synthesize any complete sentences
+            sentences = session.add_text(message)
+            for sentence in sentences:
+                for chunk in session.synthesize(sentence):
+                    await websocket.send_bytes(chunk)
+
+        # Signal end of audio
+        await websocket.send_json({"type": "session_end"})
+
+    except WebSocketDisconnect:
+        log.info("WebSocket client disconnected")
+    except Exception as e:
+        log.error(f"WebSocket error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        log.info("WebSocket session ended")
+
+
 @app.get("/v1/audio/voices")
 async def list_voices() -> dict:
     """List available voices."""
@@ -451,10 +648,11 @@ async def root() -> dict:
     """Root endpoint with service info."""
     return {
         "service": "tts-server",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "backend": "F5-TTS",
         "endpoints": {
             "speech": "POST /v1/audio/speech",
+            "stream": "WS /v1/audio/stream",
             "voices": "GET /v1/audio/voices",
             "health": "GET /health",
         },

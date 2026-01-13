@@ -60,7 +60,8 @@ in
     };
 
     # Run our server script instead of default Gradio app
-    cmd = [ "python3" "/app/tts-server.py" ];
+    # Install websockets for WebSocket endpoint support
+    cmd = [ "bash" "-c" "pip install -q websockets && python3 /app/tts-server.py" ];
 
     # Depend on voices being set up
     dependsOn = [ ];
@@ -115,8 +116,13 @@ in
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
         # F5-TTS can take a while for long texts + model loading
-        proxy_read_timeout 180s;
+        # Also needed for long WebSocket sessions
+        proxy_read_timeout 3600s;
         proxy_send_timeout 180s;
 
         # Allow large request bodies for long texts
