@@ -27,6 +27,7 @@
     ./streaming.nix
     ./thermal.nix
     ./teleport.nix
+    ./tts.nix
     ./unbound-rpz.nix
     ./unbound.nix
     ./virtualisation.nix
