@@ -78,8 +78,9 @@ in
       OUT="''${1:-/tmp/airplay-$(date +%s).png}"
 
       # Find uxplay window geometry from sway tree
+      # Filter for windows with name containing uxplay or skaia (case insensitive)
       GEOM=$(${sway}/bin/swaymsg -t get_tree | \
-        ${jq}/bin/jq -r '.. | select(.name? | test("uxplay|skaia"; "i")) | "\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"' | \
+        ${jq}/bin/jq -r '.. | select(.name? != null and (.name | test("uxplay|skaia"; "i"))) | "\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"' | \
         head -1)
 
       if [ -z "$GEOM" ]; then
