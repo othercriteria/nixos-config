@@ -2,6 +2,10 @@
 
 {
   hardware = {
+    # Enable NVIDIA container toolkit for Docker GPU access
+    # This generates CDI specs at boot, allowing --gpus flag to work
+    nvidia-container-toolkit.enable = true;
+
     graphics = {
       enable = true;
       enable32Bit = true;

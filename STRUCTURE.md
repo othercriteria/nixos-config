@@ -20,7 +20,7 @@ Per-host NixOS configurations:
   - Teleport auth server, Harmonia nix cache
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
-  - Ollama LLM + TTS server (OpenAI-compatible APIs)
+  - Ollama LLM + F5-TTS (OpenAI-compatible APIs, GPU-accelerated)
 - `meteor-{1,2,3,4}/`: Veil cluster k3s server nodes
   - GPU support on meteor-4
   - Node exporter for Prometheus scraping
@@ -50,7 +50,6 @@ Reusable NixOS modules:
 - `promtail.nix`: Promtail log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
 - `vibectl.nix`: AI-powered kubectl wrapper
-- `tts-server.nix`: OpenAI-compatible TTS with Ollama-style model management
 - `veil/`: Veil cluster-specific modules
   - `k3s-common.nix`: Common k3s flags, drain/uncordon hooks
   - `firewall.nix`: Firewall defaults for meteors
