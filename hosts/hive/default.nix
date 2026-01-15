@@ -6,6 +6,7 @@
     ./hardware-configuration.nix
     ./storage.nix
     ./observability.nix
+    ./urbit.nix
   ];
 
   # Boot configuration with LUKS encryption

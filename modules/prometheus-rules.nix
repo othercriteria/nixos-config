@@ -85,6 +85,32 @@
               }
             ];
           }
+          # Urbit health monitoring
+          {
+            name = "urbit.rules";
+            rules = [
+              {
+                alert = "UrbitUnresponsive";
+                expr = "probe_success{job=\"urbit-health\"} == 0";
+                "for" = "3m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "Urbit ship ~{{ $labels.ship }} is unresponsive";
+                  description = "Urbit web interface at {{ $labels.instance }} has not responded for 3 minutes.";
+                };
+              }
+              {
+                alert = "UrbitSlow";
+                expr = "probe_duration_seconds{job=\"urbit-health\"} > 5";
+                "for" = "5m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "Urbit ship ~{{ $labels.ship }} responding slowly";
+                  description = "Urbit web interface is taking >5s to respond for 5 minutes.";
+                };
+              }
+            ];
+          }
           # Node-level monitoring rules
           {
             name = "node.rules";

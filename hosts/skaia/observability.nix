@@ -144,6 +144,37 @@
               targets = [ "hive.home.arpa:9002" ];
             }];
           }
+          # Blackbox probe for Urbit web interface health
+          {
+            job_name = "urbit-health";
+            scrape_interval = "60s";
+            scrape_timeout = "10s";
+            metrics_path = "/probe";
+            params = {
+              module = [ "http_2xx_3xx" ];
+            };
+            static_configs = [{
+              targets = [ "http://hive.home.arpa:8080/" ];
+              labels = {
+                service = "urbit";
+                ship = "taptev-donwyx";
+              };
+            }];
+            relabel_configs = [
+              {
+                source_labels = [ "__address__" ];
+                target_label = "__param_target";
+              }
+              {
+                source_labels = [ "__param_target" ];
+                target_label = "instance";
+              }
+              {
+                target_label = "__address__";
+                replacement = "127.0.0.1:9115"; # Blackbox exporter
+              }
+            ];
+          }
           {
             job_name = "kubernetes-apiservers";
             scheme = "https";
@@ -274,40 +305,64 @@
       };
     };
 
-    # Alertmanager with email notifications
-    prometheus.alertmanager = {
-      enable = true;
-      port = 9093;
-      configText = ''
-        global:
-          resolve_timeout: 5m
-          smtp_smarthost: "127.0.0.1:1025"
-          smtp_from: "daniel.l.klein@pm.me"
-        route:
-          receiver: "email"
-          group_wait: 30s
-          group_interval: 5m
-          repeat_interval: 3h
-        receivers:
-        - name: "email"
-          email_configs:
-          - to: "daniel.l.klein@pm.me"
-            send_resolved: true
-            require_tls: false
-            auth_username: "daniel.l.klein@pm.me"
-            auth_password_file: "/etc/nixos/secrets/dlk-protonmail-password"
-      '';
-      extraFlags = [ "--cluster.listen-address=" ];
-    };
+    # Prometheus exporters and alertmanager
+    prometheus = {
+      # Blackbox exporter for HTTP/TCP probe monitoring
+      # Used to check if services like Urbit are responding
+      exporters.blackbox = {
+        enable = true;
+        port = 9115;
+        configFile = pkgs.writeText "blackbox.yml" ''
+          modules:
+            http_2xx_3xx:
+              prober: http
+              timeout: 5s
+              http:
+                valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+                valid_status_codes: [200, 301, 302, 303, 307, 308]
+                method: GET
+                follow_redirects: false
+                fail_if_ssl: false
+                fail_if_not_ssl: false
+                preferred_ip_protocol: "ip4"
+        '';
+      };
 
-    prometheus.alertmanagers = [
-      {
-        scheme = "http";
-        path_prefix = "/";
-        static_configs = [
-          { targets = [ "127.0.0.1:9093" ]; }
-        ];
-      }
-    ];
+      # Alertmanager with email notifications
+      alertmanager = {
+        enable = true;
+        port = 9093;
+        configText = ''
+          global:
+            resolve_timeout: 5m
+            smtp_smarthost: "127.0.0.1:1025"
+            smtp_from: "daniel.l.klein@pm.me"
+          route:
+            receiver: "email"
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 3h
+          receivers:
+          - name: "email"
+            email_configs:
+            - to: "daniel.l.klein@pm.me"
+              send_resolved: true
+              require_tls: false
+              auth_username: "daniel.l.klein@pm.me"
+              auth_password_file: "/etc/nixos/secrets/dlk-protonmail-password"
+        '';
+        extraFlags = [ "--cluster.listen-address=" ];
+      };
+
+      alertmanagers = [
+        {
+          scheme = "http";
+          path_prefix = "/";
+          static_configs = [
+            { targets = [ "127.0.0.1:9093" ]; }
+          ];
+        }
+      ];
+    };
   };
 }
