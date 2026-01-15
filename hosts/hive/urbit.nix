@@ -107,9 +107,8 @@ in
     after = [ "network.target" "local-fs.target" ];
     wants = [ "network.target" ];
 
-    # Don't start automatically on boot until we've validated the setup
-    # Change to: wantedBy = [ "multi-user.target" ]; after testing
-    wantedBy = [ ];
+    # Start automatically on boot
+    wantedBy = [ "multi-user.target" ];
 
     # Rate limiting: max 3 restarts in 5 minutes (must be in [Unit] section)
     startLimitIntervalSec = 300;
