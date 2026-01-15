@@ -38,6 +38,7 @@
         uv2nix.follows = "uv2nix";
       };
     };
+
   };
 
   outputs = { self, nixpkgs, nixpkgs-stable, home-manager, flake-utils, pre-commit-hooks, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
@@ -62,13 +63,16 @@
           modules = [
             ./hosts/skaia
             home-manager.nixosModules.home-manager
-            {
+            ({ pkgs, ... }: {
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                extraSpecialArgs = {
+                  twsPackage = import ./modules/tws.nix { inherit pkgs; };
+                };
                 users.dlk = import ./home;
               };
-            }
+            })
           ];
         };
 

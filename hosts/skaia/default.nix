@@ -124,6 +124,10 @@
     XDG_CURRENT_DESKTOP = "sway";
     # Ensure writable cache for fontconfig and apps in greetd/uwsm sessions
     XDG_CACHE_HOME = "/fastcache/dlk";
+
+    # Java AWT fix for non-reparenting window managers (Sway)
+    # Required for IB Gateway, VASSAL, and other Java GUI apps
+    _JAVA_AWT_WM_NONREPARENTING = "1";
   };
 
   environment.systemPackages = with pkgs; [

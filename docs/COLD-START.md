@@ -1504,7 +1504,44 @@ between NixOS infrastructure and Home Assistant.
 
 ---
 
-## 25. Printer Configuration (Brother HL-L2350DW)
+## 25. Interactive Brokers TWS First-Time Setup
+
+**Context:** TWS (Trader Workstation) provides API access for trading tools.
+Installed declaratively via `modules/tws.nix`.
+
+**Step-by-step:**
+
+1. Launch TWS:
+
+   ```sh
+   tws
+   ```
+
+1. Log in with your IBKR credentials and complete 2FA.
+
+1. Enable API access:
+
+   - Configure → Settings → API → Settings
+   - Check "Enable ActiveX and Socket Clients"
+   - Set Socket port: `4002` (paper) or `4001` (live)
+
+1. (Optional) Set Java heap to 4096 MB for bulk data operations:
+
+   - Configure → Settings → API → Precautions
+
+**Updating TWS:** When IBKR releases a new version, update the hash in
+`modules/tws.nix`. The build error will show the new hash.
+
+**In config:**
+
+- `modules/tws.nix` — TWS package using buildFHSEnv for robust installation
+- `home/default.nix` — `twsPackage` in home.packages
+- `hosts/skaia/default.nix` — `_JAVA_AWT_WM_NONREPARENTING` session variable
+  for Sway compatibility
+
+---
+
+## 26. Printer Configuration (Brother HL-L2350DW)
 
 **Context:** Printer configuration in NixOS is inherently imperative — CUPS stores
 printer definitions in its own database (`/var/lib/cups/`). The brlaser driver is

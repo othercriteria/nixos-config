@@ -1,4 +1,4 @@
-{ pkgs, pkgs-stable, config, ... }:
+{ pkgs, pkgs-stable, config, twsPackage, ... }:
 
 {
   home = {
@@ -285,6 +285,9 @@
     amp-cli # TODO: migrate to ampcode
     claude-code
 
+    twsPackage # Interactive Brokers TWS (provides `tws` command)
+
+
     links2
     pandoc
     texlive.combined.scheme-full
@@ -307,6 +310,8 @@
     signal-desktop-bin
     slack
     spotify
+    # TODO: simplify to just `vassal` now that _JAVA_AWT_WM_NONREPARENTING is set
+    # globally in hosts/skaia/default.nix
     (
       let
         vassal-original = vassal;
