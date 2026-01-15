@@ -30,18 +30,20 @@
 { config, lib, pkgs, ... }:
 
 let
-  # The pier directory contains .run (runtime) and the ship data
-  pierPath = "/home/dlk/workspace/urbit/taptev-donwyx";
-  shipName = "taptev-donwyx";
+  # The pier directory contains .run (runtime) and the ship data in .urb/
+  # Urbit expects to be run from the PARENT of the pier with the pier name as argument
+  urbitBase = "/home/dlk/workspace/urbit";
+  pierName = "taptev-donwyx";
+  pierPath = "${urbitBase}/${pierName}";
 
   # Pre-start safety script: refuse to start if another instance is detected
   preStartScript = pkgs.writeShellScript "urbit-prestart-check" ''
     set -euo pipefail
 
     PIER_PATH="${pierPath}"
-    SHIP_NAME="${shipName}"
+    PIER_NAME="${pierName}"
 
-    echo "Urbit pre-start safety check for ~$SHIP_NAME"
+    echo "Urbit pre-start safety check for ~$PIER_NAME"
 
     # Check 1: Look for any running urbit processes for this pier
     if ${pkgs.procps}/bin/pgrep -f "$PIER_PATH" > /dev/null 2>&1; then
@@ -71,6 +73,8 @@ let
   startScript = pkgs.writeShellScript "urbit-start" ''
     set -euo pipefail
 
+    URBIT_BASE="${urbitBase}"
+    PIER_NAME="${pierName}"
     PIER_PATH="${pierPath}"
     LOCK_FILE="$PIER_PATH/.service.lock"
 
@@ -82,14 +86,15 @@ let
       exit 1
     fi
 
-    echo "Lock acquired. Starting Urbit ship ~${shipName}..."
+    echo "Lock acquired. Starting Urbit ship ~$PIER_NAME..."
 
     # Start urbit in foreground (systemd manages the process)
+    # Urbit expects: ./pier/.run pier_name (run from parent of pier directory)
     # -t = no TTY (suitable for service, no interactive prompts)
     # --loom 31 = 2GB memory arena (default, can increase if needed)
     # Note: Do NOT use -d (daemon mode) as systemd handles daemonization
-    cd "$PIER_PATH"
-    exec ./.run ${shipName} -t --loom 31
+    cd "$URBIT_BASE"
+    exec ./$PIER_NAME/.run $PIER_NAME -t --loom 31
   '';
 in
 {
@@ -106,11 +111,15 @@ in
     # Change to: wantedBy = [ "multi-user.target" ]; after testing
     wantedBy = [ ];
 
+    # Rate limiting: max 3 restarts in 5 minutes (must be in [Unit] section)
+    startLimitIntervalSec = 300;
+    startLimitBurst = 3;
+
     serviceConfig = {
       Type = "simple";
       User = "dlk";
       Group = "users";
-      WorkingDirectory = pierPath;
+      WorkingDirectory = urbitBase;
 
       # Safety: pre-start check for existing instances
       ExecStartPre = "${preStartScript}";
@@ -127,10 +136,6 @@ in
       # Restart policy: restart on failure, but not too aggressively
       Restart = "on-failure";
       RestartSec = 30; # Wait 30s before restart to avoid rapid cycling
-
-      # Rate limiting: max 3 restarts in 5 minutes
-      StartLimitIntervalSec = 300;
-      StartLimitBurst = 3;
 
       # Resource limits
       LimitNOFILE = 65536;
