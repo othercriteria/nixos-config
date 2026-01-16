@@ -32,7 +32,8 @@
 let
   # The pier directory contains .run (runtime) and the ship data in .urb/
   # Urbit expects to be run from the PARENT of the pier with the pier name as argument
-  urbitBase = "/home/dlk/workspace/urbit";
+  # Pier moved to /ssd for better I/O isolation from root filesystem
+  urbitBase = "/ssd/urbit";
   pierName = "taptev-donwyx";
   pierPath = "${urbitBase}/${pierName}";
 
