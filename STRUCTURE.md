@@ -17,6 +17,7 @@ Per-host NixOS configurations:
   - NVIDIA RTX 4090 (24GB VRAM), AMD CPU
   - k3s control plane, Unbound DNS, nginx reverse proxy
   - Observability stack (Prometheus, Grafana, Loki, Netdata parent)
+  - ntfy.sh push notifications (Alertmanager webhook, mobile/desktop alerts)
   - Teleport auth server, Harmonia nix cache
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
@@ -47,6 +48,7 @@ Reusable NixOS modules:
 - `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
 - `grafana.nix`: Grafana with datasource provisioning
 - `loki.nix`: Loki log aggregation server
+- `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook, mobile push)
 - `promtail.nix`: Promtail log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
 - `vibectl.nix`: AI-powered kubectl wrapper

@@ -16,6 +16,7 @@
 {
   imports = [
     ../../modules/loki.nix
+    ../../modules/ntfy.nix
     ../../modules/promtail.nix
     ../../modules/grafana.nix
     ../../modules/prometheus-base.nix
@@ -32,6 +33,15 @@
       enable = true;
       # Listen on all interfaces to accept logs from LAN hosts (hive, etc.)
       listenAddress = "0.0.0.0";
+    };
+    ntfy = {
+      enable = true;
+      baseUrl = "https://ntfy.valueof.info";
+      auth = {
+        enable = true;
+        username = "dlk";
+        passwordFile = "/etc/nixos/secrets/ntfy-password";
+      };
     };
     promtail.enable = true;
     grafana = {
@@ -328,7 +338,9 @@
         '';
       };
 
-      # Alertmanager with email notifications
+      # Alertmanager with ntfy + email notifications
+      # ntfy: instant push notifications for critical/warning alerts
+      # email: audit trail and less urgent notifications
       alertmanager = {
         enable = true;
         port = 9093;
@@ -338,11 +350,40 @@
             smtp_smarthost: "127.0.0.1:1025"
             smtp_from: "daniel.l.klein@pm.me"
           route:
-            receiver: "email"
+            receiver: "ntfy-and-email"
             group_wait: 30s
             group_interval: 5m
             repeat_interval: 3h
+            routes:
+            # Critical alerts: high priority ntfy + email
+            - match:
+                severity: critical
+              receiver: "ntfy-critical"
+              continue: true
+            # All alerts also go to the default receiver
           receivers:
+          - name: "ntfy-and-email"
+            webhook_configs:
+            - url: "http://127.0.0.1:8090/alerts"
+              send_resolved: true
+              http_config:
+                basic_auth:
+                  username: "dlk"
+                  password_file: "/etc/nixos/secrets/ntfy-password"
+            email_configs:
+            - to: "daniel.l.klein@pm.me"
+              send_resolved: true
+              require_tls: false
+              auth_username: "daniel.l.klein@pm.me"
+              auth_password_file: "/etc/nixos/secrets/dlk-protonmail-password"
+          - name: "ntfy-critical"
+            webhook_configs:
+            - url: "http://127.0.0.1:8090/alerts?priority=urgent&tags=rotating_light"
+              send_resolved: true
+              http_config:
+                basic_auth:
+                  username: "dlk"
+                  password_file: "/etc/nixos/secrets/ntfy-password"
           - name: "email"
             email_configs:
             - to: "daniel.l.klein@pm.me"

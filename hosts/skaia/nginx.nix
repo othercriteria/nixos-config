@@ -132,6 +132,27 @@ in
         '';
       };
 
+      # ntfy.sh push notification server (public)
+      # Mobile apps and external services can publish/subscribe to topics
+      "ntfy.valueof.info" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:8090";
+          proxyWebsockets = true;
+          extraConfig = ''
+            # Support for long-polling and SSE
+            proxy_buffering off;
+            proxy_read_timeout 180s;
+            # Attachments can be large
+            client_max_body_size 50M;
+          '';
+        };
+        extraConfig = ''
+          add_header Strict-Transport-Security "max-age=31536000" always;
+        '';
+      };
+
       # Netdata real-time monitoring (LAN only)
       "netdata.home.arpa" = {
         listen = [{ addr = "0.0.0.0"; port = 80; }];

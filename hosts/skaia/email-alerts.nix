@@ -5,8 +5,31 @@ let
   emailTo = "daniel.l.klein@pm.me";
   emailFrom = "daniel.l.klein@pm.me";
 
+  # ntfy notification helper - instant push notifications
+  # Uses basic auth from secrets file
+  sendNtfyEvent = { event, priority ? "default", tags ? "computer" }: ''
+        NTFY_PASS=$(cat /etc/nixos/secrets/ntfy-password)
+        ${pkgs.curl}/bin/curl -s \
+          -u "dlk:$NTFY_PASS" \
+          -H "Title: ${hostName} ${event}" \
+          -H "Priority: ${priority}" \
+          -H "Tags: ${tags}" \
+          -d "$(${pkgs.coreutils}/bin/date --iso-8601=seconds)
+
+    zpool status:
+    $(${pkgs.zfs}/bin/zpool status)" \
+          http://127.0.0.1:8090/system-events || true
+  '';
+
+  # Email notification helper - audit trail
   sendEmailEvent = { event }: ''
     printf "Subject: ${hostName} ${event} $(${pkgs.coreutils}/bin/date --iso-8601=seconds)\n\nzpool status:\n\n$(${pkgs.zfs}/bin/zpool status)" | ${pkgs.msmtp}/bin/msmtp -a default ${emailTo}
+  '';
+
+  # Combined notification - ntfy for instant alert, email for records
+  sendBothEvents = { event, priority ? "default", tags ? "computer" }: ''
+    ${sendNtfyEvent { inherit event priority tags; }}
+    ${sendEmailEvent { inherit event; }}
   '';
 in
 {
@@ -46,18 +69,18 @@ in
     };
     "boot-mail-alert" = {
       wantedBy = [ "multi-user.target" ];
-      after = [ "hydroxide.service" "network-online.target" ];
+      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
       };
-      script = sendEmailEvent { event = "just booted"; };
+      script = sendBothEvents { event = "just booted"; tags = "white_check_mark,computer"; };
     };
     "shutdown-mail-alert" = {
       wantedBy = [ "multi-user.target" ];
-      after = [ "hydroxide.service" "network-online.target" ];
+      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
       serviceConfig = {
@@ -65,14 +88,14 @@ in
         RemainAfterExit = true;
       };
       script = "true";
-      preStop = sendEmailEvent { event = "is shutting down"; };
+      preStop = sendBothEvents { event = "is shutting down"; priority = "high"; tags = "warning,computer"; };
     };
     "weekly-mail-alert" = {
       serviceConfig.Type = "oneshot";
-      after = [ "hydroxide.service" "network-online.target" ];
+      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
-      script = sendEmailEvent { event = "is still alive"; };
+      script = sendBothEvents { event = "is still alive"; tags = "heartbeat"; };
     };
   };
 
