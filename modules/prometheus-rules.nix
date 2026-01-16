@@ -116,6 +116,16 @@
             name = "node.rules";
             rules = [
               {
+                alert = "DiskIOBacklogHigh";
+                expr = "rate(node_disk_io_time_weighted_seconds_total[5m]) > 10";
+                "for" = "15m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "High disk I/O backlog on {{ $labels.instance }}";
+                  description = "Disk {{ $labels.device }} has weighted I/O time >10 for 15 minutes. This indicates I/O pressure that may cause system slowdowns.";
+                };
+              }
+              {
                 alert = "DiskSpaceLow";
                 expr =
                   "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"}) * 100 < 15";
