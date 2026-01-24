@@ -15,4 +15,8 @@
       };
     };
   };
+
+  # Increase file descriptor limit for greetd to prevent exhaustion
+  # Default systemd limit (1024) is insufficient for sessions with many apps
+  systemd.services.greetd.serviceConfig.LimitNOFILE = 65536;
 }
