@@ -170,6 +170,8 @@
             git
             git-lfs
             git-secret
+            gh
+            jq
             nixpkgs-fmt
             deadnix
             statix

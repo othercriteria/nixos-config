@@ -114,7 +114,11 @@
   services.resolved = {
     enable = true;
     # Allow mDNS if desired for .local discovery
-    extraConfig = "MulticastDNS=yes";
+    settings = {
+      Resolve = {
+        MulticastDNS = "yes";
+      };
+    };
   };
 
   services = {
