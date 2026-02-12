@@ -21,11 +21,11 @@ let
       which
 
       # X11/GUI requirements
-      xorg.libX11
-      xorg.libXext
-      xorg.libXrender
-      xorg.libXtst
-      xorg.libXi
+      libx11
+      libxext
+      libxrender
+      libxtst
+      libxi
       gtk2
       gtk3
       glib
@@ -66,17 +66,17 @@ let
     nspr
     nss
     pango
-    xorg.libX11
-    xorg.libXcomposite
-    xorg.libXdamage
-    xorg.libXext
-    xorg.libXfixes
-    xorg.libXi
-    xorg.libXrandr
-    xorg.libXrender
-    xorg.libXtst
-    xorg.libXxf86vm
-    xorg.libxcb
+    libx11
+    libxcomposite
+    libxdamage
+    libxext
+    libxfixes
+    libxi
+    libxrandr
+    libxrender
+    libxtst
+    libxxf86vm
+    libxcb
     zlib
   ]);
 
