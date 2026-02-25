@@ -48,6 +48,8 @@
       enable = true;
       port = 2342;
       prometheusUrl = "http://localhost:9001"; # skaia uses non-default port
+      # COLD START: Requires /etc/nixos/secrets/grafana-secret-key to exist
+      secretKeyFile = "/etc/nixos/secrets/grafana-secret-key";
       # Production: no anonymous access, bind to localhost only
     };
     prometheus = {

@@ -30,7 +30,6 @@ in
         inconsolata
         inter
         ipafont
-        jetbrains-mono
         liberation_ttf
         meslo-lg
         monaspace

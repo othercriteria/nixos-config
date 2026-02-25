@@ -301,11 +301,32 @@ install.
 
 ---
 
-## 7. TODO: Secrets Management
+## 7. Secrets Management
 
-> TODO: Document all secrets required for cold start (e.g., API keys, passwords
-> in `/etc/nixos/secrets/`). For now, ensure any referenced secret files exist
-> and are populated as needed on new systems.
+> TODO: Document all secrets required for cold start. For now, ensure
+> any referenced secret files exist and are populated as needed on new
+> systems.
+
+### Grafana secret key
+
+Grafana uses a secret key for signing cookies and encrypting
+datasource credentials.
+
+```sh
+head -c 32 /dev/urandom | base64 > secrets/grafana-secret-key
+git secret add secrets/grafana-secret-key
+git secret hide
+git add secrets/grafana-secret-key.secret .gitignore
+```
+
+After `make reveal-secrets`, the key is available at
+`/etc/nixos/secrets/grafana-secret-key`.
+
+**In config:**
+
+- `hosts/skaia/observability.nix` — `secretKeyFile` option
+- `modules/grafana.nix` — loads key via Grafana's `$__file{}`
+  syntax
 
 ---
 

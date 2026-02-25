@@ -8,7 +8,7 @@
 #   custom.grafana.enable = true;
 #   custom.grafana.anonymousAccess = true;  # For demos
 
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.custom.grafana;
@@ -52,9 +52,18 @@ in
       default = true;
       description = "Automatically provision Prometheus and Loki datasources.";
     };
+
+    secretKeyFile = lib.mkOption {
+      type = lib.types.path;
+      description = "Path to file containing Grafana's secret key for signing cookies and encrypting datasource credentials.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    systemd.services.grafana.serviceConfig.ExecStartPre = lib.mkBefore [
+      "+${pkgs.coreutils}/bin/install -m 0400 -o grafana -g grafana ${cfg.secretKeyFile} /run/grafana/secret_key"
+    ];
+
     services.grafana = {
       enable = true;
       settings = {
@@ -62,6 +71,7 @@ in
           http_port = cfg.port;
           http_addr = cfg.addr;
         };
+        security.secret_key = "$__file{/run/grafana/secret_key}";
         "auth.anonymous" = lib.mkIf cfg.anonymousAccess {
           enabled = true;
           org_role = "Admin";

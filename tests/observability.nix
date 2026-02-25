@@ -35,6 +35,7 @@ pkgs.testers.nixosTest {
         enable = true;
         addr = "0.0.0.0";
         anonymousAccess = true; # For test API access
+        secretKeyFile = pkgs.writeText "grafana-test-secret" "test-not-a-real-secret";
       };
       prometheus = {
         enable = true;

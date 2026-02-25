@@ -40,6 +40,7 @@
       enable = true;
       addr = "0.0.0.0"; # Allow access from host
       anonymousAccess = true; # Easy exploration without login
+      secretKeyFile = pkgs.writeText "grafana-demo-secret" "demo-not-a-real-secret";
     };
     prometheus = {
       enable = true;
