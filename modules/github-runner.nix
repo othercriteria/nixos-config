@@ -1,10 +1,11 @@
-# GitHub Actions Self-Hosted Runner
+# GitHub Actions Self-Hosted Runner (nixos-config)
 #
-# Declarative configuration for a self-hosted GitHub Actions runner.
-# Uses the built-in NixOS module (services.github-runners).
+# Declarative configuration for the nixos-config self-hosted GitHub Actions
+# runner. Uses the built-in NixOS module (services.github-runners).
+# Additional repo-specific runners (e.g., RPM) are defined in host configs.
 #
-# COLD START: Generate a fine-grained PAT with "Read and Write access to
-# repository self hosted runners" scope, then:
+# COLD START: Generate a fine-grained PAT scoped to nixos-config with
+# "Read and Write access to repository self hosted runners" scope, then:
 #
 #   echo -n 'github_pat_...' > secrets/github-runner-token
 #   git secret add secrets/github-runner-token

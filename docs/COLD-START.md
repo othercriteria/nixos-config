@@ -1051,30 +1051,36 @@ The web interface is exposed on port 8080 and proxied through skaia's nginx at
 
 ---
 
-## 20. GitHub Actions Self-Hosted Runner
+## 20. GitHub Actions Self-Hosted Runners
 
-**Context:** CI runs on a self-hosted runner on `skaia`, which has KVM access for
-NixOS integration tests. Builds automatically populate the Harmonia cache.
+**Context:** CI runs on self-hosted runners on `skaia`. Two runner instances
+are configured:
 
-The runner is managed declaratively via `modules/github-runner.nix` using the
-built-in NixOS `services.github-runners` module.
+- **skaia** (nixos-config): Full toolchain with KVM access for NixOS
+  integration tests. Builds populate the Harmonia cache.
+- **skaia-rpm** (rearguard-portfolio-management): Minimal runner that relies
+  on `nix develop` for the full Python toolchain.
 
-**Step-by-step:**
+Both runners share the `github-runner` user/group and run in ephemeral mode.
+
+### nixos-config runner
+
+Managed declaratively via `modules/github-runner.nix` using the built-in
+NixOS `services.github-runners` module.
 
 1. Create a fine-grained Personal Access Token (PAT) on GitHub:
 
-   - Go to GitHub → Settings → Developer settings → Personal access tokens →
-     Fine-grained tokens
+   - Go to GitHub → Settings → Developer settings → Personal access
+     tokens → Fine-grained tokens
    - Generate new token with:
      - Repository access: Only select repositories → `nixos-config`
-     - Permissions → Repository permissions → Administration: Read and write
-       (this grants self-hosted runner management)
+     - Permissions → Repository permissions → Administration:
+       Read and write (grants self-hosted runner management)
    - Copy the token (starts with `github_pat_...`)
 
 1. Store the token as a secret:
 
    ```sh
-   # IMPORTANT: Use -n to avoid trailing newline
    echo -n 'github_pat_...' > secrets/github-runner-token
    git secret add secrets/github-runner-token
    git secret hide
@@ -1082,7 +1088,8 @@ built-in NixOS `services.github-runners` module.
    git commit -m "feat: add github runner token"
    ```
 
-1. Enable the runner in your host config (e.g., `hosts/skaia/default.nix`):
+1. Enable the runner in your host config
+   (e.g., `hosts/skaia/default.nix`):
 
    ```nix
    imports = [ ../../modules/github-runner.nix ];
@@ -1106,22 +1113,67 @@ built-in NixOS `services.github-runners` module.
 
 1. Verify in GitHub UI:
 
-   - Go to: `https://github.com/othercriteria/nixos-config/settings/actions/runners`
-   - (Or: Repository → Settings → Actions → Runners)
+   - Repository → Settings → Actions → Runners
    - Should show: `skaia` with status **Idle** and labels
      `self-hosted`, `Linux`, `X64`, `nixos`, `kvm`
 
-**Updating the runner:**
+### RPM runner
 
-Runner updates happen automatically with `nixos-rebuild` when nixpkgs updates
-the `github-runner` package. No manual intervention needed.
+Configured directly in `hosts/skaia/default.nix` using
+`services.github-runners.skaia-rpm`. Uses minimal `extraPackages`
+because `nix develop` provides the full Python/uv/pyright/ruff
+toolchain.
+
+1. Create a fine-grained PAT scoped to
+   `othercriteria/rearguard-portfolio-management` with
+   "Read and Write access to repository self hosted runners".
+
+1. Store the token as a secret:
+
+   ```sh
+   echo -n 'github_pat_...' > secrets/github-runner-token-rpm
+   git secret add secrets/github-runner-token-rpm
+   git secret hide
+   git add secrets/github-runner-token-rpm.secret
+   git commit -m "feat: add github runner token for RPM"
+   ```
+
+1. Deploy:
+
+   ```sh
+   make reveal-secrets
+   make apply-host HOST=skaia
+   ```
+
+1. Verify the runner registered:
+
+   ```sh
+   systemctl status github-runner-skaia-rpm
+   # Should show: Active: active (running)
+   # And: Listening for Jobs
+   ```
+
+1. Verify in GitHub UI:
+
+   - Repository → Settings → Actions → Runners
+   - Should show: `skaia-rpm` with status **Idle** and labels
+     `self-hosted`, `Linux`, `X64`, `nixos`
+
+### Updating runners
+
+Runner updates happen automatically with `nixos-rebuild` when
+nixpkgs updates the `github-runner` package. No manual intervention
+needed.
 
 **In config:**
 
-- `modules/github-runner.nix` — Declarative runner module
-- `.github/workflows/ci.yml` — CI workflow using `runs-on: self-hosted`
-- Runner runs as dedicated `github-runner` user with KVM access
-- Builds populate `/nix/store`, served by Harmonia to other hosts
+- `modules/github-runner.nix` — nixos-config runner module
+- `hosts/skaia/default.nix` — RPM runner definition
+- `.github/workflows/ci.yml` — CI workflow using
+  `runs-on: self-hosted`
+- Both runners share the `github-runner` user with KVM access
+  (nixos-config) or minimal packages (RPM)
+- nixos-config builds populate `/nix/store`, served by Harmonia
 
 ---
 

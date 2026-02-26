@@ -39,3 +39,4 @@ secrets/mqtt-homeassistant-password
 secrets/mqtt-nixos-password
 secrets/ntfy-password
 secrets/grafana-secret-key
+secrets/github-runner-token-rpm

@@ -33,8 +33,45 @@
     ./virtualisation.nix
   ];
 
-  # GitHub Actions self-hosted runner for CI
+  # GitHub Actions self-hosted runner for CI (nixos-config repo)
   custom.githubRunner.enable = true;
+
+  # COLD START: Generate a fine-grained PAT scoped to
+  # othercriteria/rearguard-portfolio-management with "Read and Write access to
+  # repository self hosted runners", then:
+  #
+  #   echo -n 'github_pat_...' > secrets/github-runner-token-rpm
+  #   git secret add secrets/github-runner-token-rpm
+  #   git secret hide
+  services.github-runners.skaia-rpm = {
+    enable = true;
+    url = "https://github.com/othercriteria/rearguard-portfolio-management";
+    tokenFile = "/etc/nixos/secrets/github-runner-token-rpm";
+    name = "skaia-rpm";
+    extraLabels = [ "nixos" ];
+    extraPackages = with pkgs; [
+      nix
+      git
+      coreutils
+      bash
+    ];
+    extraEnvironment = {
+      NIX_CONFIG = "experimental-features = nix-command flakes";
+      HOME = "/var/lib/github-runner";
+    };
+    user = "github-runner";
+    group = "github-runner";
+    ephemeral = true;
+    replace = true;
+    serviceOverrides = {
+      ProtectHome = "read-only";
+      ProtectSystem = "strict";
+      ReadWritePaths = [
+        "/nix/var"
+        "/var/lib/github-runner"
+      ];
+    };
+  };
 
   boot = {
     loader = {
