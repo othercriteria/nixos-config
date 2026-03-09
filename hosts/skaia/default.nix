@@ -37,7 +37,7 @@
   custom.githubRunner.enable = true;
 
   # COLD START: Generate a fine-grained PAT scoped to
-  # othercriteria/rearguard-portfolio-management with "Read and Write access to
+  # othercriteria/remedial-portfolio-management with "Read and Write access to
   # repository self hosted runners", then:
   #
   #   echo -n 'github_pat_...' > secrets/github-runner-token-rpm
@@ -45,7 +45,7 @@
   #   git secret hide
   services.github-runners.skaia-rpm = {
     enable = true;
-    url = "https://github.com/othercriteria/rearguard-portfolio-management";
+    url = "https://github.com/othercriteria/remedial-portfolio-management";
     tokenFile = "/etc/nixos/secrets/github-runner-token-rpm";
     name = "skaia-rpm";
     extraLabels = [ "nixos" ];

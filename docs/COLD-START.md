@@ -1058,7 +1058,7 @@ are configured:
 
 - **skaia** (nixos-config): Full toolchain with KVM access for NixOS
   integration tests. Builds populate the Harmonia cache.
-- **skaia-rpm** (rearguard-portfolio-management): Minimal runner that relies
+- **skaia-rpm** (remedial-portfolio-management): Minimal runner that relies
   on `nix develop` for the full Python toolchain.
 
 Both runners share the `github-runner` user/group and run in ephemeral mode.
@@ -1125,7 +1125,7 @@ because `nix develop` provides the full Python/uv/pyright/ruff
 toolchain.
 
 1. Create a fine-grained PAT scoped to
-   `othercriteria/rearguard-portfolio-management` with
+   `othercriteria/remedial-portfolio-management` with
    "Read and Write access to repository self hosted runners".
 
 1. Store the token as a secret:
