@@ -54,6 +54,7 @@
       git
       coreutils
       bash
+      kubectl
     ];
     extraEnvironment = {
       NIX_CONFIG = "experimental-features = nix-command flakes";
