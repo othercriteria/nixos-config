@@ -239,6 +239,117 @@ root filesystem and can benefit from snapshots.
 
 ---
 
+## 4a. Create ZFS Dataset for Docker Local Storage on `skaia`
+
+**Context:** `skaia` uses Docker both for long-lived OCI containers and for
+local image churn from development workflows. Keeping `/var/lib/docker` inside
+the parent `/var` dataset causes that churn to bloat `/var` and makes
+autosnapshots pin old image layers. A dedicated child dataset allows
+autosnapshots to be disabled and quotas to be applied independently.
+
+**Step-by-step (new host):**
+
+1. Create the dataset with a legacy mountpoint:
+
+   ```sh
+   zfs create -o mountpoint=legacy fastdisk/system/var/docker
+   ```
+
+1. Disable autosnapshots for the Docker dataset:
+
+   ```sh
+   zfs set com.sun:auto-snapshot=false fastdisk/system/var/docker
+   ```
+
+1. Optionally cap Docker's growth. For example, use a 400 GiB quota:
+
+   ```sh
+   zfs set quota=400G fastdisk/system/var/docker
+   ```
+
+1. Rebuild/apply the host config so the dataset is mounted at
+   `/var/lib/docker`.
+
+1. Verify the mount:
+
+   ```sh
+   zfs list fastdisk/system/var/docker
+   mount | grep '/var/lib/docker'
+   df -h /var/lib/docker
+   ```
+
+**Step-by-step (existing host migration):**
+
+1. Stop Docker and any dependent containers:
+
+   ```sh
+   sudo systemctl stop docker.service docker.socket
+   ```
+
+1. Create the dataset and disable autosnapshots:
+
+   ```sh
+   sudo zfs create -o mountpoint=legacy fastdisk/system/var/docker
+   sudo zfs set com.sun:auto-snapshot=false fastdisk/system/var/docker
+   ```
+
+1. Mount the new dataset at a temporary path:
+
+   ```sh
+   sudo mkdir -p /mnt/docker-zfs
+   sudo mount -t zfs fastdisk/system/var/docker /mnt/docker-zfs
+   ```
+
+1. Either migrate the current Docker state or intentionally start clean:
+
+   ```sh
+   # Preserve current Docker state
+   sudo rsync -aHAX --numeric-ids /var/lib/docker/ /mnt/docker-zfs/
+
+   # Or, if you want a clean cache instead, skip rsync and repull images later
+   ```
+
+1. Unmount the temporary path:
+
+   ```sh
+   sudo umount /mnt/docker-zfs
+   ```
+
+1. Move the old directory aside before the new dataset is mounted there:
+
+   ```sh
+   sudo mv /var/lib/docker /var/lib/docker.pre-zfs
+   sudo mkdir -p /var/lib/docker
+   ```
+
+1. Rebuild/apply the host config so the new dataset mounts at
+   `/var/lib/docker`, then verify the mount:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#skaia
+   mount | grep '/var/lib/docker'
+   df -h /var/lib/docker
+   ```
+
+1. Once Docker starts cleanly and the data looks correct, remove the old copy:
+
+   ```sh
+   sudo rm -rf /var/lib/docker.pre-zfs
+   ```
+
+**Important:** Do not mount the new dataset on top of an existing populated
+`/var/lib/docker` directory without first moving or deleting the old contents.
+If you do, the old files become hidden under the mount but still consume space
+in `fastdisk/system/var`.
+
+**In config:**
+
+- `hosts/skaia/default.nix` — look for
+  `# COLD START: Create ZFS dataset fastdisk/system/var/docker`
+  next to `fileSystems."/var/lib/docker"`.
+
+---
+
 ## 5. Move LAN DNS to `skaia`
 
 **Context:** The home router may not support the desired static records for the

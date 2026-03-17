@@ -17,15 +17,21 @@ let
     set -e
     zfs snapshot ${dataset}@auto-$(date +%Y-%m-%d-%H%M)
     # Prune old snapshots
-    zfs list -H -t snapshot -o name -s creation | \
-      grep "^${dataset}@auto-" | \
-      while read snap; do
-        snapdate=$(echo $snap | sed "s/.*@auto-//")
-        snapts=$(date -d $snapdate +%s 2>/dev/null || true)
-        cutoff=$(date -d "-${pruneDays} days" +%s)
-        if [ -n "$snapts" ] && [ $snapts -lt $cutoff ]; then
-          zfs destroy $snap
-        fi
+    cutoff=$(date -d "-${pruneDays} days" +%s)
+    zfs list -H -t snapshot -o name -s creation ${dataset} | \
+      while IFS= read -r snap; do
+        case "$snap" in
+          ${dataset}@auto-*)
+            snapdate=''${snap##*@auto-}
+            # Convert auto-YYYY-MM-DD-HHMM to a format GNU date parses.
+            snapdate_fmt=$(printf '%s\n' "$snapdate" | \
+              sed -E 's/^([0-9]{4}-[0-9]{2}-[0-9]{2})-([0-9]{2})([0-9]{2})$/\1 \2:\3/')
+            snapts=$(date -d "$snapdate_fmt" +%s 2>/dev/null || true)
+            if [ -n "$snapts" ] && [ "$snapts" -lt "$cutoff" ]; then
+              zfs destroy "$snap"
+            fi
+            ;;
+        esac
       done
   '';
 

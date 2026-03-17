@@ -83,24 +83,38 @@
     kernelParams = [ "zfs.zfs_arc_max=38654705664" ];
   };
 
-  fileSystems."/bulk" =
-    {
+  fileSystems = {
+    "/bulk" = {
       device = "slowdisk/bulk";
       fsType = "zfs";
     };
 
-  # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
-  # mountpoint and disable autosnapshots on it. Mount it outside $HOME to avoid
-  # nested filesystem ordering issues during login.
-  #
-  #   zfs create -o mountpoint=legacy fastdisk/user/home/dlk-cache
-  #   zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
-  #   mkdir -p /fastcache/dlk && chown -R dlk:users /fastcache/dlk
-  fileSystems."/fastcache/dlk" =
-    {
+    # COLD START: Create ZFS dataset fastdisk/system/var/docker with a legacy
+    # mountpoint, disable autosnapshots on it, and optionally set a quota. On
+    # an existing host, migrate or delete the old /var/lib/docker contents
+    # before mounting the new dataset there, otherwise the old data remains
+    # hidden in the parent /var dataset and still consumes space.
+    #
+    #   zfs create -o mountpoint=legacy fastdisk/system/var/docker
+    #   zfs set com.sun:auto-snapshot=false fastdisk/system/var/docker
+    #   zfs set quota=400G fastdisk/system/var/docker  # optional
+    "/var/lib/docker" = {
+      device = "fastdisk/system/var/docker";
+      fsType = "zfs";
+    };
+
+    # COLD START: Create ZFS dataset fastdisk/user/home/dlk-cache with legacy
+    # mountpoint and disable autosnapshots on it. Mount it outside $HOME to
+    # avoid nested filesystem ordering issues during login.
+    #
+    #   zfs create -o mountpoint=legacy fastdisk/user/home/dlk-cache
+    #   zfs set com.sun:auto-snapshot=false fastdisk/user/home/dlk-cache
+    #   mkdir -p /fastcache/dlk && chown -R dlk:users /fastcache/dlk
+    "/fastcache/dlk" = {
       device = "fastdisk/user/home/dlk-cache";
       fsType = "zfs";
     };
+  };
 
   networking = {
     hostName = "skaia"; # XXX: this is used in email-alerts.nix

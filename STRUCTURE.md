@@ -109,6 +109,8 @@ Project documentation:
 These directories are created during cold-start and are essential to operation:
 
 - `/var/lib/prometheus2`: Prometheus data (ZFS dataset `fastdisk/prometheus`)
+- `/var/lib/docker`: Docker local storage (ZFS dataset
+  `fastdisk/system/var/docker`, autosnapshots disabled)
 - `/var/lib/registry`: Docker registry storage (ZFS dataset `slowdisk/registry`)
 - `/var/cache/netdata/dbengine`: Netdata metrics storage
 - `/fastcache/dlk`: User cache (ZFS dataset, autosnapshots disabled)
