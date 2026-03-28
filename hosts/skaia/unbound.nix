@@ -48,6 +48,8 @@
           "\"meteor-3.home.arpa. A 192.168.0.123\""
           "\"meteor-4.home.arpa. A 192.168.0.124\""
           "\"hive.home.arpa. A 192.168.0.144\""
+          # Rooted Wyze Cam Pan v2
+          "\"cam-pan.home.arpa. A 192.168.0.189\""
           # Home Assistant accessed via nginx proxy on skaia (not direct to HA Yellow)
           "\"assistant.home.arpa. A 192.168.0.160\""
           # Ollama LLM API (nginx proxy to localhost:11434)

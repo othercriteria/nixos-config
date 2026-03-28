@@ -16,6 +16,8 @@ hosts reside.
   - `meteor-3` → 192.168.0.123 (MAC 58-47-CA-7F-1E-71)
   - `meteor-4` → 192.168.0.124 (MAC 38-05-25-31-86-AE)
   - `hive` → 192.168.0.144 (MAC E0-D5-5E-2B-FB-72)
+  - `cam-pan` → 192.168.0.189 (MAC 7C-78-B2-86-82-6F, rooted Wyze Cam
+    Pan v2)
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - `projector` → 192.168.0.146 (MAC 28-24-C9-05-90-A2, Fire TV Stick 4K
     Max)
@@ -53,6 +55,7 @@ hosts reside.
     - `meteor-3.home.arpa` → 192.168.0.123
     - `meteor-4.home.arpa` → 192.168.0.124
     - `hive.home.arpa` → 192.168.0.144
+    - `cam-pan.home.arpa` → 192.168.0.189 (rooted Wyze Cam Pan v2)
     - `homeassistant.home.arpa` → 192.168.0.184
     - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy)
     - `assistant-direct.home.arpa` → 192.168.0.184 (HA direct/SSH)
@@ -66,7 +69,6 @@ hosts reside.
 
 - Optional (not preserved unless needed):
   - `ESP_4DBB32` → 192.168.0.208 (MAC 04-CF-8C-4D-BB-32)
-  - `unknown client name` → 192.168.0.189 (MAC 7C-78-B2-86-82-6F)
 - If these prove important, migrate them to static reservations and add
   corresponding DNS A records under the appropriate zone.
 
