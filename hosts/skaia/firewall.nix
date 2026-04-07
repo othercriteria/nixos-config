@@ -13,7 +13,7 @@
       3024 # Teleport reverse tunnel listener
       3025 # Teleport auth server (node join from LAN)
       3026 # Teleport Kubernetes proxy listener
-      3100 # Loki log ingestion (promtail from LAN hosts)
+      3100 # Loki log ingestion (Alloy from LAN hosts)
       6443 # k3s API server (required for cluster nodes/pods)
       6881 # BitTorrent (double-check necessity; high exposure surface)
       8200 # MiniDLNA web UI (limit to LAN clients)

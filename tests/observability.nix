@@ -3,7 +3,7 @@
 # This test uses the SAME modules as production, validating that:
 # - Prometheus starts and can scrape its own node exporter
 # - Prometheus alerting rules (from prometheus-rules.nix) are loaded
-# - Loki starts and can receive logs from Promtail
+# - Loki starts and can receive logs from Alloy
 # - Grafana is reachable with provisioned datasources
 #
 # Run with: nix flake check
@@ -45,7 +45,7 @@ pkgs.testers.nixosTest {
       };
     };
 
-    # Set hostname for promtail labels
+    # Set hostname for log shipping labels
     networking.hostName = "monitor";
 
     # Ensure we have curl for testing
@@ -115,9 +115,9 @@ pkgs.testers.nixosTest {
         with monitor.nested("waiting for Loki ready endpoint"):
             monitor.wait_until_succeeds("curl -sf localhost:3100/ready", timeout=30)
 
-    with subtest("Promtail is configured to ship logs to Loki"):
-        monitor.wait_for_unit("promtail.service")
-        # Verify promtail is running and connected to Loki
+    with subtest("Alloy is configured to ship logs to Loki"):
+        monitor.wait_for_unit("alloy.service")
+        # Verify Alloy is running and connected to Loki
         # (Full log flow verification is complex in VM tests due to timing)
 
     with subtest("End-to-end: Grafana datasources are provisioned"):

@@ -178,7 +178,7 @@
             pre-commit
             detect-secrets
             gitleaks
-            nodePackages.markdownlint-cli
+            markdownlint-cli
           ];
           shellHook = ''
             if [ ! -d private-assets ]; then

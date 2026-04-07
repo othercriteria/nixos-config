@@ -1,4 +1,4 @@
-# Promtail log shipper module
+# Alloy-backed Loki log shipper module
 #
 # Ships systemd journal logs to a Loki instance.
 # Used by both production hosts and test/demo environments.
@@ -15,7 +15,7 @@ let
 in
 {
   options.custom.promtail = {
-    enable = lib.mkEnableOption "Promtail log shipper";
+    enable = lib.mkEnableOption "Alloy-backed Loki log shipper";
 
     lokiUrl = lib.mkOption {
       type = lib.types.str;
@@ -25,31 +25,34 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    services.promtail = {
+    services.alloy = {
       enable = true;
-      configuration = {
-        server = {
-          disable = true;
-        };
-        clients = [{
-          url = cfg.lokiUrl;
-        }];
-        scrape_configs = [
-          {
-            job_name = "journal";
-            journal = {
-              labels = {
-                job = "systemd-journal";
-                host = config.networking.hostName;
-              };
-            };
-            relabel_configs = [{
-              source_labels = [ "__journal__systemd_unit" ];
-              target_label = "unit";
-            }];
-          }
-        ];
-      };
     };
+
+    environment.etc."alloy/config.alloy".text = ''
+      loki.relabel "journal" {
+        forward_to = []
+
+        rule {
+          source_labels = ["__journal__systemd_unit"]
+          target_label  = "unit"
+        }
+      }
+
+      loki.source.journal "read" {
+        forward_to    = [loki.write.endpoint.receiver]
+        relabel_rules = loki.relabel.journal.rules
+        labels = {
+          host = "${config.networking.hostName}",
+          job  = "systemd-journal",
+        }
+      }
+
+      loki.write "endpoint" {
+        endpoint {
+          url = "${cfg.lokiUrl}"
+        }
+      }
+    '';
   };
 }

@@ -82,9 +82,9 @@ zfs receive -F fastdisk/prometheus < backupfile
 
 Grafana dashboards are provisioned and can be managed as code.
 
-## Loki and Promtail
+## Loki and Alloy
 
-Loki and Promtail collect and store logs on ZFS. Retention and backup are
+Loki and Alloy collect and store logs on ZFS. Retention and backup are
 managed via ZFS.
 
 ## Troubleshooting

@@ -1,6 +1,6 @@
 # Observability for hive: metrics and logs flow to skaia
 #
-# Uses shared modules for Promtail log shipping.
+# Uses shared modules for Alloy-backed log shipping.
 # Site-specific: node exporter and netdata child node configuration.
 
 { config, lib, pkgs, ... }:

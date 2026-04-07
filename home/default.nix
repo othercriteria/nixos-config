@@ -48,6 +48,7 @@
     git = {
       enable = true;
       lfs.enable = true;
+      signing.format = "openpgp";
       settings = {
         user = {
           name = "Daniel Klein";
@@ -306,8 +307,8 @@
     kdePackages.ktorrent
     lutris
     maestral
-    protonvpn-gui
-    signal-desktop-bin
+    proton-vpn
+    signal-desktop
     slack
     spotify
     # TODO: simplify to just `vassal` now that _JAVA_AWT_WM_NONREPARENTING is set

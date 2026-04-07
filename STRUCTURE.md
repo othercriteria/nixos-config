@@ -26,7 +26,7 @@ Per-host NixOS configurations:
   - GPU support on meteor-4
   - Node exporter for Prometheus scraping
 - `hive/`: Headless server for Urbit and misc services
-  - Streams metrics/logs to skaia (node exporter, Netdata child, Promtail)
+  - Streams metrics/logs to skaia (node exporter, Netdata child, Alloy)
   - LUKS-encrypted root, bulk storage mounts
 - `demo/`: Standalone demo VM for portfolio showcase
   - Self-contained observability stack (no secrets required)
@@ -49,7 +49,7 @@ Reusable NixOS modules:
 - `grafana.nix`: Grafana with datasource provisioning
 - `loki.nix`: Loki log aggregation server
 - `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook, mobile push)
-- `promtail.nix`: Promtail log shipper
+- `promtail.nix`: Alloy-backed Loki log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
 - `vibectl.nix`: AI-powered kubectl wrapper
 - `veil/`: Veil cluster-specific modules

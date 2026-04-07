@@ -1113,7 +1113,7 @@ logs to `skaia` for centralized observability.
 
    ```sh
    # Observability (metrics stream to skaia)
-   systemctl status prometheus-node-exporter netdata promtail
+   systemctl status prometheus-node-exporter netdata alloy
 
    # Check netdata is streaming to skaia
    journalctl -u netdata | grep -i stream

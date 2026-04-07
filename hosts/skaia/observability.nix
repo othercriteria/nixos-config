@@ -4,7 +4,7 @@
 # - Prometheus with node exporter and k8s scraping
 # - Grafana dashboards
 # - Loki log aggregation
-# - Promtail log shipping
+# - Alloy log shipping
 #
 # Site-specific additions:
 # - Alertmanager with email notifications

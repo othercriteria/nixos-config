@@ -16,7 +16,7 @@
   #
   # Then deploy to skaia and the key will be available at /etc/nixos/secrets/
 
-  services.harmonia = {
+  services.harmonia.cache = {
     enable = true;
     signKeyPaths = [ "/etc/nixos/secrets/harmonia-cache-private-key" ];
     settings = {
