@@ -37,6 +37,9 @@
       "if [ -f /etc/nixos/secrets/anthropic-2025-03-28-local-dev ]; then"
       "  export ANTHROPIC_API_KEY=\"$(cat /etc/nixos/secrets/anthropic-2025-03-28-local-dev)\""
       "fi"
+      "if [ -f /etc/nixos/secrets/openai-2026-04-12-codex-local-dev ]; then"
+      "  export OPENAI_API_KEY=\"$(cat /etc/nixos/secrets/openai-2026-04-12-codex-local-dev)\""
+      "fi"
     ];
 
     zplug = {

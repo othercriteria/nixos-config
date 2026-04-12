@@ -285,6 +285,7 @@
 
     amp-cli # TODO: migrate to ampcode
     claude-code
+    codex
 
     twsPackage # Interactive Brokers TWS (provides `tws` command)
 
