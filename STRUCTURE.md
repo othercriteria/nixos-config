@@ -19,6 +19,7 @@ Per-host NixOS configurations:
   - Observability stack (Prometheus, Grafana, Loki, Netdata parent)
   - ntfy.sh push notifications (Alertmanager webhook, mobile/desktop alerts)
   - Teleport auth server, Harmonia nix cache
+  - Private Forgejo instance (LAN-first, PostgreSQL, Git LFS)
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
   - Ollama LLM + F5-TTS (OpenAI-compatible APIs, GPU-accelerated)
@@ -114,6 +115,10 @@ These directories are created during cold-start and are essential to operation:
 - `/var/lib/registry`: Docker registry storage (ZFS dataset `slowdisk/registry`)
 - `/var/cache/netdata/dbengine`: Netdata metrics storage
 - `/fastcache/dlk`: User cache (ZFS dataset, autosnapshots disabled)
+- `/var/lib/postgresql`: Forgejo PostgreSQL data
+- `/var/lib/forgejo`: Forgejo app state
+- `/var/lib/forgejo-repositories`: Forgejo bare repositories
+- `/var/lib/forgejo-lfs`: Forgejo Git LFS content
 
 ## Updating This Document
 

@@ -11,6 +11,7 @@
     ./ddclient.nix
     ./email-alerts.nix
     ./firewall.nix
+    ./forgejo.nix
     ../../modules/github-runner.nix
     ./graphics.nix
     ../../modules/harmonia.nix

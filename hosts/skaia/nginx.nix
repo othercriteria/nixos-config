@@ -153,6 +153,28 @@ in
         '';
       };
 
+      # Private Forgejo web UI (LAN only for MVP)
+      "forgejo.home.arpa" = {
+        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        locations."/" = {
+          # Use raw proxy config so the forwarded Host header stays as
+          # forgejo.home.arpa. The proxyPass helper combined with recommended
+          # proxy settings can rewrite Host to the upstream address, which
+          # Forgejo then rejects because it does not match ROOT_URL.
+          extraConfig = ''
+            proxy_pass http://127.0.0.1:3044;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 1G;
+            proxy_read_timeout 600s;
+            proxy_send_timeout 600s;
+          '';
+        };
+      };
+
       # Netdata real-time monitoring (LAN only)
       "netdata.home.arpa" = {
         listen = [{ addr = "0.0.0.0"; port = 80; }];

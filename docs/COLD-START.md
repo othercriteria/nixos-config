@@ -1803,3 +1803,50 @@ No configuration needed on the NixOS side for this.
 - `modules/printing.nix` — CUPS service and brlaser driver (declarative)
 - `hosts/skaia/airplay.nix` — Avahi/mDNS with `nssmdns4 = true` (declarative)
 - CUPS printer definition — stored in `/var/lib/cups/` (imperative)
+
+---
+
+## 27. Forgejo on `skaia`
+
+**Context:** `skaia` hosts a private, LAN-first Forgejo instance backed by
+local PostgreSQL. The MVP keeps the web UI behind nginx at
+`http://forgejo.home.arpa`, enables Git LFS, and disables Forgejo SSH until
+the deployment has settled.
+
+### Initial admin bootstrap
+
+1. After Forgejo starts cleanly, create the first admin user:
+
+   ```sh
+   sudo -u forgejo forgejo admin user create \
+     --config /var/lib/forgejo/custom/conf/app.ini \
+     --username dlk \
+     --email othercriteria@gmail.com \
+     --admin \
+     --password 'choose-a-strong-password'
+   ```
+
+1. Log in at `http://forgejo.home.arpa/`.
+
+1. Create a personal access token for local Git and agent workflows.
+
+1. Create private repositories as needed and enable Git LFS in those repos:
+
+   ```sh
+   git lfs install
+   ```
+
+### Notes
+
+- `services.forgejo.dump.enable = true` writes periodic dump archives to
+  `/bulk/forgejo-backups`.
+- Future refinement: move PostgreSQL, Forgejo app state, repositories, and
+  LFS onto dedicated ZFS datasets after creating them explicitly.
+- A later refinement can move the web UI behind Teleport application access
+  and add declarative admin bootstrap from a secret-backed password file.
+
+**In config:**
+
+- `hosts/skaia/forgejo.nix` — Forgejo, PostgreSQL, ZFS-backed mounts
+- `hosts/skaia/nginx.nix` — LAN reverse proxy for `forgejo.home.arpa`
+- `hosts/skaia/unbound.nix` — DNS record for `forgejo.home.arpa`
