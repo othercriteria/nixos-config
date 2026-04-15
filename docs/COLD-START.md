@@ -1809,9 +1809,77 @@ No configuration needed on the NixOS side for this.
 ## 27. Forgejo on `skaia`
 
 **Context:** `skaia` hosts a private, LAN-first Forgejo instance backed by
-local PostgreSQL. The MVP keeps the web UI behind nginx at
+local PostgreSQL. The service state lives on dedicated ZFS datasets mounted at
+`/var/lib/postgresql`, `/var/lib/forgejo`, `/var/lib/forgejo-repositories`,
+and `/var/lib/forgejo-lfs`. The MVP keeps the web UI behind nginx at
 `http://forgejo.home.arpa`, enables Git LFS, and disables Forgejo SSH until
 the deployment has settled.
+
+### ZFS datasets
+
+1. Create the dedicated datasets:
+
+   ```sh
+   sudo zfs create -p -o mountpoint=legacy fastdisk/services/forgejo
+   sudo zfs create -o mountpoint=legacy fastdisk/services/forgejo/postgresql
+   sudo zfs create -o mountpoint=legacy fastdisk/services/forgejo/app
+   sudo zfs create -o mountpoint=legacy fastdisk/services/forgejo/repos
+   sudo zfs create -o mountpoint=legacy fastdisk/services/forgejo/lfs
+   ```
+
+1. If Forgejo was already running on the parent `/var` dataset, stop the
+   services and copy the state into the datasets before switching the
+   config:
+
+   ```sh
+   sudo systemctl stop forgejo postgresql
+
+   sudo mkdir -p /mnt/forgejo-{pg,app,repos,lfs}
+   sudo mount -t zfs fastdisk/services/forgejo/postgresql /mnt/forgejo-pg
+   sudo mount -t zfs fastdisk/services/forgejo/app /mnt/forgejo-app
+   sudo mount -t zfs fastdisk/services/forgejo/repos /mnt/forgejo-repos
+   sudo mount -t zfs fastdisk/services/forgejo/lfs /mnt/forgejo-lfs
+
+   sudo rsync -aHAX --numeric-ids /var/lib/postgresql/ /mnt/forgejo-pg/
+   sudo rsync -aHAX --numeric-ids /var/lib/forgejo/ /mnt/forgejo-app/
+   sudo rsync -aHAX --numeric-ids /var/lib/forgejo-repositories/ /mnt/forgejo-repos/
+   sudo rsync -aHAX --numeric-ids /var/lib/forgejo-lfs/ /mnt/forgejo-lfs/
+
+   sudo umount /mnt/forgejo-pg /mnt/forgejo-app /mnt/forgejo-repos /mnt/forgejo-lfs
+   sudo rmdir /mnt/forgejo-pg /mnt/forgejo-app /mnt/forgejo-repos /mnt/forgejo-lfs
+   ```
+
+1. Move the old directories aside so the new mounts do not hide stale data on
+   the parent dataset:
+
+   ```sh
+   sudo mv /var/lib/postgresql /var/lib/postgresql.pre-zfs
+   sudo mv /var/lib/forgejo /var/lib/forgejo.pre-zfs
+   sudo mv /var/lib/forgejo-repositories /var/lib/forgejo-repositories.pre-zfs
+   sudo mv /var/lib/forgejo-lfs /var/lib/forgejo-lfs.pre-zfs
+
+   sudo mkdir -p /var/lib/postgresql /var/lib/forgejo \
+     /var/lib/forgejo-repositories /var/lib/forgejo-lfs
+   ```
+
+1. Switch to the config that mounts the datasets, then verify:
+
+   ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#skaia
+
+   mount | grep '/var/lib/postgresql\|/var/lib/forgejo'
+   systemctl status postgresql forgejo --no-pager
+   ```
+
+1. After verifying the service is healthy on the mounted datasets, remove the
+   `.pre-zfs` rollback copies:
+
+   ```sh
+   sudo rm -rf /var/lib/postgresql.pre-zfs
+   sudo rm -rf /var/lib/forgejo.pre-zfs
+   sudo rm -rf /var/lib/forgejo-repositories.pre-zfs
+   sudo rm -rf /var/lib/forgejo-lfs.pre-zfs
+   ```
 
 ### Initial admin bootstrap
 
@@ -1840,8 +1908,6 @@ the deployment has settled.
 
 - `services.forgejo.dump.enable = true` writes periodic dump archives to
   `/bulk/forgejo-backups`.
-- Future refinement: move PostgreSQL, Forgejo app state, repositories, and
-  LFS onto dedicated ZFS datasets after creating them explicitly.
 - A later refinement can move the web UI behind Teleport application access
   and add declarative admin bootstrap from a secret-backed password file.
 

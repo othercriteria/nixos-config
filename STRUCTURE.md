@@ -115,10 +115,14 @@ These directories are created during cold-start and are essential to operation:
 - `/var/lib/registry`: Docker registry storage (ZFS dataset `slowdisk/registry`)
 - `/var/cache/netdata/dbengine`: Netdata metrics storage
 - `/fastcache/dlk`: User cache (ZFS dataset, autosnapshots disabled)
-- `/var/lib/postgresql`: Forgejo PostgreSQL data
-- `/var/lib/forgejo`: Forgejo app state
-- `/var/lib/forgejo-repositories`: Forgejo bare repositories
-- `/var/lib/forgejo-lfs`: Forgejo Git LFS content
+- `/var/lib/postgresql`: Forgejo PostgreSQL data (ZFS dataset
+  `fastdisk/services/forgejo/postgresql`)
+- `/var/lib/forgejo`: Forgejo app state (ZFS dataset
+  `fastdisk/services/forgejo/app`)
+- `/var/lib/forgejo-repositories`: Forgejo bare repositories (ZFS dataset
+  `fastdisk/services/forgejo/repos`)
+- `/var/lib/forgejo-lfs`: Forgejo Git LFS content (ZFS dataset
+  `fastdisk/services/forgejo/lfs`)
 
 ## Updating This Document
 

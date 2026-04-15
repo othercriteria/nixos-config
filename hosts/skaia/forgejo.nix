@@ -5,6 +5,41 @@ let
   forgejoPort = 3044;
 in
 {
+  # COLD START: The Forgejo datasets on fastdisk must exist before this config
+  # is applied:
+  #
+  #   zfs create -p -o mountpoint=legacy fastdisk/services/forgejo
+  #   zfs create -o mountpoint=legacy fastdisk/services/forgejo/postgresql
+  #   zfs create -o mountpoint=legacy fastdisk/services/forgejo/app
+  #   zfs create -o mountpoint=legacy fastdisk/services/forgejo/repos
+  #   zfs create -o mountpoint=legacy fastdisk/services/forgejo/lfs
+  #
+  # Migration note: if Forgejo/PostgreSQL were first brought up on the parent
+  # /var dataset, stop the services, rsync the existing contents into the
+  # datasets mounted temporarily elsewhere, then switch this config so the
+  # datasets mount at the final paths. See docs/COLD-START.md.
+  fileSystems = {
+    "/var/lib/postgresql" = {
+      device = "fastdisk/services/forgejo/postgresql";
+      fsType = "zfs";
+    };
+
+    "/var/lib/forgejo" = {
+      device = "fastdisk/services/forgejo/app";
+      fsType = "zfs";
+    };
+
+    "/var/lib/forgejo-repositories" = {
+      device = "fastdisk/services/forgejo/repos";
+      fsType = "zfs";
+    };
+
+    "/var/lib/forgejo-lfs" = {
+      device = "fastdisk/services/forgejo/lfs";
+      fsType = "zfs";
+    };
+  };
+
   environment.systemPackages = with pkgs; [
     forgejo
   ];
@@ -12,11 +47,6 @@ in
   services = {
     # Keep PostgreSQL local for the MVP. Using the default unix socket path lets
     # the built-in Forgejo module create and own the database declaratively.
-    #
-    # Future refinement: move PostgreSQL, Forgejo app state, repositories, and
-    # LFS onto dedicated ZFS datasets once those datasets have been created. The
-    # first deploy intentionally avoids hard mount dependencies so a missing
-    # dataset cannot wedge boot again.
     postgresql = {
       enable = true;
     };
