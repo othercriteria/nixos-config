@@ -69,47 +69,52 @@ if echo "$CHANGED_FILES" | grep -q '\.pre-commit-config\.yaml$'; then
   echo "Consider reviewing .cursor/rules/nixos-commits.mdc if you've modified checks." >&2
 fi
 
-# Function to process multi-line message parts into -m arguments
-create_m_args() {
-  local input_str="$1"
-  local current_args=""
+# Build the `git commit` invocation as an array so each logical section
+# becomes exactly one -m argument. Git separates consecutive -m args with a
+# blank line, which gives us the rule's template layout:
+#
+#   <type>: <concise description>
+#
+#   <body>
+#
+#   Breaking Changes:
+#   - ...
+#
+#   Affected Hosts:
+#   - ...
+#
+# Literal newlines inside a single -m are preserved verbatim, so multi-line
+# body/bullet blocks render without the spurious blank lines that the old
+# "one -m per line" approach produced.
 
-  if [[ -z "$input_str" || "$input_str" == "None" ]]; then
-    echo ""
-    return
-  fi
-
-  local tmpfile_args
-  tmpfile_args=$(mktemp)
-  printf "%s" "$input_str" > "$tmpfile_args"
-
-  while IFS= read -r line; do
-    local line_escaped="${line//\"/\\\"}" # Escape double quotes
-    current_args="$current_args -m \"$line_escaped\""
-  done < "$tmpfile_args"
-
-  rm "$tmpfile_args"
-  echo "$current_args"
+# Treat "None" (literal) as "absent" -- the rule passes "None" for unused
+# optional arguments.
+is_present() {
+  [[ -n "$1" && "$1" != "None" ]]
 }
 
-CONCISE_ARG="-m \"$COMMIT_TYPE: $CONCISE_DESCRIPTION\""
-DESCRIPTION_ARGS=$(create_m_args "$DETAILED_DESCRIPTION")
+cmd=(git commit -m "$COMMIT_TYPE: $CONCISE_DESCRIPTION")
 
-BREAKING_HEADER=""
-BREAKING_ARGS=""
-if [[ -n "$BREAKING_CHANGES" && "$BREAKING_CHANGES" != "None" ]]; then
-  BREAKING_HEADER="-m \"\" -m \"Breaking Changes:\""
-  BREAKING_ARGS=$(create_m_args "$BREAKING_CHANGES")
+if is_present "$DETAILED_DESCRIPTION"; then
+  cmd+=(-m "$DETAILED_DESCRIPTION")
 fi
 
-AFFECTED_HOSTS_HEADER=""
-AFFECTED_HOSTS_ARGS=""
-if [[ -n "$AFFECTED_HOSTS" && "$AFFECTED_HOSTS" != "None" ]]; then
-  AFFECTED_HOSTS_HEADER="-m \"\" -m \"Affected Hosts:\""
-  AFFECTED_HOSTS_ARGS=$(create_m_args "$AFFECTED_HOSTS")
+if is_present "$BREAKING_CHANGES"; then
+  cmd+=(-m "Breaking Changes:
+$BREAKING_CHANGES")
 fi
 
-# Construct the final git commit command with all arguments
-# Ensure that args are correctly expanded and quoted using eval
-echo "Executing: git commit $CONCISE_ARG $DESCRIPTION_ARGS $BREAKING_HEADER $BREAKING_ARGS $AFFECTED_HOSTS_HEADER $AFFECTED_HOSTS_ARGS" >&2
-eval git commit "$CONCISE_ARG" "$DESCRIPTION_ARGS" "$BREAKING_HEADER" "$BREAKING_ARGS" "$AFFECTED_HOSTS_HEADER" "$AFFECTED_HOSTS_ARGS"
+if is_present "$AFFECTED_HOSTS"; then
+  cmd+=(-m "Affected Hosts:
+$AFFECTED_HOSTS")
+fi
+
+# Log what we're about to run. Use %q so embedded newlines/quotes survive the
+# round trip into the user's terminal log.
+{
+  printf 'Executing:'
+  printf ' %q' "${cmd[@]}"
+  printf '\n'
+} >&2
+
+exec "${cmd[@]}"
