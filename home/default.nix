@@ -1,4 +1,4 @@
-{ pkgs, pkgs-stable, config, twsPackage, ... }:
+{ pkgs, twsPackage, ... }:
 
 {
   home = {
@@ -18,6 +18,7 @@
   systemd.user.startServices = false;
 
   imports = [
+    ./docker.nix
     ./helm.nix
     ./keyboard.nix
     ./sway.nix
