@@ -149,6 +149,24 @@
               targets = [ "127.0.0.1:${toString config.custom.prometheus.nodeExporter.port}" ];
             }];
           }
+          # SMART/NVMe health metrics. Lets us see things like
+          # smartctl_device_critical_warning, percentage_used, available_spare,
+          # media_errors_total. Crucial for catching NVMe firmware/wear issues
+          # on the fastdisk pool (Samsung 990 PROs) before they take the host
+          # down again.
+          {
+            job_name = "smartctl";
+            # smartctl exporter polls the disks itself on its own interval
+            # (see services.prometheus.exporters.smartctl below), so we just
+            # need a slow-ish scrape here. Fast scrapes don't yield fresh data.
+            scrape_interval = "60s";
+            static_configs = [{
+              targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.smartctl.port}" ];
+              labels = {
+                instance = "skaia";
+              };
+            }];
+          }
           {
             job_name = "hive";
             scrape_interval = "30s";
@@ -319,6 +337,18 @@
 
     # Prometheus exporters and alertmanager
     prometheus = {
+      # smartctl_exporter: SMART/NVMe metrics for the two Samsung 990 PROs
+      # backing fastdisk plus the SATA disks in slowdisk. Bound to localhost
+      # only (Prometheus scrapes on the same host). The NixOS module already
+      # grants the necessary CAP_SYS_RAWIO/CAP_SYS_ADMIN and DeviceAllow rules
+      # so we can run it as an unprivileged smartctl-exporter user.
+      exporters.smartctl = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+        # Default port is 9633; leave as-is. Polling interval defaults to 60s,
+        # which matches our scrape_interval above.
+      };
+
       # Blackbox exporter for HTTP/TCP probe monitoring
       # Used to check if services like Urbit are responding
       exporters.blackbox = {

@@ -81,7 +81,20 @@
       efi.canTouchEfiVariables = true;
     };
     kernel.sysctl."kernel.perf_event_paranoid" = 0;
-    kernelParams = [ "zfs.zfs_arc_max=38654705664" ];
+    kernelParams = [
+      "zfs.zfs_arc_max=38654705664"
+      # Disable the deeper NVMe APST (Autonomous Power State Transition)
+      # states. Samsung 990 PROs on AMD platforms are a known-bad combo for
+      # APST: under certain workloads a drive can fail to wake from a deep
+      # power state and disappear from PCIe entirely, requiring a full
+      # power cycle. We hit exactly this on 2026-04-22 (BIOS reported only
+      # one of the two NVMes after a soft reboot; both reappeared after a
+      # cold boot). Setting the max permitted latency to 0us forbids the
+      # kernel from selecting any non-operational PS, keeping the drives
+      # in PS0/PS1 only at the cost of a tiny bit of idle power. See:
+      #   https://bugzilla.kernel.org/show_bug.cgi?id=195039
+      "nvme_core.default_ps_max_latency_us=0"
+    ];
   };
 
   fileSystems = {

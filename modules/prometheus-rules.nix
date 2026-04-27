@@ -55,6 +55,21 @@
                   description = "One or more targets are failing scrapes.";
                 };
               }
+              {
+                # Catches the regression we hit on skaia where
+                # prometheus-node-exporter died silently for ~4 days because
+                # systemd hit its start-limit. Any scrape job staying down
+                # for 15 minutes should page us so we can't silently lose
+                # telemetry again.
+                alert = "ScrapeTargetDown";
+                expr = "up == 0";
+                "for" = "15m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "Scrape target {{ $labels.job }} on {{ $labels.instance }} is down";
+                  description = "Prometheus has been unable to scrape {{ $labels.job }} at {{ $labels.instance }} for 15 minutes (up == 0).";
+                };
+              }
             ];
           }
           # Home Assistant security monitoring
@@ -107,6 +122,69 @@
                 annotations = {
                   summary = "Urbit ship ~{{ $labels.ship }} responding slowly";
                   description = "Urbit web interface is taking >5s to respond for 5 minutes.";
+                };
+              }
+            ];
+          }
+          # SMART/NVMe health rules. Driven by smartctl_exporter where it
+          # is enabled (currently only skaia). These give us early warning
+          # for the kind of NVMe issue that left fastdisk in a precarious
+          # state in April 2026.
+          {
+            name = "smart.rules";
+            rules = [
+              {
+                alert = "SmartHealthFailing";
+                # smartctl_device_smart_status: 1 = passed, 0 = failed
+                expr = "smartctl_device_smart_status == 0";
+                "for" = "5m";
+                labels = { severity = "critical"; };
+                annotations = {
+                  summary = "SMART self-assessment failing on {{ $labels.device }}";
+                  description = "smartctl reports SMART overall-health FAILED on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Investigate / replace immediately.";
+                };
+              }
+              {
+                alert = "NvmeCriticalWarning";
+                expr = "smartctl_device_critical_warning > 0";
+                "for" = "5m";
+                labels = { severity = "critical"; };
+                annotations = {
+                  summary = "NVMe critical warning on {{ $labels.device }}";
+                  description = "smartctl_device_critical_warning is {{ $value }} on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Any non-zero value indicates an NVMe controller-reported critical condition.";
+                };
+              }
+              {
+                alert = "NvmeMediaErrors";
+                expr = "increase(smartctl_device_media_errors_total[1h]) > 0";
+                "for" = "5m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "New NVMe media/integrity errors on {{ $labels.device }}";
+                  description = "smartctl_device_media_errors_total increased by {{ $value }} in the last hour on {{ $labels.device }} at {{ $labels.instance }}.";
+                };
+              }
+              {
+                alert = "NvmeWearHigh";
+                expr = "smartctl_device_percentage_used > 80";
+                "for" = "1h";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "NVMe wear above 80% on {{ $labels.device }}";
+                  description = "Percentage Used is {{ $value }}% on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Plan replacement before the drive enters read-only fallback at 100%.";
+                };
+              }
+              {
+                alert = "NvmeAvailableSpareLow";
+                # NVMe Available Spare is reported as a percentage; healthy
+                # drives sit at 100. Once it drops below the threshold
+                # (typically 10), the controller raises a critical warning.
+                expr = "smartctl_device_available_spare < 20";
+                "for" = "10m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "NVMe available spare low on {{ $labels.device }}";
+                  description = "Available Spare is {{ $value }}% on {{ $labels.device }} at {{ $labels.instance }}. Approaching the controller's available_spare_threshold; replacement should be planned.";
                 };
               }
             ];

@@ -64,18 +64,32 @@ in
               set -euo pipefail
               LOG="/var/log/shutdown-reasons.log"
 
-              # Get last shutdown type from previous boot journal
+              # Get last shutdown type from previous boot journal. tail -1
+              # collapses to empty if no entries; default to "unknown" so
+              # the log line is still informative. Suppress pipefail with
+              # `|| true` so a missing previous boot doesn't abort the unit.
               LAST_SHUTDOWN=$(${pkgs.systemd}/bin/journalctl -b -1 --output=cat \
-                -u systemd-shutdown.service 2>/dev/null | tail -1 || echo "unknown")
+                -u systemd-shutdown.service 2>/dev/null | tail -1 || true)
+              [ -z "$LAST_SHUTDOWN" ] && LAST_SHUTDOWN="unknown"
 
-              # Check if previous boot ended cleanly
-              CLEAN_SHUTDOWN=$(${pkgs.systemd}/bin/journalctl -b -1 \
+              # Count how many of halt/poweroff/reboot targets were reached
+              # in the previous boot. Using `grep -c` here is fragile under
+              # `set -e` because grep exits 1 when there are zero matches,
+              # and a `|| echo 0` rescue concatenates a literal "0" onto the
+              # already-numeric "0" output. Compute the count without grep's
+              # exit code surfacing.
+              REACHED_LINES=$(${pkgs.systemd}/bin/journalctl -b -1 \
                 -u halt.target -u poweroff.target -u reboot.target \
-                --output=cat 2>/dev/null | grep -c "Reached target" || echo "0")
+                --output=cat 2>/dev/null \
+                || true)
+              CLEAN_SHUTDOWN=$(printf '%s\n' "$REACHED_LINES" \
+                | ${pkgs.gnugrep}/bin/grep -c "Reached target" \
+                || true)
+              CLEAN_SHUTDOWN="''${CLEAN_SHUTDOWN:-0}"
 
               BOOT_TIME=$(${pkgs.coreutils}/bin/date "+%Y-%m-%d %H:%M:%S")
 
-              if [ "$CLEAN_SHUTDOWN" = "0" ]; then
+              if [ "$CLEAN_SHUTDOWN" -eq 0 ] 2>/dev/null; then
                 echo "$BOOT_TIME - BOOT after possible unclean shutdown (last: $LAST_SHUTDOWN)" >> "$LOG"
               else
                 echo "$BOOT_TIME - BOOT after clean shutdown" >> "$LOG"
