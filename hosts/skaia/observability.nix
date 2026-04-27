@@ -264,13 +264,31 @@
   # Site-specific: Alertmanager, Netdata, ZFS snapshots
   # ============================================================
 
-  systemd.services.alertmanager.serviceConfig = {
-    User = "dlk";
-  };
+  systemd.services = {
+    alertmanager.serviceConfig.User = "dlk";
 
-  systemd.services.prometheus.serviceConfig = {
-    User = "prometheus";
-    Group = "prometheus";
+    prometheus.serviceConfig = {
+      User = "prometheus";
+      Group = "prometheus";
+    };
+
+    # Ensure the smartctl-exporter-access ACL is present on /dev/nvme*
+    # before the exporter scans devices. The NixOS module ships a udev
+    # rule that ACL-grants the smartctl-exporter-access group on
+    # `ACTION=="add"` events for NVMe character devices, but on a running
+    # system the rule never fires for NVMes that were attached at boot
+    # before the rule was loaded (e.g. immediately after a `nixos-rebuild
+    # switch` that introduces or restarts the exporter). The exporter
+    # caches its initial device scan, so even if the ACL becomes correct
+    # later, NVMe metrics never appear until restart.
+    #
+    # Re-trigger udev for the nvme subsystem at every service start, as
+    # root (the `+` prefix), and wait for the events to drain. This is
+    # idempotent and cheap.
+    prometheus-smartctl-exporter.serviceConfig.ExecStartPre = [
+      "+${pkgs.systemd}/bin/udevadm trigger --action=add --subsystem-match=nvme"
+      "+${pkgs.systemd}/bin/udevadm settle --timeout=5"
+    ];
   };
 
   services = {

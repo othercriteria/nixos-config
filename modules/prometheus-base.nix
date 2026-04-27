@@ -14,6 +14,16 @@ let
   cfg = config.custom.prometheus;
 in
 {
+  imports = [
+    # Pulls in the systemd `Sockets=` workaround for the NixOS
+    # node_exporter socket-activation regression. See the module for
+    # details. Importing here means every host using `custom.prometheus`
+    # is protected; hosts that enable `services.prometheus.exporters.node`
+    # directly (e.g. hive) get the fix from common/server-common, which
+    # also import this module.
+    ./prometheus-node-exporter-fix.nix
+  ];
+
   options.custom.prometheus = {
     enable = lib.mkEnableOption "Prometheus monitoring";
 
@@ -116,20 +126,6 @@ in
 
       # Use rules from prometheus-rules.nix if imported
       rules = lib.mkIf (config ? prometheusRules) config.prometheusRules;
-    };
-
-    # Bind node_exporter's service to its socket explicitly. The NixOS
-    # exporters.node module enables systemd socket activation
-    # (`--web.systemd-socket`), but does not add `Sockets=` to the [Service]
-    # unit. As a result, when systemd restarts the service directly (e.g.
-    # during `nixos-rebuild switch`) it does not pass any listening FDs and
-    # node_exporter aborts with:
-    #   "no socket activation file descriptors found"
-    # which can hit the systemd start-limit and leave the service down for
-    # days. Adding the explicit binding makes restarts work regardless of
-    # whether activation came via the socket or systemctl restart.
-    systemd.services.prometheus-node-exporter = lib.mkIf cfg.nodeExporter.enable {
-      serviceConfig.Sockets = "prometheus-node-exporter.socket";
     };
   };
 }

@@ -9,6 +9,10 @@
     ../../modules/protonvpn.nix
     ../../modules/shutdown-visibility.nix
     ../../modules/vibectl.nix
+    # Protects desktop hosts that run node_exporter from the upstream
+    # socket-activation regression. Idempotent with prometheus-base.nix's
+    # own import of the same module.
+    ../../modules/prometheus-node-exporter-fix.nix
   ];
 
   custom = {
