@@ -73,6 +73,12 @@ in
           client_max_body_size 50M;
         '';
 
+        # NOTE: do NOT re-declare proxy_set_header Host/X-Real-IP/X-Forwarded-*
+        # in these locations. services.nginx.recommendedProxySettings = true
+        # (set in hosts/skaia/nginx.nix) already injects them. proxyWebsockets =
+        # true already injects Upgrade/Connection. Redeclaring duplicates the
+        # headers and HA's aiohttp (>=3.10) rejects the request with 400
+        # "Duplicate 'Host' header found." (broke after the 2026.4.x update).
         locations = {
           # Authentication endpoints - strict rate limiting
           "/auth/" = {
@@ -81,11 +87,6 @@ in
             extraConfig = ''
               # Strict rate limit: 10 requests/minute with small burst
               limit_req zone=ha_auth burst=5 nodelay;
-
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
 
               # Timeouts for auth
               proxy_connect_timeout 10s;
@@ -102,11 +103,6 @@ in
               # Moderate rate limit for API
               limit_req zone=ha_general burst=30 nodelay;
 
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-
               # Longer timeouts for API calls
               proxy_connect_timeout 10s;
               proxy_send_timeout 60s;
@@ -119,11 +115,6 @@ in
             proxyPass = "http://${haUpstream}";
             proxyWebsockets = true;
             extraConfig = ''
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-
               # WebSocket-specific settings
               proxy_connect_timeout 10s;
               proxy_send_timeout 86400s;
@@ -137,13 +128,6 @@ in
             proxyWebsockets = true;
             extraConfig = ''
               limit_req zone=ha_general burst=30 nodelay;
-
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection "upgrade";
 
               # General timeouts
               proxy_connect_timeout 10s;
@@ -164,10 +148,9 @@ in
           proxyPass = "http://${haUpstream}";
           proxyWebsockets = true;
           extraConfig = ''
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            # See note in assistant.valueof.info above re: not re-declaring
+            # proxy_set_header — recommendedProxySettings + proxyWebsockets
+            # already inject Host/X-Forwarded-*/Upgrade/Connection.
             proxy_buffering off;
           '';
         };
