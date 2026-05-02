@@ -64,9 +64,10 @@ hosts reside.
     - `meteor-4.home.arpa` → 192.168.0.124
     - `hive.home.arpa` → 192.168.0.144
     - `cam-pan.home.arpa` → 192.168.0.189 (rooted Wyze Cam Pan v2)
-    - `homeassistant.home.arpa` → 192.168.0.184
-    - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy)
-    - `assistant-direct.home.arpa` → 192.168.0.184 (HA direct/SSH)
+    - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy on
+      skaia: TLS, rate limits, fail2ban)
+    - `assistant-direct.home.arpa` → 192.168.0.184 (HA Yellow direct,
+      no proxy: SSH, nginx upstream target)
     - `ollama.home.arpa` → 192.168.0.160 (Ollama LLM API via nginx)
     - `tts.home.arpa` → 192.168.0.160 (F5-TTS via nginx)
     - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick 4K Max)

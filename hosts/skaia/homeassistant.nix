@@ -21,8 +21,13 @@
 { config, lib, pkgs, ... }:
 
 let
-  # Home Assistant internal address (static IP from router DHCP)
-  haUpstream = "192.168.0.184:8123";
+  # Home Assistant Yellow on the LAN. assistant-direct.home.arpa is the
+  # canonical "bypass the local nginx proxy and talk to the device
+  # itself" name, defined in hosts/skaia/unbound.nix and pointing at
+  # the DHCP-reserved IP for the HA Yellow. nginx resolves upstream
+  # names once at config load - this only works because skaia uses its
+  # own unbound for DNS, so the local zone is always available.
+  haUpstream = "assistant-direct.home.arpa:8123";
 
   # Rate limit zones
   # - ha_auth: strict limit for authentication endpoints

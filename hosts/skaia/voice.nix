@@ -7,9 +7,13 @@
 # Used by:
 # - Home Assistant's Wyoming integration (Settings -> Devices & Services ->
 #   Add -> Wyoming Protocol). Add one entry per service:
-#     STT: 192.168.0.160:10300   (skaia.home.arpa from inside the HA addon
-#                                 container does not resolve; use the IP)
-#     TTS: 192.168.0.160:10200
+#     STT: skaia.home.arpa:10300
+#     TTS: skaia.home.arpa:10200
+#   Hostnames resolve from inside HA's Core container because we point
+#   HAOS's Supervisor CoreDNS at skaia's unbound (`ha dns options
+#   --servers dns://192.168.0.160` on the HA Yellow). Existing entries
+#   created back when DNS didn't resolve still hold IP literals - safe
+#   to leave, or reconfigure to FQDNs for clarity.
 # - Atom Echo voice satellite (m5stack-atom-echo-54d358) and any future
 #   wake-word satellites; HA brokers their audio to STT and pulls
 #   synthesized audio from TTS, then plays it back on the satellite.
