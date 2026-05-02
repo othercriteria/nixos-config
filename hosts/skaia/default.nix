@@ -16,6 +16,7 @@
     ./graphics.nix
     ../../modules/harmonia.nix
     ./homeassistant.nix
+    ./kokoro.nix
     ./mqtt.nix
     ./mqtt-state-publisher.nix
     ./k3s

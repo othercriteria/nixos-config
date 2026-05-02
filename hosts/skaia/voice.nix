@@ -1,14 +1,21 @@
 # Voice assistant server-side stack on skaia.
 #
 # Currently provides:
-# - Wyoming faster-whisper STT server on tcp://skaia.home.arpa:10300
-# - Wyoming F5-TTS proxy           on tcp://skaia.home.arpa:10200
+# - Wyoming faster-whisper STT server  on tcp://skaia.home.arpa:10300
+# - Wyoming F5-TTS proxy               on tcp://skaia.home.arpa:10200
+# - Wyoming Kokoro proxy (a/b candidate) on tcp://skaia.home.arpa:10210
 #
 # Used by:
 # - Home Assistant's Wyoming integration (Settings -> Devices & Services ->
 #   Add -> Wyoming Protocol). Add one entry per service:
 #     STT: skaia.home.arpa:10300
-#     TTS: skaia.home.arpa:10200
+#     TTS (F5):     skaia.home.arpa:10200
+#     TTS (Kokoro): skaia.home.arpa:10210
+#   Both TTS endpoints are wired in parallel so we can flip the active
+#   engine in the HA Assist pipeline (Settings -> Voice assistants ->
+#   <pipeline> -> Text-to-speech) without rebuilds. The choice is per
+#   pipeline, not global - useful when you want one satellite to use
+#   Kokoro and another to keep using F5.
 #   Hostnames resolve from inside HA's Core container because we point
 #   HAOS's Supervisor CoreDNS at skaia's unbound (`ha dns options
 #   --servers dns://192.168.0.160` on the HA Yellow). Existing entries
@@ -87,6 +94,22 @@
 #   surface HTTP errors as silent (empty) audio, which lets HA fail fast
 #   instead of hanging the satellite.
 #
+# Choices - TTS (Kokoro proxy, a/b candidate):
+# - Same shape as the F5 proxy: thin Python translator, Wyoming on one
+#   side, OpenAI-compatible /v1/audio/speech (response_format=pcm) on
+#   the other. Source: assets/wyoming-kokoro.py. Backing container in
+#   hosts/skaia/kokoro.nix on 127.0.0.1:8881.
+# - Why side-by-side instead of replacing F5: F5 has expressive prosody
+#   but no text normalization frontend (turns "11:39" into "eleventeen
+#   thirty-nine" because it phonemes the literal characters). Kokoro
+#   uses misaki[en], which normalizes numbers/dates/times before
+#   phonemizing. Running both lets us A/B in HA without rebuilds.
+# - Voices: ~50 ship with Kokoro; we advertise a curated handful via
+#   --voices. Default af_heart is the canonical Kokoro demo voice.
+#   Add or rotate by editing the --voices flag below; no on-disk
+#   changes needed (voice tensors live in the container image).
+# - Soft dependency on docker-kokoro.service: same pattern as F5.
+#
 # Future additions in this file:
 # - openWakeWord server, IFF we decide to do wake-word centrally rather
 #   than on-device. Atom Echo currently does it on-device; not needed.
@@ -97,7 +120,12 @@ let
   wyomingF5Tts = pkgs.writeText "wyoming-f5-tts.py"
     (builtins.readFile ../../assets/wyoming-f5-tts.py);
 
-  wyomingF5TtsEnv = pkgs.python3.withPackages (ps: [
+  wyomingKokoro = pkgs.writeText "wyoming-kokoro.py"
+    (builtins.readFile ../../assets/wyoming-kokoro.py);
+
+  # Shared Python env for the Wyoming bridges. Both scripts only need
+  # wyoming + httpx; using one env keeps the closure smaller.
+  wyomingTtsEnv = pkgs.python3.withPackages (ps: [
     ps.wyoming
     ps.httpx
   ]);
@@ -155,46 +183,79 @@ in
   # root-owned and the service's DynamicUser identity never needs direct
   # access to it. The '+' prefix on ExecStartPre runs it as root,
   # bypassing the unit's User=/sandboxing for that step only.
-  systemd.services.wyoming-faster-whisper-default = {
-    serviceConfig = {
-      EnvironmentFile = "-/run/wyoming-faster-whisper/env";
-      ExecStartPre = [ "+${prepWyomingFasterWhisperEnv}" ];
+  systemd.services = {
+    wyoming-faster-whisper-default = {
+      serviceConfig = {
+        EnvironmentFile = "-/run/wyoming-faster-whisper/env";
+        ExecStartPre = [ "+${prepWyomingFasterWhisperEnv}" ];
+      };
     };
-  };
 
-  systemd.services.wyoming-f5-tts = {
-    description = "Wyoming protocol bridge to local F5-TTS server";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" "docker-tts.service" ];
+    wyoming-f5-tts = {
+      description = "Wyoming protocol bridge to local F5-TTS server";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" "docker-tts.service" ];
 
-    serviceConfig = {
-      ExecStart = ''
-        ${wyomingF5TtsEnv}/bin/python3 ${wyomingF5Tts} \
-          --uri tcp://0.0.0.0:10200 \
-          --f5-url http://127.0.0.1:8880 \
-          --voices nature \
-          --default-voice nature \
-          --log-level INFO
-      '';
-      Restart = "on-failure";
-      RestartSec = "5s";
+      serviceConfig = {
+        ExecStart = ''
+          ${wyomingTtsEnv}/bin/python3 ${wyomingF5Tts} \
+            --uri tcp://0.0.0.0:10200 \
+            --f5-url http://127.0.0.1:8880 \
+            --voices nature \
+            --default-voice nature \
+            --log-level INFO
+        '';
+        Restart = "on-failure";
+        RestartSec = "5s";
 
-      DynamicUser = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
-      RestrictNamespaces = true;
-      RestrictRealtime = true;
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      SystemCallArchitectures = "native";
+        DynamicUser = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        RestrictNamespaces = true;
+        RestrictRealtime = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        SystemCallArchitectures = "native";
+      };
+    };
+
+    wyoming-kokoro = {
+      description = "Wyoming protocol bridge to local Kokoro-FastAPI server";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" "docker-kokoro.service" ];
+
+      serviceConfig = {
+        ExecStart = ''
+          ${wyomingTtsEnv}/bin/python3 ${wyomingKokoro} \
+            --uri tcp://0.0.0.0:10210 \
+            --kokoro-url http://127.0.0.1:8881 \
+            --voices af_heart,af_bella,af_sarah,am_michael,am_adam,bf_emma \
+            --default-voice af_heart \
+            --log-level INFO
+        '';
+        Restart = "on-failure";
+        RestartSec = "5s";
+
+        DynamicUser = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        RestrictNamespaces = true;
+        RestrictRealtime = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        SystemCallArchitectures = "native";
+      };
     };
   };
 
   # Wyoming protocol - HA Yellow needs to reach STT and TTS on the LAN.
   networking.firewall.allowedTCPPorts = [
     10200 # F5-TTS Wyoming bridge
+    10210 # Kokoro Wyoming bridge
     10300 # faster-whisper STT
   ];
 }

@@ -22,9 +22,11 @@ Per-host NixOS configurations:
   - Private Forgejo instance (LAN-first, PostgreSQL, Git LFS)
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
-  - Ollama LLM + F5-TTS (OpenAI-compatible APIs, GPU-accelerated)
+  - Ollama LLM + F5-TTS + Kokoro-FastAPI (OpenAI-compatible APIs,
+    GPU-accelerated)
   - Voice assistant server-side: Wyoming faster-whisper STT + Wyoming
-    F5-TTS bridge for HA Assist
+    F5-TTS / Kokoro bridges for HA Assist (both TTS engines run in
+    parallel for A/B comparison)
 - `meteor-{1,2,3,4}/`: Veil cluster k3s server nodes
   - GPU support on meteor-4
   - Node exporter for Prometheus scraping
