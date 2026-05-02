@@ -168,26 +168,18 @@ in
       # WHIP ingest - requires bearer token authentication
       "/rtc/v1/whip/" = {
         proxyPass = "http://127.0.0.1:1985";
+        # recommendedProxySettings already injects Host/X-Forwarded-*.
+        # Don't redeclare here.
         extraConfig = ''
           auth_request /auth;
           auth_request_set $auth_status $upstream_status;
-
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
         '';
       };
 
       # WHEP playback and other RTC endpoints - public access (viewers)
       "/rtc/" = {
         proxyPass = "http://127.0.0.1:1985";
-        extraConfig = ''
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-        '';
+        # recommendedProxySettings already injects Host/X-Forwarded-*.
       };
 
       # Root serves the auto-connecting player

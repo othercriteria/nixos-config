@@ -99,11 +99,12 @@ in
         enableACME = true;
         locations."/" = {
           proxyPass = "http://hive.home.arpa:8080";
+          # services.nginx.recommendedProxySettings = true already injects
+          # Host/X-Real-IP/X-Forwarded-* here. Re-declaring them duplicates
+          # the headers, which strict HTTP parsers (e.g. aiohttp >= 3.10)
+          # reject with 400 "Duplicate 'Host' header found." See the same
+          # note in hosts/skaia/homeassistant.nix.
           extraConfig = ''
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
             chunked_transfer_encoding off;
             proxy_buffering off;
             proxy_cache off;
@@ -181,12 +182,8 @@ in
         locations."/" = {
           proxyPass = "http://127.0.0.1:19999";
           proxyWebsockets = true;
-          extraConfig = ''
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-          '';
+          # recommendedProxySettings + proxyWebsockets already inject
+          # Host/X-Forwarded-*/Upgrade/Connection. Don't redeclare here.
         };
       };
 
@@ -195,12 +192,7 @@ in
         listen = [{ addr = "0.0.0.0"; port = 80; }];
         locations."/" = {
           proxyPass = "http://127.0.0.1:5380";
-          extraConfig = ''
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-          '';
+          # recommendedProxySettings already injects Host/X-Forwarded-*.
         };
       };
 
