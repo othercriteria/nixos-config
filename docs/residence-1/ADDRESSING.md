@@ -21,6 +21,10 @@ hosts reside.
   - `homeassistant` → 192.168.0.184 (MAC E4-5F-01-97-C0-C6)
   - `projector` → 192.168.0.146 (MAC 28-24-C9-05-90-A2, Fire TV Stick 4K
     Max)
+  - `atom-echo` → 192.168.0.172 (MAC 14-08-08-54-D3-58, M5Stack Atom Echo
+    voice satellite). Single-instance reservation; audio quality is too
+    poor to be worth distinguishing rooms. If we ever deploy multiples,
+    rename and add room-suffixed entries.
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
@@ -60,7 +64,10 @@ hosts reside.
     - `assistant.home.arpa` → 192.168.0.160 (HA via nginx proxy)
     - `assistant-direct.home.arpa` → 192.168.0.184 (HA direct/SSH)
     - `ollama.home.arpa` → 192.168.0.160 (Ollama LLM API via nginx)
+    - `tts.home.arpa` → 192.168.0.160 (F5-TTS via nginx)
     - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick 4K Max)
+    - `atom-echo.home.arpa` → 192.168.0.172 (M5Stack Atom Echo voice
+      satellite, ESPHome firmware)
 
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)

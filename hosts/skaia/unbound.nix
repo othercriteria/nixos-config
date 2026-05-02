@@ -61,6 +61,11 @@
           "\"assistant-direct.home.arpa. A 192.168.0.184\""
           # Fire TV Stick attached to living room projector
           "\"projector.home.arpa. A 192.168.0.146\""
+          # M5Stack Atom Echo - voice assistant satellite. Single-instance:
+          # audio quality is too poor to bother distinguishing rooms, so the
+          # name is generic and we pin one IP. If we ever deploy multiples,
+          # rename this and add room-suffixed records.
+          "\"atom-echo.home.arpa. A 192.168.0.172\""
         ];
 
         include = "/var/lib/unbound/rpz-local-zones.conf";
