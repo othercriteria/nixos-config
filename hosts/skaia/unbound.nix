@@ -61,11 +61,17 @@
           "\"assistant-direct.home.arpa. A 192.168.0.184\""
           # Fire TV Stick attached to living room projector
           "\"projector.home.arpa. A 192.168.0.146\""
-          # M5Stack Atom Echo - voice assistant satellite. Single-instance:
-          # audio quality is too poor to bother distinguishing rooms, so the
-          # name is generic and we pin one IP. If we ever deploy multiples,
-          # rename this and add room-suffixed records.
+          # M5Stack Atom Echo - voice assistant satellite. Dev-only device:
+          # cheap mic, no AEC, unreliable on-device VAD. Kept around as a
+          # cheap second satellite for testing changes against. Real use
+          # happens through the voice-N satellites below.
           "\"atom-echo.home.arpa. A 192.168.0.172\""
+          # Voice satellites - serial-numbered (voice-1, voice-2, ...) so
+          # names survive hardware swaps. The HA friendly_name carries the
+          # vendor/model. voice-1 is currently a Nabu Casa Home Assistant
+          # Voice PE (ESP32-S3, far-field mic, AEC, hardware mute switch);
+          # MAC 20:F8:3B:0A:CD:8C, lives in the office.
+          "\"voice-1.home.arpa. A 192.168.0.173\""
         ];
 
         include = "/var/lib/unbound/rpz-local-zones.conf";

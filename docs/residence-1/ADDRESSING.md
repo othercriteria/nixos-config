@@ -22,9 +22,13 @@ hosts reside.
   - `projector` → 192.168.0.146 (MAC 28-24-C9-05-90-A2, Fire TV Stick 4K
     Max)
   - `atom-echo` → 192.168.0.172 (MAC 14-08-08-54-D3-58, M5Stack Atom Echo
-    voice satellite). Single-instance reservation; audio quality is too
-    poor to be worth distinguishing rooms. If we ever deploy multiples,
-    rename and add room-suffixed entries.
+    voice satellite). Dev-only: cheap mic, no AEC, unreliable VAD. Kept
+    as a cheap second satellite for testing changes against the voice-N
+    devices.
+  - `voice-1` → 192.168.0.173 (MAC 20-F8-3B-0A-CD-8C, Nabu Casa Home
+    Assistant Voice PE, ESP32-S3 with far-field mic + AEC + HW mute,
+    office). Voice satellites use serial-numbered names so they survive
+    hardware swaps; the HA friendly_name carries the vendor/model.
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
@@ -68,6 +72,8 @@ hosts reside.
     - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick 4K Max)
     - `atom-echo.home.arpa` → 192.168.0.172 (M5Stack Atom Echo voice
       satellite, ESPHome firmware)
+    - `voice-1.home.arpa` → 192.168.0.173 (Nabu Casa Home Assistant
+      Voice PE, office)
 
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
