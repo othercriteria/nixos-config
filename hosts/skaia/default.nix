@@ -29,6 +29,7 @@
     ./thermal.nix
     ./teleport.nix
     ./tts.nix
+    ./voice.nix
     ./unbound-rpz.nix
     ./unbound.nix
     ./virtualisation.nix
