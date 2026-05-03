@@ -30,12 +30,6 @@ let
   # For complex reasoning tasks, pull qwen2.5:32b and use ASK_MODEL override
   defaultModel = "qwen2.5:14b-instruct-q8_0";
 
-  # Lightweight model for periodic/background tasks (waybar, automation)
-  # llama3.2:3b: smallest VRAM, fast, no Chinese character issues
-  # - 2.8GB VRAM, ~0.27s response
-  # - Better instruction-following for emoji-only output than Qwen
-  vibeModel = "llama3.2:3b";
-
   # Conversation agent for Home Assistant Assist (Phase C of the voice
   # build-out). Wired into HA via the Ollama integration; the model is
   # responsible for parsing free-form user requests, picking the right
@@ -47,6 +41,13 @@ let
   # default model). Trade up to qwen3:14b or qwen2.5:32b if multi-step
   # reasoning ever blocks us; trade down to phi-4-mini if we want to
   # see how snappy a smaller model can be.
+  #
+  # Also serves as the model used by waybar's weather-emoji vibe script
+  # (assets/weather-emoji.py). Used to be its own llama3.2:3b, but the
+  # 32k context cache pushed real allocation to ~7.5 GB and contended
+  # with the voice agent. Sharing one resident model removes the
+  # contention. The script hardcodes the name (one-off) rather than
+  # being wired to a Nix-side reference.
   haAssistantModel = "qwen3:8b-q8_0";
 in
 {
@@ -55,7 +56,7 @@ in
     package = pkgs.ollama-cuda; # CUDA acceleration for NVIDIA GPU
     host = "127.0.0.1"; # Bind localhost; nginx handles LAN exposure
     port = 11434;
-    loadModels = [ defaultModel vibeModel haAssistantModel ];
+    loadModels = [ defaultModel haAssistantModel ];
   };
 
   # Export default model so user scripts can reference it

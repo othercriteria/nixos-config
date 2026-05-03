@@ -87,11 +87,17 @@
           "interval" = 5;
         };
 
-        # Weather + time-of-day vibe as four emojis
-        # Uses METAR aviation data + lightweight Ollama model (qwen2.5:3b)
+        # Weather + time-of-day vibe as four emojis. Pulls METAR from
+        # NOAA, asks Ollama (qwen3:8b-q8_0, the same model HA Assist
+        # uses for voice) to translate it into a vibe. The script
+        # caches per (METAR, 3-hour-of-day bucket) so most polls return
+        # instantly from disk; the LLM only runs when conditions or
+        # the time bucket change. 10-minute interval is a balance
+        # between art (re-vibe occasionally) and not waking the
+        # voice agent's GPU model unnecessarily.
         "custom/vibe" = {
           "exec" = "${pkgs.python3}/bin/python3 /etc/nixos/assets/weather-emoji.py";
-          "interval" = 120; # 2 min keeps model warm (~5min Ollama default unload)
+          "interval" = 600;
           "return-type" = "json";
           "tooltip" = true;
         };
