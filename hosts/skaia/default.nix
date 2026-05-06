@@ -39,6 +39,19 @@
   # GitHub Actions self-hosted runner for CI (nixos-config repo)
   custom.githubRunner.enable = true;
 
+  nixpkgs.overlays = [
+    (_final: prev: {
+      # 4.5.4 has failing REST API fixture tests under sandboxed builds.
+      inherit (pkgs-stable) glances;
+
+      openldap = prev.openldap.overrideAttrs (_old: {
+        # 2.6.13 intermittently fails test017-syncreplication-refresh under
+        # sandboxed builds; keep the package version and skip only checks.
+        doCheck = false;
+      });
+    })
+  ];
+
   # COLD START: Generate a fine-grained PAT scoped to
   # othercriteria/remedial-portfolio-management with "Read and Write access to
   # repository self hosted runners", then:
@@ -78,6 +91,7 @@
   };
 
   boot = {
+    zfs.forceImportRoot = false;
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;

@@ -23,7 +23,9 @@ let
 
   # Email notification helper - audit trail
   sendEmailEvent = { event }: ''
-    printf "Subject: ${hostName} ${event} $(${pkgs.coreutils}/bin/date --iso-8601=seconds)\n\nzpool status:\n\n$(${pkgs.zfs}/bin/zpool status)" | ${pkgs.msmtp}/bin/msmtp -a default ${emailTo}
+    if ! printf "Subject: ${hostName} ${event} $(${pkgs.coreutils}/bin/date --iso-8601=seconds)\n\nzpool status:\n\n$(${pkgs.zfs}/bin/zpool status)" | ${pkgs.msmtp}/bin/msmtp -a default ${emailTo}; then
+      echo "Warning: failed to send ${hostName} ${event} email alert" >&2
+    fi
   '';
 
   # Combined notification - ntfy for instant alert, email for records
