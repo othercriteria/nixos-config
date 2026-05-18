@@ -29,12 +29,27 @@
     ./streaming.nix
     ./thermal.nix
     ./teleport.nix
+    ../../modules/trivia.nix
     ./tts.nix
     ./voice.nix
     ./unbound-rpz.nix
     ./unbound.nix
     ./virtualisation.nix
   ];
+
+  # Trivia drip-release file server. `seedFixtures` populates a synthetic
+  # round set (including edge cases like dangling symlinks) so the deploy
+  # can be smoke-tested before a real event; turn it off when staging
+  # real content.
+  #
+  # Off between events. The nginx vhost in hosts/skaia/nginx.nix stays
+  # defined and Basic-Auth-gated, so any stray hits get 401'd before the
+  # absent upstream matters. Flip `enable` back to true (and bump
+  # `seedFixtures` per event prep) to bring the service up again.
+  custom.trivia = {
+    enable = false;
+    seedFixtures = true;
+  };
 
   # GitHub Actions self-hosted runner for CI (nixos-config repo)
   custom.githubRunner.enable = true;

@@ -45,6 +45,8 @@ Reusable NixOS modules:
 - `greetd.nix`: TTY greeter using tuigreet to launch Sway
 - `fonts.nix`: System font configuration
 - `github-runner.nix`: GitHub Actions self-hosted runner (declarative)
+- `hardened-service.nix`: Reusable systemd sandbox preset (function returning
+  a strict `serviceConfig` attrset for small network/compute services)
 - `harmonia.nix`: Nix binary cache server (skaia only)
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
 - `teleport-node.nix`: Teleport node agent for remote access
@@ -58,6 +60,9 @@ Reusable NixOS modules:
 - `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook, mobile push)
 - `promtail.nix`: Alloy-backed Loki log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
+- `trivia.nix`: Drip-release file server for trivia events (FastAPI app
+  behind nginx + Basic Auth; consumes `hardened-service.nix` for sandboxing;
+  uses `assets/trivia-server.py`)
 - `vibectl.nix`: AI-powered kubectl wrapper
 - `veil/`: Veil cluster-specific modules
   - `k3s-common.nix`: Common k3s flags, drain/uncordon hooks
@@ -131,6 +136,8 @@ These directories are created during cold-start and are essential to operation:
   `fastdisk/services/forgejo/repos`)
 - `/var/lib/forgejo-lfs`: Forgejo Git LFS content (ZFS dataset
   `fastdisk/services/forgejo/lfs`)
+- `/var/lib/trivia/rounds`: Per-round subdirectories for the trivia drip
+  server (no dedicated ZFS dataset; ~150 MB total, ephemeral per event)
 
 ## Updating This Document
 

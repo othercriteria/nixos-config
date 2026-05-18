@@ -1,6 +1,10 @@
 { config, lib, pkgs, ... }:
 
 let
+  # Path to the Basic Auth htpasswd file used by the trivia vhost. Created
+  # via git-secret; see docs/COLD-START.md.
+  triviaHtpasswd = "/etc/nixos/secrets/trivia-htpasswd";
+
   valueofInfoStatic = pkgs.writeTextFile {
     name = "valueof-info-index";
     destination = "/index.html";
@@ -60,6 +64,17 @@ in
     recommendedProxySettings = true;
     recommendedGzipSettings = true;
     recommendedOptimisation = true;
+
+    # Rate-limit zones used by trivia.valueof.info. Defined at http{} scope
+    # so they can be applied per-location below. Sized for one trivia
+    # event's worth of contestants; nginx tracks ~16k IPs per MB. Note:
+    # `limit_req_status 429;` is already declared once at http{} scope by
+    # hosts/skaia/homeassistant.nix; nginx forbids it from being repeated,
+    # so we don't redeclare it here. The 429 status applies to all zones.
+    appendHttpConfig = ''
+      limit_req_zone $binary_remote_addr zone=trivia_req:10m rate=10r/s;
+      limit_conn_zone $binary_remote_addr zone=trivia_conn:10m;
+    '';
 
     virtualHosts = {
       "valueof.info" = {
@@ -154,6 +169,50 @@ in
         '';
       };
 
+      # Trivia drip-release file server (public, Basic-Auth gated).
+      # Backing service defined in modules/trivia.nix; see also
+      # docs/COLD-START.md for the htpasswd setup. The credential is
+      # shared with all contestants out-of-band (e.g. alongside the event
+      # invite); the URL is recoverable from Certificate Transparency
+      # logs, so Basic Auth is the real authentication boundary here.
+      #
+      # The backing service is typically disabled between events
+      # (custom.trivia.enable = false in hosts/skaia/default.nix). When
+      # that's the case this vhost stays defined: requests hit Basic
+      # Auth first and get 401'd, so the absent upstream never gets
+      # touched by unauth'd traffic.
+      "trivia.valueof.info" = {
+        forceSSL = true;
+        enableACME = true;
+        basicAuthFile = triviaHtpasswd;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:8765";
+          extraConfig = ''
+            # Range requests get streamed straight through so MP3 seek
+            # and resumable downloads work without buffering in nginx.
+            proxy_buffering off;
+            proxy_read_timeout 120s;
+
+            limit_req zone=trivia_req burst=30 nodelay;
+            limit_conn trivia_conn 4;
+          '';
+        };
+        extraConfig = ''
+          # No uploads here; the only legitimate verb is GET. 1 KB caps the
+          # request body so malformed clients/scanners can't ship surprises
+          # into the app. client_*_timeout live at server scope (nginx
+          # forbids them inside a location block).
+          client_max_body_size 1k;
+          client_body_timeout 10s;
+          client_header_timeout 10s;
+
+          add_header Strict-Transport-Security "max-age=31536000" always;
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header Referrer-Policy "no-referrer" always;
+          add_header X-Robots-Tag "noindex, nofollow" always;
+        '';
+      };
+
       # Private Forgejo web UI (LAN only for MVP)
       "forgejo.home.arpa" = {
         listen = [{ addr = "0.0.0.0"; port = 80; }];
@@ -227,6 +286,26 @@ in
     acceptTerms = true;
     defaults.email = "othercriteria@gmail.com";
   };
+
+  # `make reveal-secrets` and the workspace -> /etc/nixos sync leave the
+  # htpasswd file as 0600 owned by the invoking user. nginx workers run as
+  # the `nginx` user and need read access to validate Basic Auth challenges.
+  #
+  # We do this in an activation script (rather than tmpfiles or nginx's
+  # preStart) because:
+  # - tmpfiles' `z` rule only re-fires when tmpfiles config changes, so a
+  #   "edit secret only" deploy leaves the file with workspace perms.
+  # - nginx.service's preStart inherits the unit's SystemCallFilter, which
+  #   excludes @chown -- chown(2) gets SIGSYS-killed there.
+  # Activation scripts run as root, outside any sandbox, on every switch
+  # and every boot. Tolerant of the file's absence so a fresh deploy
+  # before secrets have been revealed doesn't crash activation.
+  system.activationScripts.trivia-htpasswd-perms = ''
+    if [ -f ${triviaHtpasswd} ]; then
+      chown root:nginx ${triviaHtpasswd}
+      chmod 0640 ${triviaHtpasswd}
+    fi
+  '';
 
   # Ensure nginx only starts or reloads once DNS (Unbound) is available so
   # upstreams that rely on home.arpa resolution don't fail config tests.
