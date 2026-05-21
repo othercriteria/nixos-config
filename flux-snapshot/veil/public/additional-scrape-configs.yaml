@@ -1,3 +1,7 @@
+# snapshot-gitops: safe -- Secret-shaped carrier for a Prometheus scrape config.
+# Contents are kubernetes_sd_configs / relabel_configs only; no credentials,
+# tokens, or other sensitive material. Safe to mirror into the public
+# nixos-config repo via `make snapshot-gitops`.
 apiVersion: v1
 kind: Secret
 metadata:

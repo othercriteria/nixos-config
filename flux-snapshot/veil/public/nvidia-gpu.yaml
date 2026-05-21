@@ -95,6 +95,17 @@ spec:
     # Use nvidia runtime to access GPU
     runtimeClassName: nvidia
 
+    # Pin to the dcgm-exporter image known to work against the
+    # NixOS-managed NVIDIA driver (currently 595.71.05). The chart's
+    # default at time of writing is 4.5.3-4.8.2-distroless, whose
+    # embedded DCGM library exits silently against this driver.
+    # 4.4.1-4.6.0-ubuntu22.04 is the same combination skaia runs
+    # under the gpu-operator chart with 183+ days of stability.
+    # See hosts/skaia/k3s/gpu-operator.nix for the parallel pin.
+    image:
+      repository: nvcr.io/nvidia/k8s/dcgm-exporter
+      tag: 4.4.1-4.6.0-ubuntu22.04
+
     # DCGM needs more memory than default 256Mi
     resources:
       requests:

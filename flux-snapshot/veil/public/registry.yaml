@@ -39,9 +39,10 @@ spec:
     s3:
       region: us-east-1
       bucket: registry
-      regionEndpoint: http://minio.object-store.svc.cluster.local:9000
+      regionEndpoint: http://s3.veil.home.arpa
       secure: false
       encrypt: false
+      forcepathstyle: true
 
     # Ingress with TLS
     ingress:

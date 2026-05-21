@@ -22,7 +22,7 @@ ifeq ($(shell test -d "$(TMPDIR)" && echo yes || echo no),no)
   export TMPDIR := /tmp
 endif
 
-.PHONY: help check init-security scan-secrets check-all test test-observability demo rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
+.PHONY: help check init-security scan-secrets check-all test test-observability demo rollback list-generations flake-update flake-restore apply-host sync-to-system reveal-secrets conceal init update add-private-assets add-gitops-veil snapshot-gitops check-unbound build-host check-unbound-built
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -45,6 +45,29 @@ reveal-secrets: ## Reveal git-secret encrypted files
 		fi \
 	else \
 		echo "git-secret not installed. Skipping secret revelation."; \
+	fi
+
+conceal: ## Remove revealed plaintexts from secrets/ (keeps .secret ciphertexts; skips orphan plaintexts)
+	@if [ ! -d secrets ]; then \
+		echo "No secrets/ directory; nothing to conceal."; \
+	else \
+		echo "Concealing revealed plaintexts in secrets/..."; \
+		removed=0; skipped=0; \
+		while IFS= read -r file; do \
+			if [ -f "$$file.secret" ]; then \
+				rm -f "$$file"; \
+				echo "  concealed: $$file"; \
+				removed=$$((removed + 1)); \
+			else \
+				echo "  SKIPPED (no .secret counterpart): $$file"; \
+				skipped=$$((skipped + 1)); \
+			fi; \
+		done < <(find secrets -type f -not -name "*.secret"); \
+		find secrets -mindepth 1 -type d -empty -delete 2>/dev/null || true; \
+		echo "Concealed $$removed file(s); skipped $$skipped orphan plaintext(s)."; \
+		if [ "$$skipped" -gt 0 ]; then \
+			echo "Hint: 'git secret add secrets/<file>' to track an orphan plaintext, then 'git secret hide'."; \
+		fi; \
 	fi
 
 flake-update: ## Update the flake
@@ -231,15 +254,33 @@ add-gitops-veil: ## Initialize gitops-veil submodule (veil cluster GitOps)
 	fi
 
 snapshot-gitops: ## Sync public GitOps manifests to flux-snapshot/ (illustrative)
-	@echo "Syncing gitops-veil/public/ to flux-snapshot/veil/public/..."
-	@if [ -d gitops-veil/public ]; then \
-		mkdir -p flux-snapshot/veil; \
-		rsync -a --delete gitops-veil/public/ flux-snapshot/veil/public/; \
-		echo "Snapshot complete. Remember: flux-snapshot/ is illustrative, not authoritative."; \
-	else \
+	@if [ ! -d gitops-veil/public ]; then \
 		echo "Error: gitops-veil/public/ not found. Run 'make add-gitops-veil' first."; \
 		exit 1; \
 	fi
+	@echo "Pre-snapshot sensitive-content scan..."
+	@suspect=$$(grep -rlE 'sops:|-----BEGIN [A-Z ]*PRIVATE KEY-----|^kind:[[:space:]]*Secret[[:space:]]*$$' gitops-veil/public/ 2>/dev/null || true); \
+	bad=""; \
+	for f in $$suspect; do \
+		if ! grep -qE 'snapshot-gitops:[[:space:]]*safe' "$$f"; then \
+			bad="$$bad $$f"; \
+		fi; \
+	done; \
+	if [ -n "$$bad" ]; then \
+		echo "Refusing to snapshot: gitops-veil/public/ contains files that look sensitive:"; \
+		for f in $$bad; do echo "  $$f"; done; \
+		echo ""; \
+		echo "If a file is intentionally safe (e.g. a Secret-shaped carrier with no"; \
+		echo "credentials), add a top-of-file marker comment:"; \
+		echo "  # snapshot-gitops: safe -- <brief reason>"; \
+		echo "Otherwise move sensitive files to gitops-veil/private/ (which is NOT snapshotted)."; \
+		exit 1; \
+	fi
+	@echo "Pre-snapshot scan: clean."
+	@echo "Syncing gitops-veil/public/ to flux-snapshot/veil/public/..."
+	@mkdir -p flux-snapshot/veil
+	@rsync -a --delete gitops-veil/public/ flux-snapshot/veil/public/
+	@echo "Snapshot complete. Remember: flux-snapshot/ is illustrative, not authoritative."
 
 build-host: ## Build system closure for HOST without switching (uses workspace flake)
 	@if [ -z "$(HOST)" ]; then \
