@@ -1052,6 +1052,9 @@ corresponding public key.
 - `assets/harmonia-cache-public-key.txt` — public key (plain text, committed)
 - `secrets/harmonia-cache-private-key` — private key (git-secret encrypted)
 
+Rotation is an ongoing operation, not a cold-start step. See
+`docs/runbooks/harmonia-key-rotation.md`.
+
 ---
 
 ## 19. Hive Migration and Bootstrap

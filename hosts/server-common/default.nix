@@ -4,6 +4,7 @@
   imports = [
     ../../modules/teleport-node.nix
     ../../modules/shutdown-visibility.nix
+    ../../modules/host-secrets-manifest.nix
     # Protects hosts that enable services.prometheus.exporters.node
     # directly (e.g. hive) from the upstream socket-activation regression.
     ../../modules/prometheus-node-exporter-fix.nix

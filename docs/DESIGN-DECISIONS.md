@@ -138,6 +138,81 @@ external contributions increase, or CI moves to isolated environment.
 
 ---
 
+## Per-host Secrets Allowlist (vs. encrypt-time recipients)
+
+**Date:** May 2026 | **Status:** Active | **Last reviewed:** May 2026
+
+**Problem:** `make sync-to-system` rsyncs the entire decrypted
+`secrets/` directory from the workspace into `/etc/nixos/secrets/` on
+the target host (modulo `*.secret`). Combined with the cold-start
+practice of importing the operator's GPG key on each host, this
+gives every host on-disk access to every plaintext secret in the
+repo. The blast radius is wider than necessary for nodes like the
+veil meteors that only need a small subset (k3s join token, per-host
+Teleport token).
+
+**Decision:** Enforce a per-host allowlist at NixOS activation time
+(`modules/host-secrets-manifest.nix`). Each host declares the
+relative paths under `/etc/nixos/secrets/` its services actually
+reference; the activation script deletes anything else.
+
+**Why activation-time, not encrypt-time:**
+
+- The encrypted `.secret` files in the repo are encrypted to the
+  operator's personal GPG key, not to per-host keys. Restricting
+  *who can decrypt* would require restructuring the recipient model
+  (e.g. SOPS with per-host age keys), which is a larger refactor
+  with broader consequences.
+- The actual runtime blast radius is what services on a host can
+  read from disk. Pruning post-rsync addresses that directly,
+  needs no recipient restructuring, and is opt-in per host.
+- Plaintext briefly exists on disk between the rsync and the
+  activation scrub. That window is acceptable in this threat model;
+  closing it further would require either filtering at rsync time
+  (more brittle, lives in the `Makefile` not in NixOS) or
+  reorganising recipients.
+
+**Trade-offs:**
+
+- Defense against service-level compromise: a misconfigured or
+  exploited service sees only its host's manifested subset
+- Defense against fs-read on a meteor: only veil-relevant secrets,
+  not skaia's signing keys or OAuth tokens
+- Opt-in: hosts without a manifest behave as before (no change)
+- Does NOT address the workspace-checkout-plus-GPG-key blast
+  radius. A host that holds both the encrypted `.secret` files and
+  the operator's GPG private key can still decrypt everything. That
+  is a separate, larger refactor (e.g. deploy secrets from a single
+  trusted host instead of decrypting on each host).
+
+**Alternatives:**
+
+- SOPS with per-host age recipients. Cleaner conceptually, but a
+  larger lift, and would be more disruptive to the existing
+  git-secret workflow that works well for skaia.
+- Filter at rsync time via per-host include lists in the
+  `Makefile`. Smaller change but moves policy out of NixOS into
+  shell glue; easier to skip accidentally.
+- Stop deploying with a workspace checkout on each host; push
+  secrets out-of-band from a single trusted host. Right answer
+  long-term, much bigger change.
+
+**Risks:** A future contributor adds a service on a host without
+updating its manifest and the activation script deletes the secret
+it needs at next rebuild. Mitigation: the activation script logs
+each pruned path to journald, and `nixos-rebuild switch` runs
+activation immediately, so the breakage surfaces during the same
+rebuild that introduced it.
+
+**Reconsider if:** We migrate to SOPS (subsumes this), or we adopt a
+deploy-from-trusted-host model (also subsumes this).
+
+**In config:** `modules/host-secrets-manifest.nix`,
+`hosts/server-common/default.nix` (import),
+`hosts/meteor-{1,2,3,4}/default.nix` (current consumers).
+
+---
+
 ## Adding New Decisions
 
 When documenting a new decision, include:

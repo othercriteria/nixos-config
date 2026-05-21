@@ -48,6 +48,9 @@ Reusable NixOS modules:
 - `hardened-service.nix`: Reusable systemd sandbox preset (function returning
   a strict `serviceConfig` attrset for small network/compute services)
 - `harmonia.nix`: Nix binary cache server (skaia only)
+- `host-secrets-manifest.nix`: Per-host secrets allowlist enforced at system
+  activation; prunes `/etc/nixos/secrets/` to the declared subset after
+  `make sync-to-system` rsyncs the full set
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
 - `teleport-node.nix`: Teleport node agent for remote access
 - `prometheus-base.nix`: Core Prometheus + node exporter module
@@ -92,6 +95,7 @@ Project documentation:
 - `VEIL-PLAN.md`: Veil cluster rollout plan
 - `residence-1/ADDRESSING.md`: LAN addressing and DNS for home network
 - `retro/`: Security incident retrospectives (YYYY-MM-DD-description.md)
+- `runbooks/`: Operational procedures for ongoing tasks (e.g. key rotation)
 
 ### Other Directories
 

@@ -15,6 +15,11 @@
   #   git add secrets/harmonia-cache-private-key.secret assets/harmonia-cache-public-key.txt
   #
   # Then deploy to skaia and the key will be available at /etc/nixos/secrets/
+  #
+  # For ROTATION (not initial generation), follow the playbook in
+  # docs/runbooks/harmonia-key-rotation.md. Rotation uses a transitional
+  # dual-trust window so consumers do not lose access to the cache while
+  # the new key propagates.
 
   services.harmonia.cache = {
     enable = true;

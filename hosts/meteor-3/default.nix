@@ -21,4 +21,16 @@
       site = "residence-1";
     };
   };
+
+  # Restrict the on-disk secrets footprint to only what this meteor's
+  # services actually read. The deploy-time rsync syncs every plaintext
+  # secret from the workspace; this scrubs everything else away at
+  # activation. See modules/host-secrets-manifest.nix.
+  custom.hostSecretsManifest = {
+    enable = true;
+    allowed = [
+      "veil-k3s-token"
+      "teleport/meteor-3.token"
+    ];
+  };
 }
