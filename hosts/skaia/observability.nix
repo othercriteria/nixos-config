@@ -22,6 +22,7 @@
     ../../modules/prometheus-base.nix
     ../../modules/prometheus-rules.nix
     ../../modules/prometheus-zfs-snapshot.nix
+    ../../modules/netdata-unlock-nodes.nix
   ];
 
   # ============================================================
@@ -44,6 +45,10 @@
       };
     };
     promtail.enable = true;
+    # Bypass Netdata's "5 active nodes" UI nerf by stamping all registered
+    # child machine_guids into the parent's settings file. See
+    # modules/netdata-unlock-nodes.nix for the why and how.
+    netdataUnlockNodes.enable = true;
     grafana = {
       enable = true;
       port = 2342;

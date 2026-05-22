@@ -54,6 +54,10 @@ Reusable NixOS modules:
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
 - `netdata-child.nix`: Netdata child-role module; streams to a parent
   (default: `skaia.home.arpa:19999`) without keeping a local dbengine
+- `netdata-unlock-nodes.nix`: Parent-side workaround for Netdata's
+  5-active-node SPA nerf; pre-populates `preferred_node_ids` in the
+  settings file so the dashboard never shows the "deactivate nodes"
+  modal
 - `teleport-node.nix`: Teleport node agent for remote access
 - `prometheus-base.nix`: Core Prometheus + node exporter module
 - `prometheus-node-exporter-fix.nix`: Workaround for upstream
