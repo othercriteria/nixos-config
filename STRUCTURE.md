@@ -52,6 +52,8 @@ Reusable NixOS modules:
   activation; prunes `/etc/nixos/secrets/` to the declared subset after
   `make sync-to-system` rsyncs the full set
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
+- `netdata-child.nix`: Netdata child-role module; streams to a parent
+  (default: `skaia.home.arpa:19999`) without keeping a local dbengine
 - `teleport-node.nix`: Teleport node agent for remote access
 - `prometheus-base.nix`: Core Prometheus + node exporter module
 - `prometheus-node-exporter-fix.nix`: Workaround for upstream
