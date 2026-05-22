@@ -140,6 +140,16 @@
     };
     fail2ban.enable = true;
     timesyncd.enable = true;
+
+    # NVMe / SATA SMART monitoring. Picks up drives via smartctl
+    # --scan-open, runs the upstream default short-test schedule, and
+    # emits any failed attributes (wear %, available spare, media
+    # errors, temperature warnings) to the journal. Journal streams to
+    # skaia via netdata-child, so a future Prom/AM rule (or netdata
+    # health alert) on `smartd:*` log lines is enough to surface
+    # drives degrading silently. The meteor fleet is uniformly
+    # Kingston OM8 NVMe; SMART attribute coverage is good there.
+    smartd.enable = true;
   };
 
   security.sudo.enable = true;
