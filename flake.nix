@@ -179,6 +179,10 @@
             detect-secrets
             gitleaks
             markdownlint-cli
+            # SOPS+age for Kubernetes secret encryption in gitops-veil.
+            # See docs/runbooks/sops-workflow.md.
+            sops
+            age
           ];
           shellHook = ''
             if [ ! -d private-assets ]; then

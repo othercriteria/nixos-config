@@ -13,8 +13,8 @@ structure, or workflow.
   start (initial deployment) of a system
 - **nixos-commits.mdc**: Guidelines for NixOS configuration commits, including
   commit message standards and documentation requirements
-- **secrets-management.mdc**: Standards for managing secrets with git-secret in
-  the NixOS configuration
+- **secrets-management.mdc**: Standards for the two secret rails — git-secret
+  for host-level (NixOS) and SOPS+age for cluster-level (Kubernetes via Flux)
 - **project-structure.mdc**: Standards for maintaining project structure
   documentation. Triggers only on structural file events (create/delete/move)
   to suggest updating STRUCTURE.md, plus separate authoring guidance when

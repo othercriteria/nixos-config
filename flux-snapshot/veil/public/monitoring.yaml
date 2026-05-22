@@ -89,3 +89,52 @@ spec:
           - secretName: alertmanager-tls
             hosts:
               - alertmanager.veil.home.arpa
+      # Mount the SOPS-decrypted ntfy credentials Secret into the
+      # Alertmanager pod. Files appear at /etc/alertmanager/secrets/
+      # alertmanager-ntfy-credentials/{username,password}. The
+      # webhook receiver below references password_file.
+      alertmanagerSpec:
+        secrets:
+          - alertmanager-ntfy-credentials
+      # Critical-only routing to skaia's ntfy server. All non-critical
+      # alerts (including the synthetic Watchdog heartbeat) fall through
+      # to a "null" receiver. We can promote severities later if the
+      # signal-to-noise warrants it.
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          receiver: "null"
+          group_by: ["alertname", "namespace"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          routes:
+            - receiver: "null"
+              matchers:
+                - alertname="Watchdog"
+            - receiver: ntfy-veil-critical
+              matchers:
+                - severity="critical"
+              continue: false
+        inhibit_rules:
+          - source_matchers:
+              - severity="critical"
+            target_matchers:
+              - severity=~"warning|info"
+            equal: ["namespace", "alertname"]
+          - source_matchers:
+              - severity="warning"
+            target_matchers:
+              - severity="info"
+            equal: ["namespace", "alertname"]
+        receivers:
+          - name: "null"
+          - name: ntfy-veil-critical
+            webhook_configs:
+              - url: https://ntfy.valueof.info/veil-critical
+                send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: veil-alerts
+                    password_file: /etc/alertmanager/secrets/alertmanager-ntfy-credentials/password

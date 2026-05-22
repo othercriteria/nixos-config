@@ -43,6 +43,21 @@
         username = "dlk";
         passwordFile = "/etc/nixos/secrets/ntfy-password";
       };
+      # Dedicated low-privilege user for veil-cluster Alertmanager.
+      # Write-only access to a single topic keeps the blast radius small
+      # if the cluster Alertmanager (or its secret) is ever compromised.
+      # COLD START: Requires /etc/nixos/secrets/ntfy-veil-alerts-password
+      # to exist (provisioned via git-secret reveal). See cold-start docs
+      # for veil-alerts-credentials Kubernetes Secret bootstrap.
+      extraUsers = [{
+        username = "veil-alerts";
+        passwordFile = "/etc/nixos/secrets/ntfy-veil-alerts-password";
+        role = "user";
+        grants = [{
+          topic = "veil-critical";
+          access = "write-only";
+        }];
+      }];
     };
     promtail.enable = true;
     # Bypass Netdata's "5 active nodes" UI nerf by stamping all registered

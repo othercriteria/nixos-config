@@ -101,7 +101,10 @@ Project documentation:
 - `VEIL-PLAN.md`: Veil cluster rollout plan
 - `residence-1/ADDRESSING.md`: LAN addressing and DNS for home network
 - `retro/`: Security incident retrospectives (YYYY-MM-DD-description.md)
-- `runbooks/`: Operational procedures for ongoing tasks (e.g. key rotation)
+- `runbooks/`: Operational procedures for ongoing tasks
+  - `harmonia-key-rotation.md`: Rotate Harmonia binary cache signing key
+  - `sops-workflow.md`: Encrypt/edit/rotate SOPS-encrypted Secrets in
+    `gitops-veil/private/`
 
 ### Other Directories
 
@@ -109,8 +112,13 @@ Project documentation:
   - `ci.yml`: Lint, build, and integration tests (self-hosted runner)
 - `assets/`: Static assets (certs, config snippets, scripts)
 - `private-assets/`: Private assets submodule (fonts, wallpapers)
-- `secrets/`: Encrypted secrets managed by git-secret
+- `secrets/`: Encrypted secrets managed by git-secret. Notable entries:
+  - `sops-age.key`: age private key for decrypting `gitops-veil/private/*.sops.yaml`
+  - `ntfy-veil-alerts-password`: password for the dedicated `veil-alerts`
+    ntfy user used by the veil cluster Alertmanager
 - `gitops-veil/`: GitOps manifests for veil cluster (private submodule)
+  - `.sops.yaml`: age public key + creation rules for `private/*.sops.yaml`
+  - `private/`: in-cluster manifests + SOPS-encrypted Secret manifests
 - `flux-snapshot/`: Public snapshots of GitOps manifests (illustrative)
 - `tests/`: NixOS integration tests
   - `observability.nix`: Tests the observability stack modules

@@ -560,6 +560,28 @@ appears in-tree as a submodule for local editing.
    rm /tmp/gitops-veil-deploy /tmp/gitops-veil-deploy.pub
    ```
 
+1. Bootstrap the SOPS age key. Flux's kustomize-controller decrypts
+   `gitops-veil/private/*.sops.yaml` using an age private key mounted via
+   a Kubernetes Secret in `flux-system`. The matching public key is
+   committed at `gitops-veil/.sops.yaml`; the private key is held in
+   `nixos-config/secrets/sops-age.key` (git-secret encrypted).
+
+   ```bash
+   # From the nixos-config workspace
+   make reveal-secrets   # decrypts secrets/* including sops-age.key
+
+   kubectl -n flux-system create secret generic sops-age \
+     --from-file=age.agekey=secrets/sops-age.key
+
+   # Sanity check: the kustomize-controller pod should see the key
+   kubectl -n flux-system get secret sops-age
+   ```
+
+   To rotate the age key later, generate a new one with
+   `age-keygen -o new.key`, re-encrypt every `private/*.sops.yaml` with
+   `sops updatekeys -i`, update `gitops-veil/.sops.yaml`, and replace
+   the `sops-age` Secret in the cluster.
+
 1. Apply the GitOps bootstrap (GitRepository + Kustomization):
 
    ```bash
@@ -594,6 +616,12 @@ kubectl -n flux-system get kustomizations -w
 - `gitops-veil/` submodule contains all veil cluster manifests
 - `gitops-veil/bootstrap/` contains the GitRepository and Kustomization that
   point Flux at the repo itself
+- `gitops-veil/.sops.yaml` declares the age public key + creation_rules
+  for encrypted secret manifests under `private/`
+- See [docs/runbooks/sops-workflow.md][sops-runbook] for the day-to-day
+  encryption workflow
+
+[sops-runbook]: runbooks/sops-workflow.md
 
 ---
 

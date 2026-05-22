@@ -41,3 +41,5 @@ secrets/ntfy-password
 secrets/grafana-secret-key
 secrets/github-runner-token-rpm
 secrets/trivia-htpasswd
+secrets/ntfy-veil-alerts-password
+secrets/sops-age.key
