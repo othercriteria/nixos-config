@@ -80,6 +80,7 @@
     hwinfo
     lsof
     pciutils
+    smartmontools
     tree
     tmux
     usbutils
