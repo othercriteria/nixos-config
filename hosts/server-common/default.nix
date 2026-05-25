@@ -71,6 +71,16 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  # System-managed gpg-agent so git-secret + manual gpg both work out of the
+  # box on headless servers. Pulls gnupg + pinentry-curses into the system
+  # closure, sets GPG_TTY in shell rc, and arranges socket activation per
+  # user. No SSH support: these hosts handle SSH via OpenSSH.
+  # Pre-existing keys live in ~/.gnupg/ as user state (see COLD-START sec 0).
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-curses;
+  };
+
   # Essential tools
   environment.systemPackages = with pkgs; [
     file
