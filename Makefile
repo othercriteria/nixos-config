@@ -191,8 +191,7 @@ sync-to-system: reveal-secrets ## Sync changes to /etc/nixos
 				sudo rsync -a --delete --exclude '*.secret' "$$path" "$(NIXOS_DIR)/$$path" || success=false; \
 			fi; \
 		else \
-			echo "Warning: $$path does not exist"; \
-			success=false; \
+			echo "Warning: $$path does not exist; skipping"; \
 		fi; \
 	done; \
 	if [ "$$success" = true ]; then \
