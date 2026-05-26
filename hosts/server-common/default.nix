@@ -47,8 +47,12 @@
         "http://cache.home.arpa"
         "https://cache.nixos.org"
       ];
+      # Dual-trust window during harmonia key rotation (2026-05-25).
+      # See docs/runbooks/harmonia-key-rotation.md. After one full
+      # rebuild cycle on every consumer, retire the *-next entry.
       trusted-public-keys = [
         (lib.strings.removeSuffix "\n" (builtins.readFile ../../assets/harmonia-cache-public-key.txt))
+        (lib.strings.removeSuffix "\n" (builtins.readFile ../../assets/harmonia-cache-public-key-next.txt))
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       ];
     };

@@ -43,3 +43,4 @@ secrets/github-runner-token-rpm
 secrets/trivia-htpasswd
 secrets/ntfy-veil-alerts-password
 secrets/sops-age.key
+secrets/harmonia-cache-private-key.new
