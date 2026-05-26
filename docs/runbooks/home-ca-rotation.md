@@ -29,20 +29,45 @@ Initial generation is documented in `docs/COLD-START.md` § 11.
 
 ### Phase A — Dual-trust window
 
-1. Generate the new CA keypair alongside the old one. Use mkcert to
-   match the existing cert's metadata style; date-suffix the file
-   names so both can coexist on disk:
+1. Generate the new CA keypair alongside the old one. We've moved
+   away from mkcert (RSA-3072) to a leaner openssl-built ECDSA
+   P-256 root with a 5-year lifetime; date-suffix the file names so
+   both can coexist on disk:
 
    ```sh
-   CAROOT=$(mktemp -d) mkcert -install   # generates new root in $CAROOT
-   # mkcert prints the path; copy the cert and key into the repo
-   cp "$CAROOT/rootCA.pem" assets/certs/rootCA-next.pem
-   cp "$CAROOT/rootCA-key.pem" secrets/home-ca.key.new
-   cp "$CAROOT/rootCA.pem"     secrets/home-ca.crt.new
+   nix shell nixpkgs#openssl --command bash -c '
+     STAMP=$(date +%Y%m%d)
+     openssl ecparam -genkey -name prime256v1 -noout \
+       -out secrets/home-ca.key.new
+     openssl req -x509 -new -key secrets/home-ca.key.new \
+       -days 1827 -sha256 \
+       -subj "/O=home-ca/OU=dlk@skaia/CN=home-ca-${STAMP}" \
+       -addext "basicConstraints=critical,CA:TRUE" \
+       -addext "keyUsage=critical,keyCertSign,cRLSign" \
+       -addext "subjectKeyIdentifier=hash" \
+       -out secrets/home-ca.crt.new
+     chmod 600 secrets/home-ca.key.new
+     cp secrets/home-ca.crt.new assets/certs/rootCA-next.pem
+   '
    ```
 
-   Alternative without mkcert (pure openssl) is fine but loses the
-   subject styling consistency.
+   Why these choices:
+
+   - **ECDSA P-256**: smaller, faster, well-supported by every
+     modern TLS client; cert-manager and kubernetes-sigs tooling
+     happy with it.
+   - **5 years (1827d)**: long enough that hygiene-only rotation
+     isn't constant churn, short enough to keep the muscle memory
+     fresh.
+   - **CN `home-ca-YYYYMMDD`**: self-identifying generation in any
+     chain dump.
+   - **`subjectKeyIdentifier=hash`**: helps tools that chain by SKI
+     rather than DN.
+
+   _Optional hardening for a future rotation:_ add
+   `nameConstraints=permitted;DNS:.home.arpa` to scope the CA. Skip
+   this rotation to keep the variable count down; it's a deliberate
+   forward-looking note.
 
 1. Track the new private key with git-secret and hide it:
 
@@ -78,14 +103,20 @@ Initial generation is documented in `docs/COLD-START.md` § 11.
 
    ```sh
    ssh meteor-1.home.arpa '
-     ls -l /etc/static/ssl/certs/ca-certificates.crt
-     awk -v RS= "/BEGIN CERTIFICATE/" /etc/static/ssl/certs/ca-certificates.crt \
-       | nix shell nixpkgs#openssl -c sh -c "while read -r line; do echo \"\$line\" | openssl x509 -noout -subject -fingerprint -sha256 2>/dev/null; done" \
-       | grep mkcert
-   ' || true
+     for f in /etc/ssl/certs/ca-certificates.crt; do
+       awk "/BEGIN/{p=1;n++}p" "$f" \
+         | csplit -z -s -b "-%02d.pem" -f /tmp/ca - "/-----END CERTIFICATE-----/+1" "{*}"
+     done
+     for c in /tmp/ca-*.pem; do
+       openssl x509 -in "$c" -noout -subject -fingerprint -sha256 2>/dev/null \
+         | grep -E "home-ca|mkcert" -A1 || true
+     done
+     rm -f /tmp/ca-*.pem
+   '
    ```
 
-   You should see two `mkcert ...` entries with different
+   You should see two entries — the old `mkcert dlk@skaia` RSA root
+   and the new `home-ca-YYYYMMDD` ECDSA root — with different
    fingerprints.
 
 ### Phase B — Swap signing key
@@ -117,19 +148,20 @@ Initial generation is documented in `docs/COLD-START.md` § 11.
    ```
 
 1. Force re-issuance of every leaf certificate currently signed by
-   the old CA. The cleanest option is to delete the
-   `Certificate.cert-manager.io` resources and let the controllers
-   reconcile fresh requests:
+   the old CA. With only ~7 leaves (registry, monitoring/×3,
+   argocd, argo-rollouts, argo-workflows) the delete-all strategy
+   is simple, and ingress-shim auto-recreates the `Certificate`
+   resources from the annotated Ingresses:
 
    ```sh
    kubectl get certificates.cert-manager.io -A
-   # for each leaf you want to roll, e.g.:
-   kubectl -n <ns> delete certificate <name>
+   kubectl delete certificates.cert-manager.io -A --all   # auto-recreate via ingress-shim
+   # watch until all back to Ready=True (typically <60s)
+   kubectl get certificates.cert-manager.io -A -w
    ```
 
-   Or, less invasive: annotate each certificate with
-   `cert-manager.io/issue-temporary-certificate=true` and bump the
-   renewal window. Pick the strategy that matches your fleet size.
+   At larger fleet sizes prefer `cmctl renew` (per-cert) or a
+   batched annotation roll instead of mass-delete.
 
 1. Verify a freshly-issued leaf cert chains to the new root:
 
