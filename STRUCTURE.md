@@ -107,6 +107,9 @@ Project documentation:
   - `harmonia-key-rotation.md`: Rotate Harmonia binary cache signing key
   - `home-ca-rotation.md`: Rotate the home-ca certificate authority
     that signs veil cluster ingress TLS
+  - `skaia-edge-to-hive.md`: Relocate the public-facing nginx /
+    ACME / ddclient surface from `skaia` to `hive` so `skaia` can
+    run ProtonVPN as the default network configuration
   - `sops-workflow.md`: Encrypt/edit/rotate SOPS-encrypted Secrets in
     `gitops-veil/private/`
 
