@@ -578,32 +578,31 @@ kubectl -n flux-system get kustomizations -w
 
 ## 11. cert-manager CA Secret
 
-**Context:** cert-manager uses a ClusterIssuer (`home-ca`) to sign TLS
-certificates for cluster services. The CA key is stored encrypted in
-`secrets/home-ca.key` (revealed via `make reveal-secrets`).
+The `home-ca` ClusterIssuer signs TLS for veil cluster services. The
+CA keypair lives in `secrets/home-ca.{crt,key}` (git-secret); the
+public root is checked in as `assets/certs/rootCA.pem` and trusted
+system-wide on every NixOS host via `security.pki.certificateFiles`
+in `hosts/common` (skaia) and `hosts/server-common` (hive +
+meteor-1..4).
 
-**Step-by-step:**
+With secrets revealed (§ 0), seed the in-cluster CA secret:
 
-1. Ensure secrets are revealed:
+```bash
+kubectl -n cert-manager create secret tls home-ca-secret \
+  --cert=secrets/home-ca.crt \
+  --key=secrets/home-ca.key
+```
 
-   ```bash
-   make reveal-secrets
-   ```
+The `cert-manager` namespace is auto-created by the Flux HelmRelease
+(`gitops-veil/public/cert-manager.yaml`); only run `kubectl create
+ns cert-manager` first if you're seeding the secret pre-Flux. The
+ClusterIssuer itself is defined in
+`gitops-veil/issuer/clusterissuer.yaml` and is referenced from
+ingresses via `cert-manager.io/cluster-issuer: "home-ca"`.
 
-1. Create the CA secret in-cluster:
+To rotate the CA, see [docs/runbooks/home-ca-rotation.md][home-ca-rotation].
 
-   ```bash
-   kubectl create ns cert-manager || true
-   kubectl -n cert-manager create secret tls home-ca-secret \
-     --cert=secrets/home-ca.crt \
-     --key=secrets/home-ca.key
-   ```
-
-**In config:**
-
-- `secrets/home-ca.crt` and `secrets/home-ca.key` (encrypted via git-secret)
-- `gitops-veil/public/cert-manager.yaml` defines the ClusterIssuer `home-ca`
-- Ingresses use annotation `cert-manager.io/cluster-issuer: "home-ca"`
+[home-ca-rotation]: runbooks/home-ca-rotation.md
 
 ---
 

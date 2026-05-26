@@ -103,6 +103,8 @@ Project documentation:
 - `retro/`: Security incident retrospectives (YYYY-MM-DD-description.md)
 - `runbooks/`: Operational procedures for ongoing tasks
   - `harmonia-key-rotation.md`: Rotate Harmonia binary cache signing key
+  - `home-ca-rotation.md`: Rotate the home-ca certificate authority
+    that signs veil cluster ingress TLS
   - `sops-workflow.md`: Encrypt/edit/rotate SOPS-encrypted Secrets in
     `gitops-veil/private/`
 
