@@ -3,6 +3,7 @@
 {
   imports = [
     ../server-common
+    ../../modules/hdd-power-mgmt.nix
     ./hardware-configuration.nix
     ./storage.nix
     ./observability.nix

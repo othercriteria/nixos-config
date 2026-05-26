@@ -48,6 +48,8 @@ Reusable NixOS modules:
 - `hardened-service.nix`: Reusable systemd sandbox preset (function returning
   a strict `serviceConfig` attrset for small network/compute services)
 - `harmonia.nix`: Nix binary cache server (skaia only)
+- `hdd-power-mgmt.nix`: Override aggressive APM head-parking on consumer
+  HDDs via `hdparm -B`; activated per-host (currently hive only)
 - `host-secrets-manifest.nix`: Per-host secrets allowlist enforced at system
   activation; prunes `/etc/nixos/secrets/` to the declared subset after
   `make sync-to-system` rsyncs the full set
