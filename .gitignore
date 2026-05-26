@@ -44,5 +44,5 @@ secrets/trivia-htpasswd
 secrets/ntfy-veil-alerts-password
 secrets/sops-age.key
 secrets/harmonia-cache-private-key.prev
-secrets/home-ca.key.new
-secrets/home-ca.crt.new
+secrets/home-ca.crt.prev
+secrets/home-ca.key.prev
