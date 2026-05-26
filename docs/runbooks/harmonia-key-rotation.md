@@ -96,3 +96,17 @@ Initial generation of the signing key is documented in
 During the dual-trust window, revert `secrets/harmonia-cache-private-key`
 to the `.prev` file and re-apply skaia. Consumers still trust the old
 key during this window, so the rollback is transparent.
+
+## Rotation history
+
+| New key id                 | Phase A              | Phase B              | Phase C due  |
+|----------------------------|----------------------|----------------------|--------------|
+| `cache.home.arpa-20260525` | 2026-05-25 (292ac53) | 2026-05-26 (e5af212) | 2026-06-02   |
+
+The 2026-05-25 rotation was the first key turnover since the cache
+was stood up; trigger was routine hygiene rather than any specific
+exposure. Phase C is gated on every consumer completing at least one
+rebuild after Phase B and on the absence of any locally-cached
+narinfo still signed by the retiring key that would need re-fetch.
+A week is a generous default; if you've already poked each consumer
+through a `make apply-host` cycle, you can pull this in.
