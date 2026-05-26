@@ -150,13 +150,24 @@ Initial generation is documented in `docs/COLD-START.md` § 11.
 1. Force re-issuance of every leaf certificate currently signed by
    the old CA. With only ~7 leaves (registry, monitoring/×3,
    argocd, argo-rollouts, argo-workflows) the delete-all strategy
-   is simple, and ingress-shim auto-recreates the `Certificate`
-   resources from the annotated Ingresses:
+   is simple, but **deleting the `Certificate.cert-manager.io`
+   resource alone is not sufficient**: ingress-shim recreates the
+   Certificate within a second or two, sees the existing (still-
+   valid, just signed by the now-retired CA) leaf in the target
+   `Secret`, and reports `Ready=True` without ever issuing a new
+   CertificateRequest. You also need to delete the underlying
+   `Secret` so cert-manager has to materialize a fresh one:
 
    ```sh
-   kubectl get certificates.cert-manager.io -A
-   kubectl delete certificates.cert-manager.io -A --all   # auto-recreate via ingress-shim
-   # watch until all back to Ready=True (typically <60s)
+   # 1. delete the Certificate resources (ingress-shim will recreate)
+   kubectl delete certificates.cert-manager.io -A --all
+   # 2. delete the underlying leaf Secrets to force re-signing
+   for nstls in <ns>/<name> ...; do
+     ns=${nstls%/*}; name=${nstls#*/}
+     kubectl -n "$ns" delete secret "$name"
+   done
+   # watch until all Certificates back to Ready=True (typically
+   # 30-90s) and every target Secret has a fresh creationTimestamp
    kubectl get certificates.cert-manager.io -A -w
    ```
 
@@ -220,6 +231,6 @@ recovery posture.
 
 ## Rotation history
 
-| New root id  | Phase A     | Phase B     | Phase C due | Notes                                          |
-|--------------|-------------|-------------|-------------|------------------------------------------------|
-| _(none yet)_ | _(pending)_ | _(pending)_ | _(pending)_ | first rotation since stand-up; hygiene trigger |
+| New root id        | Phase A              | Phase B              | Phase C due | Notes                                        |
+|--------------------|----------------------|----------------------|-------------|----------------------------------------------|
+| `home-ca-20260526` | 2026-05-26 (7bc8901) | 2026-05-26 (8b7e3d4) | 2026-06-02  | first rotation; ECDSA P-256/5y modernization |
