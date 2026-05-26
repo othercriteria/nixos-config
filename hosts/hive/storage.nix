@@ -57,15 +57,32 @@
     };
   };
 
-  # Disable aggressive head-parking on the two spinning HDDs. Both ship
-  # with APM=128 by default; on a 24/7 server this burns through the
-  # drive's load-cycle budget in a few years. See
-  # modules/hdd-power-mgmt.nix for the longer rationale.
+  # Disable aggressive head-parking on the two spinning HDDs.
+  #
+  # Wear status as of 2026-05-26 (both drives ~8.5y of 24/7 service):
+  #
+  #   sda (WD30EZRX, "Green"):  POH=75,404h  Load_Cycle_Count=511,124
+  #   sdb (ST2000DM006):        POH=70,168h  Load_Cycle_Count=397,228
+  #
+  # Both are well past the typical 300k load-cycle budget for consumer
+  # spinners. Both still report zero reallocations, zero pending sectors,
+  # zero CRC errors, empty SMART error logs, and PASSED self-assessment;
+  # the load-cycle counter is a wear indicator in this firmware class,
+  # not a failure trigger. smartd watches the real failure signals.
+  #
+  # hdparm only works on sdb (sda is a WD Green; "APM feature is:
+  # Unavailable" -- standard ATA APM is not implemented in that firmware
+  # line; the proprietary IntelliPark timer would have to be disabled via
+  # idle3-tools, which requires a full power cycle to take effect and is
+  # not viable for a 24/7 remote host). The accumulation rate on sda is
+  # modest (~6.8 cycles/hour, not the 450/hr you'd expect at the
+  # canonical 8s timer), so we accept it. See the WD caveat block in
+  # modules/hdd-power-mgmt.nix for the full rationale.
   custom.hddPowerMgmt = {
     enable = true;
     disks = [
-      "ata-WDC_WD30EZRX-00MMMB0_WD-WCAWZ2644073" # sda (STORAGE + PROJECTS)
-      "ata-ST2000DM006-2DM164_Z4ZA10CF" # sdb (ATTIC)
+      "ata-WDC_WD30EZRX-00MMMB0_WD-WCAWZ2644073" # sda (STORAGE + PROJECTS); APM unsupported
+      "ata-ST2000DM006-2DM164_Z4ZA10CF" # sdb (ATTIC); APM=254 applied
     ];
   };
 }

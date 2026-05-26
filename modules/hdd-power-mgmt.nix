@@ -15,6 +15,16 @@
 # harmless. We still reference disks by stable /dev/disk/by-id paths so the
 # config can't accidentally target the wrong device after a SATA reshuffle.
 #
+# Caveat: Western Digital Green/Red firmware does not implement standard ATA
+# APM at all. `hdparm -B 254` will appear to succeed but a subsequent query
+# returns `APM_level = not supported`. The actual idle-park timer on those
+# drives is the proprietary "IntelliPark" feature, manageable only via
+# vendor-specific commands (`idle3-tools` / `hdparm -J`) that require a full
+# power cycle to take effect -- not viable for a remote 24/7 server. If you
+# need to suppress IntelliPark on a remote WD drive, the realistic option is
+# a small periodic-read daemon (parkverbot-style) that resets the firmware's
+# inactivity timer non-destructively. This module does not yet ship that.
+#
 # Background: hive's pair of HDDs accumulated 397k+ load cycles over 8 years
 # of 24/7 service before we noticed; sda is in a similar lineage. The damage
 # already done isn't reversible, but this stops it from getting worse and
