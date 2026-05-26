@@ -149,7 +149,12 @@
     enable = true;
   };
 
+  # Dual-trust window during home-ca rotation (2026-05-26).
+  # See docs/runbooks/home-ca-rotation.md. After every leaf has been
+  # re-issued under the new root and every host has rebuilt at least
+  # once, drop the rootCA-next.pem entry as part of Phase C.
   security.pki.certificateFiles = [
     ../../assets/certs/rootCA.pem
+    ../../assets/certs/rootCA-next.pem
   ];
 }
