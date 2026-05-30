@@ -79,6 +79,10 @@
     url = "https://github.com/othercriteria/remedial-portfolio-management";
     tokenFile = "/etc/nixos/secrets/github-runner-token-rpm";
     name = "skaia-rpm";
+    # Node 24-only runtime (see modules/github-runner.nix): the RPM repo's
+    # workflows were migrated to node24 actions, so the EOL node20 runtime is
+    # dropped here too, keeping it out of the system closure.
+    nodeRuntimes = [ "node24" ];
     extraLabels = [ "nixos" ];
     extraPackages = with pkgs; [
       nix

@@ -72,6 +72,15 @@ in
       enable = true;
       inherit (cfg) url tokenFile name;
 
+      # Drop the bundled Node 20 runtime (EOL 2026-04-30, marked insecure in
+      # nixpkgs). All workflows targeting this runner have been migrated to
+      # node24 actions, so we ship only that runtime and keep node20 out of the
+      # closure entirely. The module's `package` option re-derives itself from
+      # `nodeRuntimes`, so this is the option to set (overriding `package`
+      # directly would be reverted). Additional runners (e.g. skaia-rpm) set the
+      # same; if a new runner is added, give it node24-only too.
+      nodeRuntimes = [ "node24" ];
+
       # Labels for workflow targeting
       extraLabels = cfg.extraLabels ++ lib.optionals cfg.kvmAccess [ "kvm" ];
 

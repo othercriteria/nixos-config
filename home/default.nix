@@ -5,6 +5,16 @@
     stateVersion = "23.05";
     username = "dlk";
     homeDirectory = "/home/dlk";
+
+    # This flake tracks nixos-unstable for nixpkgs and home-manager `master`
+    # (the correct pairing for an unstable channel). Around each ~biannual
+    # release boundary home-manager's `release` label bumps a cycle ahead of
+    # nixpkgs' (e.g. HM 26.11 vs nixpkgs 26.05pre-git in May 2026) even though
+    # the two are still developed and tested together. The release check is
+    # meant for setups that pin a *stable* nixpkgs and must match HM's release
+    # branch; for this unstable-tracking config it only produces a false alarm
+    # at the boundary, so we disable it.
+    enableNixpkgsReleaseCheck = false;
   };
 
   # Use out-of-home cache to avoid nested filesystem mount issues
