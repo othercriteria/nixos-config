@@ -149,12 +149,9 @@
     enable = true;
   };
 
-  # Dual-trust window during home-ca rotation (2026-05-26).
-  # See docs/runbooks/home-ca-rotation.md. After every leaf has been
-  # re-issued under the new root and every host has rebuilt at least
-  # once, drop the rootCA-next.pem entry as part of Phase C.
+  # home-ca root (ECDSA P-256, CN=home-ca-20260526). Rotated 2026-05-30
+  # from the original mkcert RSA root; see docs/runbooks/home-ca-rotation.md.
   security.pki.certificateFiles = [
     ../../assets/certs/rootCA.pem
-    ../../assets/certs/rootCA-next.pem
   ];
 }

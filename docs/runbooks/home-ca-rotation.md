@@ -231,6 +231,16 @@ recovery posture.
 
 ## Rotation history
 
-| New root id        | Phase A              | Phase B              | Phase C due | Notes                                        |
-|--------------------|----------------------|----------------------|-------------|----------------------------------------------|
-| `home-ca-20260526` | 2026-05-26 (7bc8901) | 2026-05-26 (8b7e3d4) | 2026-06-02  | first rotation; ECDSA P-256/5y modernization |
+| New root id        | Phase A              | Phase B              | Phase C (old retired) | Notes                                        |
+|--------------------|----------------------|----------------------|-----------------------|----------------------------------------------|
+| `home-ca-20260526` | 2026-05-26 (7bc8901) | 2026-05-26 (8b7e3d4) | 2026-05-30            | first rotation; ECDSA P-256/5y modernization |
+
+Phase C was pulled in to 2026-05-30: every veil ingress leaf
+(grafana, prometheus, argocd, …) was confirmed issued by the new
+`CN=home-ca-20260526` ECDSA root via live `openssl s_client`
+probes, all NixOS consumers had rebuilt 2026-05-26+ carrying the
+dual-trust list, and the old `mkcert dlk@skaia` RSA root was
+dropped from `security.pki.certificateFiles`. The `.prev` rollback
+artifacts (`secrets/home-ca.{crt,key}.prev`) were removed. Any
+out-of-band `mkcert -install`'d device still trusting only the old
+root needs a fresh trust install — tracked separately.
