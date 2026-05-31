@@ -912,45 +912,62 @@ The SSH key is stored encrypted in `secrets/argocd-repo-key`.
 
 ## 17. Docker Registry (in-cluster)
 
-**Context:** The veil cluster runs an in-cluster Docker Registry for container
-images, using MinIO as the S3 backend.
+**Context:** The veil cluster runs an in-cluster Docker Registry backed by
+MinIO (`registry` bucket). Storage credentials are a dedicated, bucket-scoped
+MinIO user (`registry-svc`), delivered as the SOPS Secret
+`gitops-veil/private/registry-s3.sops.yaml` and applied by Flux — there is no
+manual Secret to create. Manifest deletes and a nightly garbage-collect
+CronJob are enabled in the HelmRelease.
 
-**Step-by-step:**
+**Manual step** (MinIO objects are not Flux-managed): create the bucket and
+the scoped `registry-svc` user, with a secret matching the SOPS Secret. Run
+*after* Flux has applied `registry-s3` (the snippet reads the secret as the
+source of truth), using a throwaway `mc` pod with the MinIO root credential:
 
-1. Create the MinIO bucket for registry storage (via MinIO Console at
-   `https://s3-console.veil.home.arpa` or `mc` CLI):
+```bash
+ROOT_USER=$(kubectl -n object-store get secret minio-root \
+  -o jsonpath='{.data.root-user}' | base64 -d)
+ROOT_PASS=$(kubectl -n object-store get secret minio-root \
+  -o jsonpath='{.data.root-password}' | base64 -d)
+REG_KEY=registry-svc
+REG_SECRET=$(kubectl -n registry get secret registry-s3 \
+  -o jsonpath='{.data.s3SecretKey}' | base64 -d)
 
-   ```bash
-   # Using mc CLI (configure alias first)
-   mc mb minio/registry
-   ```
+kubectl -n object-store run mc-bootstrap --image=minio/mc --restart=Never \
+  --env=ROOT_USER="$ROOT_USER" --env=ROOT_PASS="$ROOT_PASS" \
+  --env=REG_KEY="$REG_KEY" --env=REG_SECRET="$REG_SECRET" \
+  --command -- sh -c '
+set -e
+mc alias set m \
+  "http://object-store-minio.object-store.svc.cluster.local:9000" \
+  "$ROOT_USER" "$ROOT_PASS"
+mc mb --ignore-existing m/registry
+cat > /tmp/p.json <<JSON
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],
+"Resource":["arn:aws:s3:::registry","arn:aws:s3:::registry/*"]}]}
+JSON
+mc admin policy create m registry-rw /tmp/p.json || true
+mc admin user add m "$REG_KEY" "$REG_SECRET" || true
+mc admin policy attach m registry-rw --user "$REG_KEY"
+'
+kubectl -n object-store logs mc-bootstrap        # verify, then:
+kubectl -n object-store delete pod mc-bootstrap
+```
 
-1. Create the registry namespace and S3 credentials secret:
+The registry is then reachable at `https://registry.veil.home.arpa`. Push
+with `docker tag ... registry.veil.home.arpa/<img>` then `docker push`.
 
-   ```bash
-   kubectl create ns registry
-
-   # Use the same credentials as MinIO root (or create a dedicated user)
-   kubectl -n registry create secret generic registry-s3 \
-     --from-literal=s3AccessKey="minioadmin" \
-     --from-literal=s3SecretKey="<minio-root-password>"
-   ```
-
-1. The registry will be available at `https://registry.veil.home.arpa` once
-   Flux reconciles.
-
-1. To push images from a meteor node:
-
-   ```bash
-   docker tag myimage:latest registry.veil.home.arpa/myimage:latest
-   docker push registry.veil.home.arpa/myimage:latest
-   ```
+**Pruning:** with deletes enabled, remove a tag by its manifest digest
+(`curl -I -H 'Accept: application/vnd.oci.image.index.v1+json' .../manifests/<tag>`
+to read `Docker-Content-Digest`, then `DELETE .../manifests/<digest>`). Note
+the delete is digest-scoped: every tag sharing that digest is removed. The
+nightly GC CronJob reclaims the blobs.
 
 **In config:**
 
-- `gitops-veil/public/registry.yaml` — HelmRelease for Docker Registry
-- Uses MinIO S3 backend via `s3.veil.home.arpa` (external ingress)
-- TLS via cert-manager (home CA trusted by all nodes)
+- `gitops-veil/public/registry.yaml` — HelmRelease (delete + nightly GC on)
+- `gitops-veil/private/registry-s3.sops.yaml` — scoped MinIO creds (SOPS)
+- MinIO S3 backend via `s3.veil.home.arpa`; TLS via cert-manager (home CA)
 
 ---
 
