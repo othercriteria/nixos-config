@@ -35,6 +35,7 @@
           "\"argo-workflows.veil.home.arpa. A 192.168.0.220\""
           "\"argo-rollouts.veil.home.arpa. A 192.168.0.220\""
           "\"registry.veil.home.arpa. A 192.168.0.220\""
+          "\"agent.veil.home.arpa. A 192.168.0.220\""
           "\"stiletto.veil.home.arpa. A 192.168.0.220\""
           "\"stiletto-lite.veil.home.arpa. A 192.168.0.220\""
 
