@@ -608,32 +608,52 @@ To rotate the CA, see [docs/runbooks/home-ca-rotation.md][home-ca-rotation].
 
 ## 12. MinIO Root Credentials (object-store namespace)
 
-**Context:** The MinIO HelmRelease references an existing Secret for the root
-user. This secret must be created manually before the first deploy to avoid
-crashloop.
+**Context:** The MinIO HelmRelease reads its root user/password from the
+Secret `minio-root` (`auth.existingSecret`). This is now the SOPS Secret
+`gitops-veil/private/minio-root.sops.yaml`, applied by Flux — there is **no**
+manual Secret to create. MinIO is the *only* consumer of the root credential;
+every application uses a dedicated, bucket-scoped MinIO user instead:
 
-**Step-by-step:**
+| User | Policy (buckets) | Secret source |
+| --- | --- | --- |
+| `registry-svc` | `registry` | `gitops-veil/private/registry-s3.sops.yaml` |
+| `jsa-agent` | `job-search-agent` | `job-search-2026` (see its `COLD-START.md`) |
+| `stiletto-svc` | `stiletto`, `stiletto-scratch` | `stiletto/stiletto-secrets` (out-of-band, ArgoCD `IgnoreExtraneous`) |
 
-1. Create the namespace if it does not exist:
+**Cold start:** nothing manual for root — once Flux has decryption wired
+(see `gitops-veil/.sops.yaml`) it applies `minio-root` before MinIO starts.
+The scoped *application* users are MinIO IAM objects (not Flux-managed) and
+must be provisioned with a throwaway `mc` pod using the root credential;
+each consumer's cold-start doc carries the exact snippet (e.g. §17 for the
+registry).
+
+**Rotating the root password:**
+
+1. Edit the SOPS secret and reconcile so the cluster Secret updates:
 
    ```sh
-   kubectl create ns object-store || true
+   ( cd gitops-veil && sops private/minio-root.sops.yaml )   # change root-password
+   git -C gitops-veil add -A && git -C gitops-veil commit -m "chore: rotate minio root" \
+     && git -C gitops-veil push
+   # bump the submodule in nixos-config, then on the cluster:
+   flux reconcile source git gitops-veil -n flux-system
+   flux reconcile kustomization veil-cluster -n flux-system
    ```
 
-1. Create the secret with root user and password:
+1. Restart MinIO so it re-reads the env (root creds are loaded only at
+   startup; existing IAM users are unaffected):
 
    ```sh
-   kubectl -n object-store create secret generic minio-root \
-     --from-literal=root-user="minioadmin" \
-     --from-literal=root-password="<change-me>"
+   kubectl -n object-store rollout restart statefulset object-store-minio
    ```
 
-1. After the secret exists, Flux will roll out MinIO automatically after you
-   commit and push the HelmRelease.
+1. Verify with an `mc` pod (`mc alias set ... minioadmin <new-pass>`;
+   `mc admin info`). The scoped users keep working throughout.
 
 **In config:**
 
-- See `flux/veil/minio.yaml` for the HelmRelease and `auth.existingSecret`.
+- `gitops-veil/public/minio.yaml` — HelmRelease, `auth.existingSecret`.
+- `gitops-veil/private/minio-root.sops.yaml` — root creds (SOPS).
 
 ---
 
