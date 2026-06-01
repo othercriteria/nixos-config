@@ -128,7 +128,7 @@ Builds automatically populate the [Harmonia](modules/harmonia.nix) binary cache
 (`cache.home.arpa`), so other hosts benefit from cached derivations.
 
 See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for the workflow
-definition and [`docs/COLD-START.md`](docs/COLD-START.md#20-github-actions-self-hosted-runner)
+definition and [`docs/COLD-START.md`](docs/COLD-START.md#github-actions-self-hosted-runners)
 for runner setup.
 
 ## Maintenance

@@ -1,16 +1,15 @@
 # Cold Start Manual Steps
 
-This document lists all manual steps required to bring up a new system from
-scratch that are not handled by NixOS or automation. Each step is annotated
-in-line in the relevant config with `# COLD START:` and described here in
-detail.
+Manual steps to bring up a new system from scratch that NixOS and GitOps do
+not handle. Each step is annotated in config with `# COLD START:`.
 
-If you are deploying a new system, follow these steps exactly. If you add or
-remove a cold start step, update this document and the relevant code comments.
+If you add or remove a step, update this file and the matching comment.
+Ongoing operations (rotation, recovery, troubleshooting) belong in
+[docs/runbooks/](runbooks/).
 
 ---
 
-## 0. GPG Key Setup (prerequisite for secrets)
+## GPG key setup (prerequisite for secrets)
 
 Server hosts get `gpg` + `pinentry-curses` from `server-common`'s
 `programs.gnupg.agent`. This step installs the user-level keyring on the
@@ -37,7 +36,7 @@ rm ~/gnupg-{public,secret}.asc ~/gnupg-ownertrust.txt
 
 ---
 
-## 1. Create ZFS Dataset for Prometheus
+## Prometheus ZFS dataset
 
 **Context:** Prometheus stores its data in `/var/lib/prometheus2` by default.
 This directory should be a ZFS dataset, created and mounted before Prometheus
@@ -74,7 +73,7 @@ host configuration for snapshot automation.
 
 ---
 
-## 2. Thermal Management Setup
+## Thermal management setup
 
 **Context:** Some systems require manual installation of firmware or
 configuration for thermal management (e.g., fan control, sensor modules).
@@ -125,7 +124,7 @@ configuration for thermal management (e.g., fan control, sensor modules).
 
 ---
 
-## 3. K3s Prometheus Client Credentials
+## K3s Prometheus client credentials
 
 **Context:** Prometheus scrapes Kubernetes metrics using a client certificate
 and key extracted from k3s. This is handled by a systemd service, but requires
@@ -153,7 +152,7 @@ k3s to be running and accessible.
 
 ---
 
-## 4. Create ZFS Dataset for Docker Registry
+## Docker registry ZFS dataset
 
 **Context:** The local Docker registry (`registry:2` via NixOS
 `services.dockerRegistry`) stores its layers under `/var/lib/registry`. This
@@ -190,7 +189,7 @@ root filesystem and can benefit from snapshots.
 
 ---
 
-## 4a. Create ZFS Dataset for Docker Local Storage on `skaia`
+## Docker local storage ZFS dataset (`skaia`)
 
 **Context:** `skaia` uses Docker both for long-lived OCI containers and for
 local image churn from development workflows. Keeping `/var/lib/docker` inside
@@ -301,7 +300,7 @@ in `fastdisk/system/var`.
 
 ---
 
-## 5. Move LAN DNS to `skaia`
+## Move LAN DNS to `skaia`
 
 **Context:** The home router may not support the desired static records for the
 `veil.home.arpa` zone. DNS will be hosted on `skaia` while Skaia continues to
@@ -327,7 +326,7 @@ use NetworkManager for its own connectivity.
 
 ---
 
-## 6. Set networking.hostId per host
+## Set `networking.hostId` per host
 
 **Context:** `networking.hostId` is used by ZFS and system components to uniquely
 identify a host. Placeholder values should be replaced with real IDs on first
@@ -363,11 +362,7 @@ install.
 
 ---
 
-## 7. Secrets Management
-
-> TODO: Document all secrets required for cold start. For now, ensure
-> any referenced secret files exist and are populated as needed on new
-> systems.
+## Secrets management
 
 ### Grafana secret key
 
@@ -392,14 +387,7 @@ After `make reveal-secrets`, the key is available at
 
 ---
 
-## 8. [Add future cold start steps here]
-
-If you discover a new manual step, document it in-line and add a section here
-with explicit, actionable instructions.
-
----
-
-## 9. Veil Cluster Cold Start (meteors)
+## Veil cluster cold start (meteors)
 
 Context: Bring up the HA k3s cluster (veil) across `meteor-1..4`.
 
@@ -465,7 +453,7 @@ Context: Bring up the HA k3s cluster (veil) across `meteor-1..4`.
 
 ---
 
-## 10. FluxCD Bootstrap for Veil (GitOps)
+## Flux bootstrap for veil (GitOps)
 
 **Context:** Flux controllers reconcile Helm releases from a private Git repo
 (`gitops-veil`), providing versioned, declarative cluster management. The repo
@@ -528,10 +516,8 @@ appears in-tree as a submodule for local editing.
    kubectl -n flux-system get secret sops-age
    ```
 
-   To rotate the age key later, generate a new one with
-   `age-keygen -o new.key`, re-encrypt every `private/*.sops.yaml` with
-   `sops updatekeys -i`, update `gitops-veil/.sops.yaml`, and replace
-   the `sops-age` Secret in the cluster.
+   To rotate the age key later, see
+   [SOPS workflow](runbooks/sops-workflow.md#rotate-the-age-keypair).
 
 1. Apply the GitOps bootstrap (GitRepository + Kustomization):
 
@@ -569,14 +555,12 @@ kubectl -n flux-system get kustomizations -w
   point Flux at the repo itself
 - `gitops-veil/.sops.yaml` declares the age public key + creation_rules
   for encrypted secret manifests under `private/`
-- See [docs/runbooks/sops-workflow.md][sops-runbook] for the day-to-day
-  encryption workflow
-
-[sops-runbook]: runbooks/sops-workflow.md
+- [SOPS workflow](runbooks/sops-workflow.md) — encrypt, edit, age-key
+  rotation
 
 ---
 
-## 11. cert-manager CA Secret
+## cert-manager CA secret
 
 The `home-ca` ClusterIssuer signs TLS for veil cluster services. The
 CA keypair lives in `secrets/home-ca.{crt,key}` (git-secret); the
@@ -585,7 +569,7 @@ system-wide on every NixOS host via `security.pki.certificateFiles`
 in `hosts/common` (skaia) and `hosts/server-common` (hive +
 meteor-1..4).
 
-With secrets revealed (§ 0), seed the in-cluster CA secret:
+With secrets revealed (GPG key setup), seed the in-cluster CA secret:
 
 ```bash
 kubectl -n cert-manager create secret tls home-ca-secret \
@@ -606,7 +590,7 @@ To rotate the CA, see [docs/runbooks/home-ca-rotation.md][home-ca-rotation].
 
 ---
 
-## 12. MinIO Root Credentials (object-store namespace)
+## MinIO root credentials (object-store)
 
 **Context:** The MinIO HelmRelease reads its root user/password from the
 Secret `minio-root` (`auth.existingSecret`). This is now the SOPS Secret
@@ -624,40 +608,20 @@ every application uses a dedicated, bucket-scoped MinIO user instead:
 (see `gitops-veil/.sops.yaml`) it applies `minio-root` before MinIO starts.
 The scoped *application* users are MinIO IAM objects (not Flux-managed) and
 must be provisioned with a throwaway `mc` pod using the root credential;
-each consumer's cold-start doc carries the exact snippet (e.g. §17 for the
-registry).
+each consumer's cold-start doc carries the exact snippet (see
+[Docker registry (in-cluster, veil)](#docker-registry-in-cluster-veil)).
 
-**Rotating the root password:**
-
-1. Edit the SOPS secret and reconcile so the cluster Secret updates:
-
-   ```sh
-   ( cd gitops-veil && sops private/minio-root.sops.yaml )   # change root-password
-   git -C gitops-veil add -A && git -C gitops-veil commit -m "chore: rotate minio root" \
-     && git -C gitops-veil push
-   # bump the submodule in nixos-config, then on the cluster:
-   flux reconcile source git gitops-veil -n flux-system
-   flux reconcile kustomization veil-cluster -n flux-system
-   ```
-
-1. Restart MinIO so it re-reads the env (root creds are loaded only at
-   startup; existing IAM users are unaffected):
-
-   ```sh
-   kubectl -n object-store rollout restart statefulset object-store-minio
-   ```
-
-1. Verify with an `mc` pod (`mc alias set ... minioadmin <new-pass>`;
-   `mc admin info`). The scoped users keep working throughout.
+To rotate the root password, see
+[MinIO root rotation](runbooks/minio-root-rotation.md).
 
 **In config:**
 
-- `gitops-veil/public/minio.yaml` — HelmRelease, `auth.existingSecret`.
-- `gitops-veil/private/minio-root.sops.yaml` — root creds (SOPS).
+- `gitops-veil/public/minio.yaml` — HelmRelease, `auth.existingSecret`
+- `gitops-veil/private/minio-root.sops.yaml` — root creds (SOPS)
 
 ---
 
-## 13. User Cache on Separate ZFS Dataset (no nesting under $HOME)
+## User cache ZFS dataset (outside `$HOME`)
 
 **Context:** `~/.cache` can grow large and is not worth keeping in ZFS
 snapshots. To avoid login races and nested filesystem ordering issues, mount
@@ -733,7 +697,7 @@ zfs list -H -t snapshot -o name -s creation fastdisk/user/home/dlk | \
 
 ---
 
-## 14. Router Port Forwards for `skaia` Ingress
+## Router port forwards for `skaia` ingress
 
 **Context:** External access to public web content and Teleport passes through
 the TP-Link AC2300 router. The router must forward specific TCP ports to
@@ -775,7 +739,7 @@ the TP-Link AC2300 router. The router must forward specific TCP ports to
 
 ---
 
-## 15. Teleport Cluster Bootstrap
+## Teleport cluster bootstrap
 
 **Context:** Teleport provides authenticated access (SSH, Kubernetes, web apps).
 The initial admin user and node enrollments require manual steps.
@@ -891,7 +855,7 @@ The initial admin user and node enrollments require manual steps.
 
 ---
 
-## 16. ArgoCD Repository Credentials
+## ArgoCD repository credentials
 
 **Context:** ArgoCD needs SSH credentials to access private Git repositories.
 The SSH key is stored encrypted in `secrets/argocd-repo-key`.
@@ -930,7 +894,7 @@ The SSH key is stored encrypted in `secrets/argocd-repo-key`.
 
 ---
 
-## 17. Docker Registry (in-cluster)
+## Docker registry (in-cluster, veil)
 
 **Context:** The veil cluster runs an in-cluster Docker Registry backed by
 MinIO (`registry` bucket). Storage credentials are a dedicated, bucket-scoped
@@ -991,7 +955,7 @@ nightly GC CronJob reclaims the blobs.
 
 ---
 
-## 18. Harmonia Binary Cache Signing Key
+## Harmonia binary cache signing key
 
 **Context:** Harmonia serves the nix store from `skaia` to other LAN hosts. It
 signs cached derivations with a private key; clients verify with the
@@ -1072,7 +1036,7 @@ Rotation is an ongoing operation, not a cold-start step. See
 
 ---
 
-## 19. Hive Migration and Bootstrap
+## Hive migration and bootstrap
 
 **Context:** `hive` is a headless server running Urbit. It streams metrics and
 logs to `skaia` for centralized observability.
@@ -1180,7 +1144,7 @@ The web interface is exposed on port 8080 and proxied through skaia's nginx at
 
 ---
 
-## 20. GitHub Actions Self-Hosted Runners
+## GitHub Actions self-hosted runners
 
 **Context:** CI runs on self-hosted runners on `skaia`. Two runner instances
 are configured:
@@ -1288,12 +1252,6 @@ toolchain.
    - Should show: `skaia-rpm` with status **Idle** and labels
      `self-hosted`, `Linux`, `X64`, `nixos`
 
-### Updating runners
-
-Runner updates happen automatically with `nixos-rebuild` when
-nixpkgs updates the `github-runner` package. No manual intervention
-needed.
-
 **In config:**
 
 - `modules/github-runner.nix` — nixos-config runner module
@@ -1306,7 +1264,7 @@ needed.
 
 ---
 
-## 21. SRS WebRTC Streaming Failover
+## SRS WebRTC streaming failover
 
 **Context:** Self-hosted WebRTC streaming via SRS provides a failover for Twitch
 streams. OBS publishes via WHIP to `stream.valueof.info`, and viewers connect
@@ -1315,7 +1273,7 @@ via WHEP for low-latency (<2-3s) playback.
 **Prerequisites:**
 
 - DNS A record for `stream.valueof.info` pointing to `skaia`'s public IP
-- Router UDP port forward (see section 14)
+- Router UDP port forward (see [Router port forwards](#router-port-forwards-for-skaia-ingress))
 - Docker/containerd running on `skaia`
 - Bearer token secret for WHIP authentication
 
@@ -1344,7 +1302,7 @@ via WHEP for low-latency (<2-3s) playback.
    "stream.valueof.info"
    ```
 
-1. Verify the router forwards UDP `8000` to `skaia` (see section 14).
+1. Verify the router forwards UDP `8000` to `skaia` (see [Router port forwards](#router-port-forwards-for-skaia-ingress)).
 
 1. After deploying the config, verify the SRS container is running:
 
@@ -1376,53 +1334,13 @@ via WHEP for low-latency (<2-3s) playback.
    - Open `https://stream.valueof.info/players/whep.html`
    - Or use the SRS console at `/console/`
 
-**Dynamic DNS resilience:**
-
-The SRS configuration uses `stream.valueof.info` as the WebRTC candidate rather
-than a hardcoded IP. This means IP changes are handled gracefully since SRS
-resolves the hostname at connection time. Note that Firefox may have issues with
-DNS-based candidates (prefers IP addresses), but Chrome, Edge, and Safari work
-correctly.
-
-**Troubleshooting:**
-
-- **ICE connection failures**: Usually firewall/NAT issues. Verify UDP 8000 is
-  reachable from outside the LAN:
-
-  ```sh
-  # From external host
-  nc -vzu stream.valueof.info 8000
-  ```
-
-- **Container won't start**: Check Docker logs:
-
-  ```sh
-  docker logs docker-srs.service
-  ```
-
-- **OBS WHIP errors**: Ensure you're using OBS 30+ which has native WHIP
-  support. Check the OBS log for connection details.
-
-- **401 Unauthorized from WHIP**: Check that the bearer token in OBS matches
-  the secret file exactly. Verify the auth service is running:
-
-  ```sh
-  systemctl status srs-auth
-  journalctl -u srs-auth -f  # Watch auth attempts
-  ```
-
-- **Future coturn TURN server**: For viewers behind restrictive NATs (symmetric
-  NAT, enterprise firewalls), add coturn as a relay server. NixOS provides
-  `services.coturn` module. Update the SRS config to include TURN credentials
-  when implemented.
-
 **In config:**
 
 - `hosts/skaia/streaming.nix` — SRS container, nginx vhost, firewall rules
 
 ---
 
-## 22. Home Assistant Integration
+## Home Assistant integration
 
 **Context:** Home Assistant Yellow (or similar) runs on the LAN at `192.168.0.184`.
 Integration with skaia provides secure external access via nginx, metrics in
@@ -1551,48 +1469,6 @@ Prometheus/Grafana, and fail2ban protection against brute-force attacks.
    curl -s localhost:9001/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="homeassistant")'
    ```
 
-### Security measures in place
-
-- **Rate limiting**: 10 req/min on `/auth/` endpoints, 60 req/s general
-- **Fail2ban**: 5 auth failures in 10 minutes = 1 hour IP ban
-- **HSTS**: Forces TLS with long max-age
-- **Security headers**: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
-- **Alerting**: Prometheus alert on auth failure spikes (>10 in 5 minutes)
-
-### Agent/CLI access
-
-With the token stored, agents can interact with Home Assistant:
-
-```sh
-# Set up environment (add to .zshrc or use direnv)
-export HASS_SERVER=http://assistant.home.arpa:8123
-export HASS_TOKEN=$(cat /etc/nixos/secrets/homeassistant-token)
-
-# List all entities
-curl -s -H "Authorization: Bearer $HASS_TOKEN" \
-  $HASS_SERVER/api/states | jq '.[].entity_id'
-
-# Get specific entity state
-curl -s -H "Authorization: Bearer $HASS_TOKEN" \
-  $HASS_SERVER/api/states/sensor.temperature | jq
-
-# Call a service (e.g., turn on a light)
-curl -X POST -H "Authorization: Bearer $HASS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"entity_id": "light.living_room"}' \
-  $HASS_SERVER/api/services/light/turn_on
-```
-
-### Troubleshooting
-
-- **Rate limited (429)**: Wait 1 minute, or check if automation is hammering
-  the API
-- **Banned by fail2ban**: Check `fail2ban-client status homeassistant` and
-  unban with `fail2ban-client set homeassistant unbanip <IP>`
-- **Prometheus scrape failing**: Verify the token is correct and the Prometheus
-  integration is enabled in HA
-- **WebSocket issues**: Ensure `proxyWebsockets = true` in nginx config
-
 **In config:**
 
 - `hosts/skaia/homeassistant.nix` — nginx proxy, fail2ban, prometheus scrape
@@ -1603,7 +1479,7 @@ curl -X POST -H "Authorization: Bearer $HASS_TOKEN" \
 
 ---
 
-## 23. Home Assistant SSH Access (Agent Configuration)
+## Home Assistant SSH access
 
 **Context:** SSH access to the Home Assistant Yellow allows agents (AI
 assistants) to directly edit `configuration.yaml` and other files without
@@ -1643,7 +1519,7 @@ manual intervention.
 
 ---
 
-## 24. MQTT Broker for NixOS ↔ Home Assistant Integration
+## MQTT broker (NixOS ↔ Home Assistant)
 
 **Context:** Mosquitto MQTT broker on skaia enables bidirectional state sharing
 between NixOS infrastructure and Home Assistant.
@@ -1706,7 +1582,7 @@ between NixOS infrastructure and Home Assistant.
 
 ---
 
-## 25. Interactive Brokers TWS First-Time Setup
+## Interactive Brokers TWS first-time setup
 
 **Context:** TWS (Trader Workstation) provides API access for trading tools.
 Installed declaratively via `modules/tws.nix`.
@@ -1743,7 +1619,7 @@ Installed declaratively via `modules/tws.nix`.
 
 ---
 
-## 26. Printer Configuration (Brother HL-L2350DW)
+## Printer configuration (Brother HL-L2350DW)
 
 **Context:** Printer configuration in NixOS is inherently imperative — CUPS stores
 printer definitions in its own database (`/var/lib/cups/`). The brlaser driver is
@@ -1800,22 +1676,6 @@ The printer URI **must** use the `.local` mDNS suffix (e.g.,
 `lpd://BRWD89C672FCCC5.local/...`) for name resolution to work. Without the
 suffix, CUPS cannot resolve the hostname.
 
-### After printer IP changes
-
-If the printer gets a new IP (DHCP), mDNS handles it automatically. No
-reconfiguration needed as long as the hostname remains the same.
-
-### Home Assistant integration
-
-The Brother printer integration in Home Assistant auto-discovers via SNMP and
-tracks:
-
-- Printer status (idle/printing/stopped)
-- Toner level (%)
-- Drum unit remaining (%)
-
-No configuration needed on the NixOS side for this.
-
 **In config:**
 
 - `modules/printing.nix` — CUPS service and brlaser driver (declarative)
@@ -1824,7 +1684,7 @@ No configuration needed on the NixOS side for this.
 
 ---
 
-## 27. Forgejo on `skaia`
+## Forgejo on `skaia`
 
 **Context:** `skaia` hosts a private, LAN-first Forgejo instance backed by
 local PostgreSQL. The service state lives on dedicated ZFS datasets mounted at
@@ -1937,7 +1797,7 @@ the deployment has settled.
 
 ---
 
-## 28. Trivia Drip-Release File Server on `skaia`
+## Trivia drip-release file server on `skaia`
 
 **Context:** `trivia.valueof.info` serves a small set of files (PDFs, MP3s)
 for a one-evening trivia contest, with scheduled "drip" reveals encoded in
@@ -1949,8 +1809,8 @@ and per-IP rate limits.
 ### Trivia prerequisites
 
 - DNS A record for `trivia.valueof.info` pointing to the router WAN IP.
-- TCP 80/443 already forwarded to `skaia` (see section 14).
-- GPG keys imported and `make reveal-secrets` working (section 0).
+- TCP 80/443 already forwarded to `skaia` (see [Router port forwards](#router-port-forwards-for-skaia-ingress)).
+- GPG keys imported and `make reveal-secrets` working ([GPG key setup](#gpg-key-setup-prerequisite-for-secrets)).
 
 ### Trivia setup
 
@@ -2064,32 +1924,6 @@ and per-IP rate limits.
      Repeat per round. Slugs must match `[a-z0-9][a-z0-9-]*`; filenames
      must match `[A-Za-z0-9][A-Za-z0-9._-]*` (no dotfiles, no spaces).
 
-1. **Slipping a round mid-event.** If a round needs to start later,
-   just rename:
-
-   ```sh
-   sudo -u trivia mv \
-     /var/lib/trivia/rounds/2026-06-07T19:30:00__round-2 \
-     /var/lib/trivia/rounds/2026-06-07T19:40:00__round-2
-   ```
-
-   No service restart needed: discovery happens on each request.
-
-### Trivia security model recap
-
-- Public credential boundary: HTTP Basic Auth in nginx (the URL is
-  recoverable from Certificate Transparency logs).
-- nginx rate limit: 10 req/s per IP with a burst of 30; 4 concurrent
-  connections per IP; 1 KB request body cap (this is a `GET`-only API).
-- Backing service runs as the unprivileged `trivia` user inside a
-  systemd sandbox: no writes anywhere, no outbound network, `/proc`
-  pid-restricted, syscall filter excluding `@privileged`/`@resources`.
-- Symlinks inside or as rounds are rejected at the application layer.
-
-If the worst happens (an attacker compromises the FastAPI app):
-they obtain read access to `/var/lib/trivia/rounds/` and nothing
-else. No filesystem writes, no LAN scanning, no internet egress.
-
 **In config:**
 
 - `modules/trivia.nix` — service module, fixture seeder, options
@@ -2102,265 +1936,8 @@ else. No filesystem writes, no LAN scanning, no internet egress.
 
 ---
 
-## 29. Hive System Disk Replacement
+## Hive system disk replacement
 
-**Context:** Distinct from section 19 (initial migration onto NixOS). This
-covers replacing hive's system NVMe (e.g. predictive `smartd` reliability
-warning at 170% wear) while preserving the data disks, the Urbit pier, and
-hive's network identity.
-
-The procedure assumes the data layout we have: `/boot` + LUKS+LVM (root +
-swap) on `nvme0n1`, with `/ssd` (Urbit pier), `/storage`, `/projects` on
-separate SATA disks mounted by label. Because the data filesystems are
-referenced by label, SATA port shuffling is safe.
-
-**Pre-swap (hive still running):**
-
-1. Capture SSH host keys + teleport node state from the live system:
-
-   ```sh
-   STAGE=/tmp/hive-recovery-stage
-   sudo rm -rf "$STAGE"
-   sudo mkdir -p "$STAGE"/{ssh,teleport,meta}
-   sudo cp -a /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub \
-     "$STAGE/ssh/"
-   sudo cp -a /var/lib/teleport-node/. "$STAGE/teleport/"
-   sudo cp /etc/machine-id "$STAGE/meta/machine-id"
-   sudo blkid | sudo tee "$STAGE/meta/blkid.txt" >/dev/null
-   sudo tar -czf /tmp/hive-recovery.tar.gz -C "$STAGE" .
-   sudo chmod 0600 /tmp/hive-recovery.tar.gz
-   sudo chown dlk:users /tmp/hive-recovery.tar.gz
-   sudo rm -rf "$STAGE"
-   ```
-
-   Pull `/tmp/hive-recovery.tar.gz` off-host (e.g. `scp` to skaia and the
-   workstation). Storing in two places matters — these contain hive's SSH
-   host private keys and a valid teleport node identity.
-
-1. Optional but recommended: `rsync` `/home/dlk/` to `/storage/dlk/` so user
-   dotfiles + `.ssh/authorized_keys` survive. Exclude `.cache/` and
-   `.local/share/Trash/`.
-
-1. Stop urbit cleanly. The `urbit-taptev-donwyx` service uses SIGINT with
-   `TimeoutStopSec=120`. Real-world urbit instances can take longer than
-   that to flush; if `systemctl stop` reports `failed (timeout)` and the
-   service was SIGKILL'd, the pier is *probably* fine but a quiescent
-   snapshot is best taken from a `|exit`'d manual run if possible:
-
-   ```sh
-   sudo systemctl stop urbit-taptev-donwyx
-   pgrep -af taptev-donwyx
-   ```
-
-1. Pier snapshot to **a different host** (e.g. skaia) for blast-radius
-   isolation. ZFS-backed destination compresses well (~50%):
-
-   ```sh
-   # from skaia:
-   rsync -aHAX --info=progress2,stats2 \
-     dlk@hive.home.arpa:/ssd/urbit/taptev-donwyx/ \
-     /home/dlk/hive-pier-snapshot-$(date +%F)/
-   ```
-
-   Compare apparent size + file count source vs dest to confirm:
-
-   ```sh
-   find /ssd/urbit/taptev-donwyx -type f | wc -l        # on hive
-   du --apparent-size -sh /ssd/urbit/taptev-donwyx      # on hive
-   ```
-
-   This snapshot is for emergency restore only — restoring an out-of-date
-   pier triggers identity breach.
-
-1. Stage the flake on skaia for the installer to fetch later:
-
-   ```sh
-   # from workstation (cwd: nixos-config)
-   git archive --format=tar.gz -o /tmp/nixos-config-flake.tar.gz HEAD
-   scp /tmp/nixos-config-flake.tar.gz dlk@skaia:/home/dlk/iso/
-   scp /tmp/hive-recovery.tar.gz       dlk@skaia:/home/dlk/iso/
-   ```
-
-1. `sudo poweroff`.
-
-**Physical swap:**
-
-- M.2 NVMe out (old), in (new).
-- Leave all SATA disks alone. Hive's data filesystems mount by label, so
-  port shuffling is safe — but unnecessary risk if you can avoid it.
-- Boot from a current NixOS minimal installer USB.
-
-**Install from USB (drive over SSH for ergonomics):**
-
-1. SSH as `nixos@hive.home.arpa` from the workstation. The installer's
-   `nixos` user has passwordless sudo.
-
-1. Identify the new NVMe (`lsblk -d -o NAME,SIZE,VENDOR,MODEL`). Make
-   absolutely sure you're targeting the new drive, not a data SATA disk.
-
-1. Start a one-shot HTTP server on skaia (`cd /home/dlk/iso &&
-   python3 -m http.server 8000`) and fetch the staged tarballs:
-
-   ```sh
-   cd /tmp
-   curl -O http://skaia.home.arpa:8000/nixos-config-flake.tar.gz
-   curl -O http://skaia.home.arpa:8000/hive-recovery.tar.gz
-   ```
-
-1. Partition, preserving the existing 3-partition layout. The vestigial
-   1MiB `p1` keeps `nvme0n1p3` as the LUKS device path, matching the
-   declared `boot.initrd.luks.devices.root.device`:
-
-   ```sh
-   DISK=/dev/nvme0n1
-   sudo wipefs -a $DISK
-   sudo sgdisk --zap-all $DISK
-   sudo sgdisk \
-     -n 1:1MiB:+1MiB    -t 1:8300 -c 1:"pad" \
-     -n 2:0:+1GiB       -t 2:EF00 -c 2:"ESP" \
-     -n 3:0:0           -t 3:8309 -c 3:"LUKS" \
-     $DISK
-   sudo partprobe $DISK
-   ```
-
-1. LUKS + LVM, recreating the existing UUIDs so
-   `hosts/hive/hardware-configuration.nix` works unchanged:
-
-   ```sh
-   sudo cryptsetup luksFormat /dev/nvme0n1p3
-   sudo cryptsetup luksOpen   /dev/nvme0n1p3 root
-   sudo pvcreate /dev/mapper/root
-   sudo vgcreate vg /dev/mapper/root
-   sudo lvcreate -L 8G       -n swap vg
-   sudo lvcreate -l 100%FREE -n root vg
-
-   sudo mkfs.vfat -i 8619132C -n EFI                                /dev/nvme0n1p2
-   sudo mkfs.ext4 -F -L root -U 9c37b50e-6323-4e07-b2d1-36fe8a4d2bb9 /dev/mapper/vg-root
-   sudo mkswap     -L swap -U eda6fb00-9a24-4fe3-8c83-4d8fd4d7dd2b   /dev/mapper/vg-swap
-   ```
-
-1. Mount, stage flake, install — pointing at the harmonia LAN cache so the
-   install completes in 1-2 minutes instead of pulling everything from
-   cache.nixos.org:
-
-   ```sh
-   sudo mount /dev/mapper/vg-root /mnt
-   sudo mkdir -p /mnt/boot
-   sudo mount /dev/nvme0n1p2 /mnt/boot
-   sudo mkdir -p /mnt/etc/nixos
-   sudo tar -xzf /tmp/nixos-config-flake.tar.gz -C /mnt/etc/nixos
-   sudo chown -R root:root /mnt/etc/nixos
-
-   TRUSTKEY=$(tr -d "\n" < /mnt/etc/nixos/assets/harmonia-cache-public-key.txt)
-   sudo nixos-install \
-     --no-root-passwd \
-     --flake /mnt/etc/nixos#hive \
-     --option extra-substituters       "http://cache.home.arpa" \
-     --option extra-trusted-public-keys "$TRUSTKEY"
-   ```
-
-1. Restore identity to the new root before reboot. `--no-root-passwd`
-   intentionally leaves root locked; `sudo` is the only privilege path.
-
-   ```sh
-   mkdir -p /tmp/recovery
-   tar -xzf /tmp/hive-recovery.tar.gz -C /tmp/recovery
-
-   sudo cp /tmp/recovery/ssh/ssh_host_*_key     /mnt/etc/ssh/
-   sudo cp /tmp/recovery/ssh/ssh_host_*_key.pub /mnt/etc/ssh/
-   sudo chmod 600 /mnt/etc/ssh/ssh_host_*_key
-   sudo chmod 644 /mnt/etc/ssh/ssh_host_*_key.pub
-   sudo chown root:root /mnt/etc/ssh/ssh_host_*
-
-   sudo mkdir -p /mnt/var/lib/teleport-node
-   sudo cp -a /tmp/recovery/teleport/. /mnt/var/lib/teleport-node/
-   sudo chown -R root:root /mnt/var/lib/teleport-node
-   sudo chmod 750 /mnt/var/lib/teleport-node
-
-   sudo cp /tmp/recovery/meta/machine-id /mnt/etc/machine-id
-   ```
-
-1. Restore `~/.ssh/authorized_keys` from the `/storage` home backup so SSH
-   key auth works on first boot (`PasswordAuthentication=false` in
-   `sshd_config`). Verify dlk's old uid:gid was 1000:100 — if so, the
-   ownership matches what NixOS will assign to the new dlk on activation:
-
-   ```sh
-   sudo mkdir -p /tmp/storage
-   sudo mount -o ro /dev/disk/by-label/STORAGE /tmp/storage
-   sudo cp -a /tmp/storage/dlk/home-backup-*/.ssh /mnt/home/dlk/.ssh
-   sudo chown -R 1000:100 /mnt/home/dlk
-   sudo chmod 700 /mnt/home/dlk/.ssh
-   sudo chmod 600 /mnt/home/dlk/.ssh/authorized_keys
-   sudo umount /tmp/storage
-   ```
-
-1. **Set dlk's initial password while still in the installer.** This is
-   the one step that, if skipped, results in a fresh hive where `sudo`
-   cannot work because dlk has no password and root is locked. `chroot`
-   into the new root via `nixos-enter` for a clean PAM context:
-
-   ```sh
-   sudo nixos-enter --root /mnt -- bash -c 'passwd dlk'
-   ```
-
-1. Tear down and reboot:
-
-   ```sh
-   sudo umount -R /mnt
-   sudo vgchange -an vg
-   sudo cryptsetup luksClose root
-   sudo reboot
-   ```
-
-**Post-boot verification:**
-
-1. LUKS unlocks at the local console with the existing passphrase.
-
-1. SSH from the workstation — host key fingerprint should match the
-   restored ed25519 (you may need to `ssh-keygen -R hive.home.arpa` to
-   clear stale `known_hosts` entries from the installer phase).
-
-1. Run the verification trio:
-
-   ```sh
-   ssh hive.home.arpa '
-     findmnt --real -o TARGET,SOURCE,FSTYPE,LABEL,SIZE,USED
-     systemctl is-active teleport-node smartd urbit-taptev-donwyx sshd
-     smartctl -A -H /dev/nvme0 | sed -n "1,12p"
-     sudo -v
-   '
-   tsh ls    # hive should be back with its labels (no re-enrollment)
-   ```
-
-1. Final structural check from the workstation:
-
-   ```sh
-   ssh hive.home.arpa 'sudo nixos-rebuild dry-activate --flake /etc/nixos#hive'
-   ```
-
-   If the resulting store path matches what `nixos-rebuild build
-   --flake .#hive` produces locally, the running hive is byte-identical to
-   `master`.
-
-1. Restore user state from the `/storage` home backup as needed
-   (`~/.gnupg`, `~/.ssh`, etc.). Drop any stale `~/.gnupg/gpg-agent.conf`
-   that pins `pinentry-program` to a GC'd `/nix/store/...` path from the
-   old system — `programs.gnupg.agent` (server-common) provides a system
-   pinentry that `gpgconf` will find on its own.
-
-**Cleanup after success:**
-
-- Remove the recovery tarball from skaia's LAN-served dir (it contains SSH
-  host private keys): `rm /home/dlk/iso/hive-recovery-*.tar.gz`.
-- Keep the pier snapshot on skaia for ~1 week then drop it.
-- Label and store (or recycle) the retired NVMe.
-
-**Why the partition layout matches the old one exactly:**
-
-`hosts/hive/hardware-configuration.nix` references three UUIDs (root, boot,
-swap) and `hosts/hive/default.nix` references `/dev/nvme0n1p3` for LUKS. By
-recreating filesystems with `mkfs.* -U <uuid>` / `mkfs.vfat -i <vol-id>` and
-preserving the 3-partition layout, the flake works unchanged. The
-alternative (regenerate `hardware-configuration.nix`) is also fine but adds
-a config commit to the swap procedure.
+Not a from-scratch step. See
+[Hive system disk replacement](runbooks/hive-disk-replacement.md) (NVMe swap
+while keeping data disks and pier).

@@ -97,7 +97,8 @@ Home Manager user configuration:
 
 Project documentation:
 
-- `COLD-START.md`: Manual steps for new hosts and services
+- `COLD-START.md`: Manual cold-start steps for new hosts and services
+  (descriptive headings; no section numbers)
 - `DESIGN-DECISIONS.md`: Architecture decisions with rationale and trade-offs
 - `OBSERVABILITY.md`: Metrics, logs, dashboards, backup/restore
 - `VEIL-PLAN.md`: Veil cluster rollout plan
@@ -112,6 +113,9 @@ Project documentation:
     run ProtonVPN as the default network configuration
   - `sops-workflow.md`: Encrypt/edit/rotate SOPS-encrypted Secrets in
     `gitops-veil/private/`
+  - `minio-root-rotation.md`: Rotate MinIO root credentials on veil
+  - `hive-disk-replacement.md`: Replace hive system NVMe while keeping
+    data disks and pier
 
 ### Other Directories
 

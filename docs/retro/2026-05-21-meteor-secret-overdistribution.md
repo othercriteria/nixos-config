@@ -28,7 +28,7 @@ Two mechanisms compose into the gap:
 
 1. **Encrypt-time:** `.gitsecret/keys/pubring.kbx` has two GPG keys,
    both belonging to the operator. Every `.secret` file is encrypted
-   to both. Per `docs/COLD-START.md` § 0, each host imports the
+   to both. Per `docs/COLD-START.md` (GPG key setup), each host imports the
    operator's private GPG key during onboarding, so each host can
    decrypt every secret in a workspace checkout.
 

@@ -6,7 +6,8 @@ veil cluster's internal ingresses. Like the
 dual-trust window so every NixOS host accepts both the retiring and
 the incoming root while leaf certificates are re-issued.
 
-Initial generation is documented in `docs/COLD-START.md` § 11.
+Initial generation is documented in
+[cert-manager CA secret](../COLD-START.md#cert-manager-ca-secret).
 
 [harmonia]: harmonia-key-rotation.md
 

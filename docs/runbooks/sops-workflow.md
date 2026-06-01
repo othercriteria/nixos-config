@@ -7,7 +7,8 @@ key stored in the `sops-age` Secret in `flux-system`. The matching
 public key is committed to `gitops-veil/.sops.yaml`.
 
 Bootstrap of the keypair + in-cluster Secret is described in
-`docs/COLD-START.md` § 10. This document covers everyday usage:
+[Flux bootstrap for veil](../COLD-START.md#flux-bootstrap-for-veil-gitops).
+This document covers everyday usage:
 encrypt a new Secret, edit an existing one, and rotate the key.
 
 ## Prerequisites

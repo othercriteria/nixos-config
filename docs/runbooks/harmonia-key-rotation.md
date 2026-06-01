@@ -8,7 +8,8 @@ cached paths signed with the old key until the new key has
 propagated everywhere.
 
 Initial generation of the signing key is documented in
-`docs/COLD-START.md` § 18. Service definition is in
+[Harmonia binary cache signing key](../COLD-START.md#harmonia-binary-cache-signing-key).
+Service definition is in
 `modules/harmonia.nix`.
 
 ## Steps
