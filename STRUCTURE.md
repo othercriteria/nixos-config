@@ -116,6 +116,8 @@ Project documentation:
   - `minio-root-rotation.md`: Rotate MinIO root credentials on veil
   - `hive-disk-replacement.md`: Replace hive system NVMe while keeping
     data disks and pier
+  - `trivia-setup.md`: Prepare trivia.valueof.info for a drip-release
+    contest (secret, deploy, content)
 
 ### Other Directories
 
