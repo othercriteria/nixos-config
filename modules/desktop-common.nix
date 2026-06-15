@@ -27,8 +27,17 @@
     xfconf.enable = true; # Allows Thunar preference to persist without XFCE
   };
 
-  services.gvfs.enable = true;
-  services.tumbler.enable = true;
+  services = {
+    gvfs.enable = true;
+    tumbler.enable = true;
+
+    # Power/battery info over D-Bus. Chromium/Electron apps (Chrome, Slack,
+    # Cursor, etc.) query UPower's DisplayDevice on startup; if the service is
+    # not activatable the D-Bus call times out (NoReply), libdbus hits a
+    # "pending != NULL" assertion and aborts the whole process (SIGABRT). Works
+    # fine on battery-less desktops (just reports line power).
+    upower.enable = true;
+  };
 
   # Enable XDG portal for desktop integration
   xdg.portal = {

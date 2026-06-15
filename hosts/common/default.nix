@@ -120,9 +120,9 @@
   };
 
   # Ensure the systemd user manager has a correct HOME for login sessions
-  systemd.user.extraConfig = ''
-    DefaultEnvironment=HOME=/home/dlk
-  '';
+  systemd.user.settings.Manager = {
+    DefaultEnvironment = "HOME=/home/dlk";
+  };
 
 
 

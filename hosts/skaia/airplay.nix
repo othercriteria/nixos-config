@@ -130,6 +130,15 @@ in
         ];
         Restart = "on-failure";
         RestartSec = "5s";
+        # uxplay does not drain the Avahi/mDNS D-Bus signal stream while
+        # idle, so unread messages accumulate in the system bus (~107 MB/day
+        # observed). Left running for days this exhausts uid 1000's per-user
+        # dbus-broker byte quota (512 MB), after which the broker disconnects
+        # every new caller from the user ("does not have the resources to
+        # receive a reply") and Chromium/Electron apps abort on startup.
+        # Recycle the service daily to drain the buffer; on-failure restart
+        # treats the RuntimeMaxSec timeout as a failure and brings it back.
+        RuntimeMaxSec = "24h";
       };
 
       # Auto-start when graphical session is available
