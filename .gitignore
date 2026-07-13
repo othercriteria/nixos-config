@@ -24,7 +24,6 @@ private-assets/
 
 secrets/ddclient-password
 secrets/dlk-protonmail-password
-secrets/anthropic-2025-03-28-local-dev
 secrets/anthropic-2025-04-10-vibectl-personal-usage
 secrets/veil-k3s-token
 secrets/home-ca.crt
@@ -43,3 +42,4 @@ secrets/github-runner-token-rpm
 secrets/trivia-htpasswd
 secrets/ntfy-veil-alerts-password
 secrets/sops-age.key
+secrets/anthropic-2026-07-13-local-dev

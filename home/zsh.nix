@@ -34,8 +34,8 @@
       (builtins.readFile ../assets/p10k.zsh)
       (builtins.readFile ../assets/nix-direnv.zsh)
       "export EDITOR=\"emacs -nw\""
-      "if [ -f /etc/nixos/secrets/anthropic-2025-03-28-local-dev ]; then"
-      "  export ANTHROPIC_API_KEY=\"$(cat /etc/nixos/secrets/anthropic-2025-03-28-local-dev)\""
+      "if [ -f /etc/nixos/secrets/anthropic-2026-07-13-local-dev ]; then"
+      "  export ANTHROPIC_API_KEY=\"$(cat /etc/nixos/secrets/anthropic-2026-07-13-local-dev)\""
       "fi"
       "if [ -f /etc/nixos/secrets/openai-2026-04-12-codex-local-dev ]; then"
       "  export OPENAI_API_KEY=\"$(cat /etc/nixos/secrets/openai-2026-04-12-codex-local-dev)\""
