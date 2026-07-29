@@ -53,7 +53,15 @@ in
 {
   services.ollama = {
     enable = true;
-    package = pkgs.ollama-cuda; # CUDA acceleration for NVIDIA GPU
+    # TEMPORARY: CMake 4.2 no longer falls back to PATH when the CUDA setup
+    # hook provides a CUDAToolkit_ROOT without nvcc. Remove this override once
+    # nixpkgs PR #545542 is included in our pinned revision.
+    package = pkgs.ollama-cuda.overrideAttrs (old: {
+      preBuild = ''
+        unset CUDAToolkit_ROOT
+        ${old.preBuild}
+      '';
+    });
     host = "127.0.0.1"; # Bind localhost; nginx handles LAN exposure
     port = 11434;
     loadModels = [ defaultModel haAssistantModel ];

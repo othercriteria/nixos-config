@@ -18,13 +18,13 @@
 
 let
   # GStreamer plugin path shared between services
+  # gst-vaapi was removed in GStreamer 1.28; VA-API lives in gst-plugins-bad now
   gstPluginPath = lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [
     gst_all_1.gstreamer
     gst_all_1.gst-plugins-base
     gst_all_1.gst-plugins-good
     gst_all_1.gst-plugins-bad
     gst_all_1.gst-plugins-ugly
-    gst_all_1.gst-vaapi
     pipewire
   ]);
 
@@ -62,14 +62,12 @@ in
     uxplay
 
     # GStreamer plugins for video/audio decoding
+    # gst-plugins-bad covers h264 parsing and VA-API (replaces gst-vaapi)
     gst_all_1.gstreamer
     gst_all_1.gst-plugins-base
     gst_all_1.gst-plugins-good
-    gst_all_1.gst-plugins-bad # Required for h264 parsing
-    gst_all_1.gst-plugins-ugly # Additional codecs
-
-    # For hardware-accelerated decoding on NVIDIA
-    gst_all_1.gst-vaapi
+    gst_all_1.gst-plugins-bad
+    gst_all_1.gst-plugins-ugly
 
     # Snapshot tool for capturing frames from AirPlay stream
     # Usage: airplay-snapshot [output.png]

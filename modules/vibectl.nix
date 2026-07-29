@@ -4,6 +4,19 @@ with lib;
 
 let
   cfg = config.custom.vibectl;
+
+  # vibectl classifiers list 3.11–3.13; stick to 3.13 rather than the flake's
+  # default python3 (3.14), where uv2nix currently fails to build aiohttp.
+  python = pkgs.python313;
+
+  # nixpkgs anthropic/openai pull inline-snapshot as a check input; its docs
+  # tests currently fail against black formatting on some interpreters
+  # (seen on 3.12: 3 failed / 1428 passed).
+  pythonPackages = pkgs.python313Packages.overrideScope (_final: prev: {
+    inline-snapshot = prev.inline-snapshot.overridePythonAttrs (_old: {
+      doCheck = false;
+    });
+  });
 in
 {
   options.custom.vibectl = {
@@ -69,7 +82,7 @@ in
           pluginNeeded = if cfg.anthropicPlugin != null then cfg.anthropicPlugin else (cfg.anthropicApiKey != null || cfg.anthropicApiKeyFile != null);
 
           # Optional llm-anthropic plugin derivation
-          anthropicPluginDrv = pkgs.python312Packages.buildPythonPackage rec {
+          anthropicPluginDrv = pythonPackages.buildPythonPackage rec {
             # PyPI uses underscores for the source archive name
             pname = "llm_anthropic";
             version = "0.17";
@@ -78,11 +91,13 @@ in
               inherit pname version;
               sha256 = "sha256-L14atbfrmoS40HRzqGlwiLZZ/U8ZQdloY88Yz4z7nrA="; # pragma: allowlist secret
             };
-            propagatedBuildInputs = with pkgs.python312Packages; [ llm anthropic ];
+            propagatedBuildInputs = with pythonPackages; [ llm anthropic ];
             pythonImportsCheck = [ "llm_anthropic" ];
           };
 
-          pythonSet = (pkgs.callPackage pyprojectNix.build.packages { python = pkgs.python312; }).overrideScope (lib.composeManyExtensions [
+          pythonSet = (pkgs.callPackage pyprojectNix.build.packages {
+            inherit python;
+          }).overrideScope (lib.composeManyExtensions [
             pyprojectBuildSystems.overlays.default
             overlay
           ]);
@@ -93,7 +108,7 @@ in
         in
         base.overrideAttrs (old:
           let
-            pythonVer = lib.versions.majorMinor pkgs.python312.version; # e.g. "3.12"
+            pythonVer = lib.versions.majorMinor python.version; # e.g. "3.13"
             sitePkgs = "$out/lib/python${pythonVer}/site-packages";
           in
           {
@@ -105,7 +120,7 @@ in
               cp -r "$pluginSitePkgs"/* "${sitePkgs}/"
 
               # Also copy the required anthropic dependency
-              anthropicSitePkgs=${pkgs.python312Packages.anthropic}/lib/python${pythonVer}/site-packages
+              anthropicSitePkgs=${pythonPackages.anthropic}/lib/python${pythonVer}/site-packages
               cp -r "$anthropicSitePkgs"/* "${sitePkgs}/"
             '';
 

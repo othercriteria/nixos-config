@@ -167,8 +167,8 @@
     unzip
     zip
 
-    python312Packages.python
-    python312Packages.virtualenv
+    python3
+    python3Packages.virtualenv
 
     # Creative
     asunder
@@ -303,7 +303,7 @@
 
     links2
     pandoc
-    texlive.combined.scheme-full
+    texliveFull
     yt-dlp
 
     code-cursor
@@ -336,7 +336,6 @@
     )
     vlc
     warp-terminal
-    windsurf
     wine
     zoom-us
   ];

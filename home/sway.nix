@@ -27,6 +27,7 @@
     ];
 
     pointerCursor = {
+      enable = true;
       gtk.enable = true;
       sway.enable = true;
       name = "Adwaita";
@@ -70,6 +71,16 @@
       bars = [ ];
 
       startup = [
+        {
+          # Signal UWSM that the compositor is ready and export WAYLAND_DISPLAY
+          # (plus plugin vars like SWAYSOCK) into the systemd user environment.
+          # Without this, wayland-wm@*.service hits its 10s startup timeout and
+          # the graphical session is half-broken — which is why login had to be
+          # overridden to plain sway / zsh→sway.
+          # Double exec: sway's "exec" + shell replace, per UWSM docs.
+          command = "exec ${pkgs.uwsm}/bin/uwsm finalize";
+          always = false;
+        }
         {
           # Status bar - started via sway rather than systemd since we use
           # UWSM for session management (see systemd.enable comment above)
