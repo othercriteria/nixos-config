@@ -38,7 +38,7 @@ let
       link="${cfg.docRoot}"
       storeLink="$state/.build"
       revStamp="$state/deployed-rev"
-      outStamp="$state/published-store"
+      hashStamp="$state/published-hash"
 
       rev="$(git ls-remote "${cfg.gitUrl}" "refs/heads/${cfg.branch}" | cut -f1)"
       if [ -z "$rev" ]; then
@@ -73,7 +73,15 @@ let
       # The build is deterministic, so most new revisions produce output
       # identical to what is already published. Republishing those would
       # churn mtimes and needlessly invalidate reader caches.
-      if [ "$built" = "$(cat "$outStamp" 2>/dev/null || true)" ] && [ -e "$link" ]; then
+      #
+      # Compare content rather than the store path. The derivation takes the
+      # checkout as its source, so its path is a function of the revision and
+      # changes on every commit even when the output bytes do not -- comparing
+      # paths here made this branch unreachable, and a docs-only commit
+      # invalidated every reader's cache. The NAR hash comes from the store's
+      # own database, so it costs a lookup rather than a re-read of the tree.
+      builtHash="$(nix-store --query --hash "$built")"
+      if [ "$builtHash" = "$(cat "$hashStamp" 2>/dev/null || true)" ] && [ -e "$link" ]; then
         echo "$rev" > "$revStamp"
         echo "''${rev:0:7} rebuilt to the published output; nothing to swap"
         exit 0
@@ -98,7 +106,7 @@ let
       ln -sfn "$release" "$link.tmp"
       mv -T "$link.tmp" "$link"
 
-      echo "$built" > "$outStamp"
+      echo "$builtHash" > "$hashStamp"
       echo "$rev" > "$revStamp"
 
       # Keep the previous release alongside the current one, so a request
