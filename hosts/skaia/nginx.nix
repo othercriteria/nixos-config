@@ -114,8 +114,14 @@ in
               # default charset_types omits text/css, and llms.txt is
               # served from here as text/plain. text/html is always
               # charset-tagged and nginx warns if it is listed again.
+              #
+              # Both JavaScript types are listed because nginx's mime.types
+              # now maps .js to text/javascript; with only the contract's
+              # application/javascript, site.js went out untagged and its
+              # middle dots decoded correctly only by inheriting the
+              # document's encoding.
               charset utf-8;
-              charset_types text/css text/plain application/javascript;
+              charset_types text/css text/plain text/javascript application/javascript;
             '';
           };
         };
