@@ -52,17 +52,28 @@
             runHook postInstall
           '';
 
-          # Cheap guard against a silently truncated assembly: the contract
-          # names these files, and serving a page without them is worse than
-          # failing the deploy.
+          # Cheap guard against a silently truncated assembly: serving a page
+          # with a missing or empty part is worse than failing the deploy.
+          #
+          # The named list is transcribed from the contract's file table and
+          # so can lag the book: the /making/ split shipped before the table
+          # listed it, and this check inherited that omission. The empty-file
+          # sweep below is the drift-proof half -- it covers whatever the
+          # build emits, including pages added since this list was written.
           doInstallCheck = true;
           installCheckPhase = ''
-            for f in index.html site.css site.js cover.jpg llms.txt; do
+            for f in index.html site.css site.js cover.jpg llms.txt making/index.html; do
               if [ ! -s "$out/$f" ]; then
                 echo "site build is missing or empty: $f" >&2
                 exit 1
               fi
             done
+
+            if find "$out" -type f -empty -print | grep -q .; then
+              echo "site build emitted empty files:" >&2
+              find "$out" -type f -empty -printf '  %P\n' >&2
+              exit 1
+            fi
           '';
 
           meta = {
