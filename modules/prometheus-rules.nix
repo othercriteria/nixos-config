@@ -126,6 +126,53 @@
               }
             ];
           }
+          # the-baltic-approaches site publishing (modules/baltic-site).
+          # The deploy is designed to fail safe: a broken upstream commit
+          # or a failed fetch leaves the previous build serving. That is
+          # the right behaviour but it is silent, so the page can go stale
+          # indefinitely with nothing visibly wrong. These two rules cover
+          # the two ways that happens: the deploy runs and fails, or the
+          # deploy stops running at all. Both are warnings rather than
+          # critical -- readers keep getting the last good build.
+          {
+            name = "baltic-site.rules";
+            rules = [
+              {
+                alert = "BalticSiteDeployFailing";
+                expr = ''
+                  node_systemd_unit_state{name="baltic-site-deploy.service",state="failed"} == 1
+                '';
+                # The timer fires every 15m (plus up to 2m of jitter), so
+                # 30m means at least two consecutive failures and a
+                # transient GitHub or substituter blip stays quiet.
+                "for" = "30m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "the-baltic-approaches site deploy is failing";
+                  description = "baltic-site-deploy.service on {{ $labels.instance }} has been in the failed state for 30 minutes, so valueof.info/the-baltic-approaches/ is still serving the previously published build. Check `journalctl -u baltic-site-deploy`: either the book repo's test suite is red on main or the build/fetch is broken.";
+                };
+              }
+              {
+                alert = "BalticSiteDeployStalled";
+                # Catches the case the failure alert cannot see: the timer
+                # itself stopped firing (masked, disabled, or lost across a
+                # rebuild), so the service never runs and never fails. The
+                # `> 0` guard keeps this quiet after a reboot, before the
+                # timer has triggered for the first time.
+                expr = ''
+                  node_systemd_timer_last_trigger_seconds{name="baltic-site-deploy.timer"} > 0
+                  and
+                  time() - node_systemd_timer_last_trigger_seconds{name="baltic-site-deploy.timer"} > 3600
+                '';
+                "for" = "10m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "the-baltic-approaches deploy timer has stopped firing";
+                  description = "baltic-site-deploy.timer on {{ $labels.instance }} last triggered over an hour ago, against a 15m schedule. New commits on the book repo's main are not reaching valueof.info/the-baltic-approaches/. Check `systemctl list-timers baltic-site-deploy`.";
+                };
+              }
+            ];
+          }
           # SMART/NVMe health rules. Driven by smartctl_exporter where it
           # is enabled (currently only skaia). These give us early warning
           # for the kind of NVMe issue that left fastdisk in a precarious

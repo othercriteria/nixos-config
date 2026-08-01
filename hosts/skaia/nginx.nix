@@ -81,9 +81,45 @@ in
         forceSSL = true;
         enableACME = true;
         root = valueofInfoStatic;
-        locations."/" = {
-          index = "index.html";
+        locations = {
+          "/" = {
+            index = "index.html";
+          };
+
+          # The book page. A path under this vhost rather than its own
+          # service, per the deployment contract in the book repo's
+          # planning/site-handoff.md. Content is published by
+          # modules/baltic-site, which swaps the symlink atomically.
+          #
+          # The trailing slash is the ruled path form, so send the bare
+          # path to it instead of letting it fall through to the apex root.
+          "= /the-baltic-approaches" = {
+            return = "301 /the-baltic-approaches/";
+          };
+
+          "/the-baltic-approaches/" = {
+            alias = "${config.custom.balticSite.docRoot}/";
+            index = "index.html";
+            extraConfig = ''
+              # The page fetches nothing off-origin and executes nothing
+              # inline: its atlas data rides in a type="application/json"
+              # block, which CSP does not treat as executable content.
+              add_header Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'" always;
+              add_header Referrer-Policy "no-referrer" always;
+              add_header Strict-Transport-Security "max-age=31536000" always;
+              add_header X-Content-Type-Options "nosniff" always;
+              add_header X-Frame-Options "DENY" always;
+
+              # UTF-8 on every text type the contract names. nginx's
+              # default charset_types omits text/css, and llms.txt is
+              # served from here as text/plain. text/html is always
+              # charset-tagged and nginx warns if it is listed again.
+              charset utf-8;
+              charset_types text/css text/plain application/javascript;
+            '';
+          };
         };
+
         extraConfig = ''
           add_header Content-Security-Policy "default-src 'self'" always;
           add_header Referrer-Policy "no-referrer" always;

@@ -19,6 +19,7 @@ Per-host NixOS configurations:
   - Observability stack (Prometheus, Grafana, Loki, Netdata parent)
   - ntfy.sh push notifications (Alertmanager webhook, mobile/desktop alerts)
   - Teleport auth server, Harmonia nix cache
+  - the-baltic-approaches book page (self-updating static publish)
   - Private Forgejo instance (LAN-first, PostgreSQL, Git LFS)
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
@@ -41,6 +42,12 @@ Per-host NixOS configurations:
 
 Reusable NixOS modules:
 
+- `baltic-site/`: Publishes the-baltic-approaches book page at
+  `valueof.info/the-baltic-approaches/` (timer polls the book repo, builds
+  the tested site in a Nix sandbox, swaps the docroot symlink atomically;
+  consumes `hardened-service.nix`)
+  - `site-flake/`: Single-input flake building the page from the book
+    repo's own devShell toolchain
 - `desktop-common.nix`: Shared desktop settings (Thunar, XDG portals, polkit)
 - `greetd.nix`: TTY greeter using tuigreet to launch Sway
 - `fonts.nix`: System font configuration
@@ -169,6 +176,8 @@ These directories are created during cold-start and are essential to operation:
   `fastdisk/services/forgejo/lfs`)
 - `/var/lib/trivia/rounds`: Per-round subdirectories for the trivia drip
   server (no dedicated ZFS dataset; ~150 MB total, ephemeral per event)
+- `/var/lib/baltic-site`: Published book page plus the deploy unit's Nix
+  eval cache (~300 KB per release, two kept; no dedicated ZFS dataset)
 
 ## Updating This Document
 
