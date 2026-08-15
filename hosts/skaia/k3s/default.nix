@@ -88,7 +88,11 @@
     script = ''
       set -euo pipefail
       echo "Pruning stopped containers..."
-      k3s crictl rm -fa || true
+      # Do not pass -f. `crictl rm -a` removes stopped containers;
+      # `-f` force-deletes running ones and their sandboxes. That
+      # killed ib-gateway-live / decapod-live on 2026-08-15 (k3s
+      # node stayed up; kubelet recreated pods and live 2FA fired).
+      k3s crictl rm -a || true
       echo "Pruning unused images..."
       k3s crictl rmi --prune || true
     '';
