@@ -154,7 +154,8 @@ in
       type = lib.types.str;
       default = "15m";
       description = ''
-        How often to check for new commits. The page has no freshness
+        How often to check for new commits. Mapped to an OnCalendar
+        expression (15m, 30m, or 1h). The page has no freshness
         requirement tighter than "soon after an errata lands".
       '';
     };
@@ -225,13 +226,17 @@ in
       description = "Check for new the-baltic-approaches commits";
       wantedBy = [ "timers.target" ];
       timerConfig = {
-        # OnStartupSec (not OnBootSec): fires after the timer unit
-        # starts, so nixos-rebuild switch also schedules a first run.
-        # OnUnitActiveSec alone never arms until the service has run
-        # once this boot, which is how BalticSiteDeployStalled fired
-        # after the 2026-08-23 switch/reboot.
-        OnStartupSec = "5m";
-        OnUnitActiveSec = cfg.interval;
+        # System timers treat OnStartupSec like OnBootSec (time since
+        # PID 1), so a restart after boot cannot re-arm it. OnCalendar
+        # always has a next wall-clock elapse; OnActiveSec covers the
+        # first run after the timer unit itself starts (boot, switch,
+        # or systemctl restart).
+        OnActiveSec = "5m";
+        OnCalendar = {
+          "15m" = "*:0/15";
+          "30m" = "*:0/30";
+          "1h" = "hourly";
+        }.${cfg.interval} or (throw "custom.balticSite.interval '${cfg.interval}' has no OnCalendar mapping");
         # Spread the GitHub poll so it doesn't land on the minute boundary
         # alongside every other timer on the host.
         RandomizedDelaySec = "2m";
