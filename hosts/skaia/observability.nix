@@ -322,8 +322,10 @@
     # Configured as parent node - receives streams from child nodes (e.g., hive)
     netdata = {
       enable = true;
-      # Enable cloud UI (requires unfree license acceptance)
-      package = pkgs.netdata.override { withCloudUi = true; };
+      # Cloud UI + GOPROXY sandbox patch come from the skaia overlay
+      # in hosts/skaia/default.nix. Do not `.override { withCloudUi }`
+      # here: that re-invokes unpatched nixpkgs netdata.
+      package = pkgs.netdata;
       config = {
         global = {
           # Bind to LAN interface to receive streams from child nodes
@@ -421,20 +423,20 @@
             smtp_from: "daniel.l.klein@pm.me"
           route:
             receiver: "ntfy-and-email"
+            group_by: ["alertname"]
             group_wait: 30s
             group_interval: 5m
             repeat_interval: 3h
             routes:
-            # Critical alerts: high priority ntfy + email
+            # Urgent ntfy + email. No continue: the default receiver
+            # would also POST to /alerts and double the phone banner.
             - match:
                 severity: critical
               receiver: "ntfy-critical"
-              continue: true
-            # All alerts also go to the default receiver
           receivers:
           - name: "ntfy-and-email"
             webhook_configs:
-            - url: "http://127.0.0.1:8090/alerts"
+            - url: "http://127.0.0.1:8090/alerts?template=alertmanager"
               send_resolved: true
               http_config:
                 basic_auth:
@@ -448,12 +450,18 @@
               auth_password_file: "/etc/nixos/secrets/dlk-protonmail-password"
           - name: "ntfy-critical"
             webhook_configs:
-            - url: "http://127.0.0.1:8090/alerts?priority=urgent&tags=rotating_light"
+            - url: "http://127.0.0.1:8090/alerts?priority=urgent&tags=rotating_light&template=alertmanager"
               send_resolved: true
               http_config:
                 basic_auth:
                   username: "dlk"
                   password_file: "/etc/nixos/secrets/ntfy-password"
+            email_configs:
+            - to: "daniel.l.klein@pm.me"
+              send_resolved: true
+              require_tls: false
+              auth_username: "daniel.l.klein@pm.me"
+              auth_password_file: "/etc/nixos/secrets/dlk-protonmail-password"
           - name: "email"
             email_configs:
             - to: "daniel.l.klein@pm.me"

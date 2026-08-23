@@ -2,6 +2,7 @@
 #
 # This test uses the SAME modules as production, validating that:
 # - Prometheus starts and can scrape its own node exporter
+# - ntfy metrics endpoint is scraped (job ntfy)
 # - Prometheus alerting rules (from prometheus-rules.nix) are loaded
 # - Loki starts and can receive logs from Alloy
 # - Grafana is reachable with provisioned datasources
@@ -22,6 +23,7 @@ pkgs.testers.nixosTest {
       ../modules/grafana.nix
       ../modules/prometheus-base.nix
       ../modules/prometheus-rules.nix
+      ../modules/ntfy.nix
     ];
 
     # Enable observability stack via shared modules
@@ -43,6 +45,9 @@ pkgs.testers.nixosTest {
         scrapeInterval = "5s"; # Fast scrapes for testing
         nodeExporter.enabledCollectors = [ "systemd" ];
       };
+      # No auth; metrics on localhost:8091. Confirms scrape wiring and
+      # that ntfy.rules load even when the production auth path is off.
+      ntfy.enable = true;
     };
 
     # Set hostname for log shipping labels
@@ -80,6 +85,21 @@ pkgs.testers.nixosTest {
         assert len(node_target) == 1, f"Expected 1 node target, got {len(node_target)}"
         assert node_target[0]["health"] == "up", f"Node target not healthy: {node_target[0]}"
 
+    with subtest("ntfy metrics endpoint is scraped"):
+        monitor.wait_for_unit("ntfy-sh.service")
+        monitor.wait_for_open_port(8091)
+        monitor.succeed("curl -sf localhost:8091/metrics | grep -q ntfy_messages_published")
+        monitor.wait_until_succeeds(
+            """
+            curl -sf localhost:9090/api/v1/targets | jq -e '
+              .data.activeTargets[]
+              | select(.labels.job=="ntfy")
+              | select(.health=="up")
+            '
+            """,
+            timeout=30,
+        )
+
     with subtest("Prometheus alerting rules are loaded"):
         # Verify our custom rules are loaded
         result = monitor.succeed("curl -sf localhost:9090/api/v1/rules")
@@ -88,9 +108,10 @@ pkgs.testers.nixosTest {
         group_names = [g["name"] for g in rule_groups]
         monitor.log(f"Loaded rule groups: {group_names}")
 
-        # Both rule groups should be present (defined in prometheus-rules.nix module)
+        # Rule groups from prometheus-rules.nix
         assert "self-monitoring.rules" in group_names, f"Expected self-monitoring.rules group, got {group_names}"
         assert "node.rules" in group_names, f"Expected node.rules group, got {group_names}"
+        assert "ntfy.rules" in group_names, f"Expected ntfy.rules group, got {group_names}"
 
     with subtest("Grafana starts and is accessible"):
         monitor.wait_for_unit("grafana.service")

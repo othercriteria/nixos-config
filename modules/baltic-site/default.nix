@@ -225,7 +225,12 @@ in
       description = "Check for new the-baltic-approaches commits";
       wantedBy = [ "timers.target" ];
       timerConfig = {
-        OnBootSec = "5m";
+        # OnStartupSec (not OnBootSec): fires after the timer unit
+        # starts, so nixos-rebuild switch also schedules a first run.
+        # OnUnitActiveSec alone never arms until the service has run
+        # once this boot, which is how BalticSiteDeployStalled fired
+        # after the 2026-08-23 switch/reboot.
+        OnStartupSec = "5m";
         OnUnitActiveSec = cfg.interval;
         # Spread the GitHub poll so it doesn't land on the minute boundary
         # alongside every other timer on the host.

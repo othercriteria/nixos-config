@@ -1,6 +1,37 @@
 { config, lib, pkgs, ... }:
 
 let
+  # Hostnames the ntfy iOS app needs to resolve for FCM/APNs. StevenBlack
+  # currently NXDOMAINs firebaselogging-pa.googleapis.com, which silently
+  # kills iOS push on LAN clients using this resolver. Keep the rest of
+  # the set even if a name is not currently blocked, so a future list
+  # update cannot break push again.
+  fcmAllowlist = [
+    "firebaselogging-pa.googleapis.com"
+    "firebaselogging.googleapis.com"
+    "firebaseinstallations.googleapis.com"
+    "fcm.googleapis.com"
+    "fcmtoken.googleapis.com"
+    "fcmregistrations.googleapis.com"
+    "device-provisioning.googleapis.com"
+    "android.apis.google.com"
+  ];
+
+  # Included *after* the generated RPZ file. `transparent` with no local
+  # data forwards to upstream resolvers, overriding always_nxdomain for
+  # the same name as long as this file is loaded last.
+  allowlistConf = pkgs.writeText "unbound-rpz-allowlist.conf" (
+    lib.concatMapStrings
+      (d: ''
+        local-zone: "${d}." transparent
+      '')
+      fcmAllowlist
+  );
+
+  allowlistPattern = lib.concatMapStringsSep "|"
+    (d: lib.replaceStrings [ "." ] [ "\\." ] d)
+    fcmAllowlist;
+
   updateScript = pkgs.writeShellScript "update-unbound-rpz" ''
     		set -euo pipefail
     		WORKDIR=/var/lib/unbound
@@ -29,6 +60,7 @@ let
     			| ${pkgs.gnused}/bin/sed -E 's/#.*$//' \
     			| ${pkgs.gnugrep}/bin/grep -Ev '^(localhost|localhost\.|localdomain|broadcasthost)$' \
     			| ${pkgs.gnugrep}/bin/grep -Ev '\.local$' \
+    			| ${pkgs.gnugrep}/bin/grep -Ev '^(${allowlistPattern})$' \
     			| ${pkgs.coreutils}/bin/sort -u \
     			| ${pkgs.gawk}/bin/awk '{ printf("local-zone: \"%s\" always_nxdomain\n", $0) }' \
     			>> "$TMPFILE"; then
@@ -38,6 +70,24 @@ let
 
     		${pkgs.coreutils}/bin/mv -f "$TMPFILE" "$OUTFILE"
     		${pkgs.coreutils}/bin/chmod 0644 "$OUTFILE"
+
+    		# Daily timer updates the file on disk; Unbound only rereads it
+    		# on reload. Skip when Unbound is not running yet (boot).
+    		#
+    		# Unbound is After= this unit. A synchronous reload deadlocks
+    		# nixos-rebuild switch: Unbound waits for us to finish, we wait
+    		# for Unbound to reload. Skip if a job is already queued
+    		# (switch-to-configuration will reload Unbound itself).
+    		# Otherwise queue the reload and return.
+    		if ${pkgs.systemd}/bin/systemctl is-active --quiet unbound.service; then
+    			if ${pkgs.systemd}/bin/systemctl list-jobs --full --no-legend \
+    				| ${pkgs.gnugrep}/bin/grep -F -q 'unbound.service'; then
+    				echo "[unbound-rpz] unbound already has a systemd job; skip reload" >&2
+    			else
+    				${pkgs.systemd}/bin/systemctl reload --no-block unbound.service \
+    					|| echo "[unbound-rpz] WARN: unbound reload failed" >&2
+    			fi
+    		fi
     	'';
 in
 {
@@ -76,6 +126,9 @@ in
     };
   };
 
-  # Add include for the generated RPZ file
-  services.unbound.settings.server.include = "/var/lib/unbound/rpz-local-zones.conf";
+  # RPZ first, allowlist second so transparent zones win for FCM hosts.
+  services.unbound.settings.server.include = [
+    "/var/lib/unbound/rpz-local-zones.conf"
+    "${allowlistConf}"
+  ];
 }

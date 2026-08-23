@@ -17,6 +17,15 @@
   # Headless server baseline (no GUI)
   # Imports: none of the desktop modules
 
+  # Same netdata GOPROXY rewrite as skaia. hive/meteors use the default
+  # (non-Cloud-UI) package; Hydra may not have a 2.11.0 cache hit if
+  # this cmake step failed upstream too.
+  nixpkgs.overlays = [
+    (_final: prev: {
+      netdata = import ../../overlays/netdata-offline-go.nix prev.netdata;
+    })
+  ];
+
   # Boot loader: assume UEFI and use systemd-boot
   boot.loader = {
     systemd-boot.enable = true;

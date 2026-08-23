@@ -121,8 +121,8 @@
         cursor-color = "#f5e0dc"; # Catppuccin rosewater
 
         # Visual polish: subtle transparency to see wallpaper through
-        background-opacity = 0.98;
-        unfocused-split-opacity = 0.96;
+        background-opacity = 0.99;
+        unfocused-split-opacity = 0.97;
         minimum-contrast = 1.2; # Boost for legibility with busy backgrounds
 
         # Splits and panes: nice visual separation

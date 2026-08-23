@@ -274,6 +274,36 @@
               }
             ];
           }
+          # ntfy.sh (self-hosted). Scraped from modules/ntfy.nix when both
+          # ntfy and Prometheus are enabled on the host. NtfyDown is
+          # critical because it is the push path for other alerts; the
+          # default Alertmanager route still emails if ntfy itself is
+          # unreachable. ScrapeTargetDown also covers this at 15m.
+          {
+            name = "ntfy.rules";
+            rules = [
+              {
+                alert = "NtfyDown";
+                expr = "up{job=\"ntfy\"} == 0";
+                "for" = "2m";
+                labels = { severity = "critical"; };
+                annotations = {
+                  summary = "ntfy is not being scraped";
+                  description = "Prometheus cannot scrape ntfy at {{ $labels.instance }} for 2 minutes. iOS/Android push and Alertmanager webhooks will fail until ntfy-sh.service recovers.";
+                };
+              }
+              {
+                alert = "NtfyPublishFailures";
+                expr = "increase(ntfy_messages_published_failure[15m]) > 5";
+                "for" = "15m";
+                labels = { severity = "warning"; };
+                annotations = {
+                  summary = "ntfy publish failures";
+                  description = "{{ $value }} ntfy publishes failed in 15 minutes (auth, rate-limit, or upstream). Check ntfy-sh.service logs.";
+                };
+              }
+            ];
+          }
         ];
       })
     ];

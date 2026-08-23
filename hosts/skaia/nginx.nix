@@ -199,10 +199,14 @@ in
           proxyPass = "http://127.0.0.1:8090";
           proxyWebsockets = true;
           extraConfig = ''
-            # Support for long-polling and SSE
+            # ntfy official proxy example: disable buffering so SSE /
+            # long-poll / iOS poll_request fetches are not held in nginx.
+            # Timeouts at 3m match upstream; attachments can be large.
             proxy_buffering off;
-            proxy_read_timeout 180s;
-            # Attachments can be large
+            proxy_request_buffering off;
+            proxy_connect_timeout 3m;
+            proxy_send_timeout 3m;
+            proxy_read_timeout 3m;
             client_max_body_size 50M;
           '';
         };

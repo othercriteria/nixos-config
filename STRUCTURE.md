@@ -75,7 +75,8 @@ Reusable NixOS modules:
 - `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
 - `grafana.nix`: Grafana with datasource provisioning
 - `loki.nix`: Loki log aggregation server
-- `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook, mobile push)
+- `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook,
+  mobile push, localhost Prometheus metrics)
 - `promtail.nix`: Alloy-backed Loki log shipper
 - `protonvpn.nix`: ProtonVPN client configuration
 - `trivia.nix`: Drip-release file server for trivia events (FastAPI app
@@ -86,6 +87,16 @@ Reusable NixOS modules:
   - `k3s-common.nix`: Common k3s flags, drain/uncordon hooks
   - `firewall.nix`: Firewall defaults for meteors
   - `kubeconfig.nix`: Veil-specific kubeconfig handling
+
+### `overlays/`
+
+Package overlays applied from host modules (not a flake `overlays`
+output). Synced to `/etc/nixos` via `Makefile` `SYNC_PATHS`. Currently:
+
+- `netdata-offline-go.nix`: Rewrite leftover `GOPROXY=proxy.golang.org`
+  in netdata 2.11.0 `CMakeLists.txt` so the SNMP trap-profile `go run`
+  works in the Nix sandbox. Imported from `hosts/skaia` (with Cloud UI)
+  and `hosts/server-common`.
 
 ### `home/`
 

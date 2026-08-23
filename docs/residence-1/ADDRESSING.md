@@ -76,6 +76,17 @@ hosts reside.
     - `voice-1.home.arpa` → 192.168.0.173 (Nabu Casa Home Assistant
       Voice PE, office)
 
+  - Split-horizon public names (LAN A record; WAN still via ddclient):
+
+    - `ntfy.valueof.info` → 192.168.0.160 (skaia). Avoids hairpin NAT
+      so the iOS ntfy Notification Service Extension can poll the
+      self-hosted server within APNs' ~25s window.
+
+- RPZ: Unbound applies the StevenBlack hosts list as
+  `always_nxdomain`. Firebase/FCM hostnames required by the ntfy iOS
+  app are allowlisted in `hosts/skaia/unbound-rpz.nix` so they still
+  resolve.
+
 - mDNS (`*.local`): optional for direct host discovery on L2
   - Enable via `services.resolved.multicastDns = true;` (or Avahi)
 

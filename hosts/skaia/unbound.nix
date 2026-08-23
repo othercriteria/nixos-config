@@ -22,7 +22,13 @@
         # Local authoritative zones
         # - veil.home.arpa: cluster services (MetalLB VIPs, ingresses, etc.)
         # - home.arpa: LAN hosts (skaia, meteors, hive, etc.)
-        local-zone = [ "\"veil.home.arpa.\" static" "\"home.arpa.\" static" ];
+        # - ntfy.valueof.info: split-horizon so LAN clients skip hairpin NAT
+        #   (iOS Notification Service Extensions have ~25s to poll ntfy)
+        local-zone = [
+          "\"veil.home.arpa.\" static"
+          "\"home.arpa.\" static"
+          "\"ntfy.valueof.info.\" redirect"
+        ];
         local-data = [
           # veil (cluster services)
           "\"ingress.veil.home.arpa. A 192.168.0.220\""
@@ -73,9 +79,9 @@
           # Voice PE (ESP32-S3, far-field mic, AEC, hardware mute switch);
           # MAC 20:F8:3B:0A:CD:8C, lives in the office.
           "\"voice-1.home.arpa. A 192.168.0.173\""
+          # Public ntfy hostname, LAN IP. WAN still comes from ddclient.
+          "\"ntfy.valueof.info. A 192.168.0.160\""
         ];
-
-        include = "/var/lib/unbound/rpz-local-zones.conf";
       };
 
       forward-zone = [

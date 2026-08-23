@@ -9,6 +9,7 @@ SYNC_PATHS := \
   flake.lock \
   hosts \
   modules \
+  overlays \
   home \
   assets \
   private-assets/fonts \

@@ -62,16 +62,26 @@
   };
 
   nixpkgs.overlays = [
-    (_final: prev: {
-      # 4.5.4 has failing REST API fixture tests under sandboxed builds.
-      inherit (pkgs-stable) glances;
+    (_final: prev:
+      let
+        withOfflineGo = import ../../overlays/netdata-offline-go.nix;
+      in
+      {
+        # 4.5.4 has failing REST API fixture tests under sandboxed builds.
+        inherit (pkgs-stable) glances;
 
-      openldap = prev.openldap.overrideAttrs (_old: {
-        # 2.6.13 intermittently fails test017-syncreplication-refresh under
-        # sandboxed builds; keep the package version and skip only checks.
-        doCheck = false;
-      });
-    })
+        # withCloudUi is a callPackage arg. Apply it here instead of
+        # `pkgs.netdata.override { withCloudUi = true; }` in
+        # observability.nix: `.override` re-invokes the unpatched
+        # nixpkgs derivation and would drop the GOPROXY rewrite.
+        netdata = withOfflineGo (prev.netdata.override { withCloudUi = true; });
+
+        openldap = prev.openldap.overrideAttrs (_old: {
+          # 2.6.13 intermittently fails test017-syncreplication-refresh under
+          # sandboxed builds; keep the package version and skip only checks.
+          doCheck = false;
+        });
+      })
   ];
 
   # COLD START: Generate a fine-grained PAT scoped to

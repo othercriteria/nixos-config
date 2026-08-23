@@ -78,6 +78,21 @@ Or receive from backup:
 zfs receive -F fastdisk/prometheus < backupfile
 ```
 
+## ntfy metrics
+
+ntfy exposes Prometheus metrics on localhost only
+(`127.0.0.1:8091/metrics`), not on the public vhost. skaia's Prometheus
+scrapes job `ntfy`. Alerts in `modules/prometheus-rules.nix`:
+
+- `NtfyDown` (critical): scrape target down for 2 minutes
+- `NtfyPublishFailures` (warning): more than 5 failed publishes in
+  15 minutes
+
+Alertmanager posts to `/alerts?template=alertmanager`. ntfy renders
+the JSON webhook with the template in `modules/ntfy.nix` (title =
+annotation summary, body = description). Critical alerts use the
+same template plus `priority=urgent`.
+
 ## Grafana
 
 Grafana dashboards are provisioned and can be managed as code.

@@ -21,6 +21,24 @@
 
 let
   cfg = config.custom.ntfy;
+
+  # Alertmanager's webhook is a JSON blob. ntfy will run this Go template
+  # over it when the publisher sets `?template=alertmanager`. Title is the
+  # alert summary (what iOS shows on the lock screen); body is the
+  # description. Stock ntfy alertmanager.yml also dumps receiver name,
+  # RFC3339 timestamps, and Prometheus generator URLs, which are noise
+  # on a phone.
+  alertmanagerTemplateDir = pkgs.writeTextDir "alertmanager.yml" ''
+    title: |
+      {{- $a := first .alerts -}}
+      {{- if eq .status "resolved" }}Resolved: {{ end -}}
+      {{- with $a.annotations.summary }}{{ . }}{{ else }}{{ $a.labels.alertname }}{{ end }}
+    message: |
+      {{- range .alerts }}
+      {{- with .annotations.description }}{{ . }}{{ else }}{{ .labels.alertname }} is {{ $.status }}{{ end }}
+      {{- with .labels.severity }} [{{ . }}]{{ end }}
+      {{ end -}}
+  '';
 in
 {
   options.custom.ntfy = {
@@ -82,8 +100,19 @@ in
       type = lib.types.str;
       default = "https://ntfy.sh";
       description = ''
-        Upstream ntfy server for UnifiedPush. Mobile apps can use this
-        to receive notifications even when your server is unreachable.
+        Upstream ntfy server used to fan out iOS poll_request messages
+        through Firebase/APNs. Must be "https://ntfy.sh" (not this
+        server) for timely iOS notifications. UnifiedPush on Android
+        does not use this setting.
+      '';
+    };
+
+    metricsPort = lib.mkOption {
+      type = lib.types.port;
+      default = 8091;
+      description = ''
+        Dedicated localhost port for the Prometheus /metrics endpoint.
+        Kept off the public ntfy vhost so metrics are not Internet-facing.
       '';
     };
 
@@ -256,9 +285,17 @@ in
           attachment-total-size-limit = cfg.attachmentTotalSizeLimit;
           attachment-file-size-limit = cfg.attachmentFileSizeLimit;
 
-          # UnifiedPush support - allows apps to use your server as a UP distributor
-          # Falls back to upstream for delivery when your server is unreachable
+          # iOS instant notifications: every publish also POSTs a
+          # poll_request (message id only) to this upstream, which fans
+          # out FCM → APNs. The iOS app then fetches the real payload
+          # from this server. See docs.ntfy.sh "iOS instant notifications".
           upstream-base-url = cfg.upstreamBaseUrl;
+
+          # Prometheus metrics on localhost only (not the public vhost).
+          metrics-listen-http = "127.0.0.1:${toString cfg.metricsPort}";
+
+          # Custom Alertmanager webhook template (see alertmanagerTemplateDir).
+          template-dir = "${alertmanagerTemplateDir}";
 
           # Logging
           log-level = "info";
@@ -277,10 +314,32 @@ in
       # into a tmpfs owned by the dynamic UID, so the script can read
       # them without us having to loosen the on-disk perms in
       # /etc/nixos/secrets.
-      systemd.services.ntfy-sh.serviceConfig = lib.mkIf needsProvisioning {
-        ExecStartPre = [ "${provisionUsers}/bin/ntfy-sh-provision-users" ];
-        LoadCredential = adminCredArg ++ extraCredArgs;
+      systemd.services.ntfy-sh = {
+        # Poll_request POSTs to ntfy.sh. At boot ntfy was coming up
+        # before Unbound, so the first publishes logged
+        # "lookup ntfy.sh: no such host" and iOS never got a wakeup.
+        after = [ "network-online.target" "nss-lookup.target" ];
+        wants = [ "network-online.target" ];
+        serviceConfig = lib.mkIf needsProvisioning {
+          ExecStartPre = [ "${provisionUsers}/bin/ntfy-sh-provision-users" ];
+          LoadCredential = adminCredArg ++ extraCredArgs;
+        };
       };
+
+      # Scrape the dedicated metrics port when Prometheus is enabled on
+      # the same host. Job name is "ntfy" so prometheus-rules.nix can
+      # match it. Inherit custom.prometheus.scrapeInterval when that
+      # module is in play (5s in the observability VM test, 15s default).
+      services.prometheus.scrapeConfigs = lib.mkIf config.services.prometheus.enable [{
+        job_name = "ntfy";
+        scrape_interval =
+          if (config.custom ? prometheus && config.custom.prometheus.enable)
+          then config.custom.prometheus.scrapeInterval
+          else "15s";
+        static_configs = [{
+          targets = [ "127.0.0.1:${toString cfg.metricsPort}" ];
+        }];
+      }];
     }
   );
 }
