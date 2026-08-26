@@ -54,7 +54,7 @@
       # Use Emacs-style key bindings in copy mode
       setw -g mode-keys emacs
 
-      # Copy to system clipboard using xclip (adjust if using Wayland or another clipboard manager)
+      # Copy to the Wayland clipboard
       bind-key -T copy-mode-emacs C-w send-keys -X copy-pipe-and-cancel "wl-copy"
       bind-key -T copy-mode-emacs MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "wl-copy"
     '';

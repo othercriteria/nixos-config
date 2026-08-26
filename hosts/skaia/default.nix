@@ -44,10 +44,11 @@
     # can be smoke-tested before a real event; turn it off when staging
     # real content.
     #
-    # Off between events. The nginx vhost in hosts/skaia/nginx.nix stays
-    # defined and Basic-Auth-gated, so any stray hits get 401'd before the
-    # absent upstream matters. Flip `enable` back to true (and bump
-    # `seedFixtures` per event prep) to bring the service up again.
+    # Off between events. The nginx vhost stays defined and
+    # Basic-Auth-gated; TLS/ACME follow this flag so a parked NXDOMAIN
+    # does not fail acme-order-renew-trivia daily. Flip `enable` back
+    # to true (and bump `seedFixtures` per event prep) after the DNS A
+    # record exists; see docs/runbooks/trivia-setup.md.
     trivia = {
       enable = false;
       seedFixtures = true;
@@ -183,7 +184,7 @@
   };
 
   networking = {
-    hostName = "skaia"; # XXX: this is used in email-alerts.nix
+    hostName = "skaia";
     hostId = "68ae467c";
     networkmanager.enable = true;
   };

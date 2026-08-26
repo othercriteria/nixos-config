@@ -9,6 +9,8 @@ round content staging.
 ## Prerequisites
 
 - DNS A record for `trivia.valueof.info` pointing to the router WAN IP
+  (required before `custom.trivia.enable = true`; ACME follows that
+  flag and Let's Encrypt NXDOMAINs a parked name)
 - TCP 80/443 forwarded to `skaia` (see
   [Router port forwards](../COLD-START.md#router-port-forwards-for-skaia-ingress))
 - GPG keys and `make reveal-secrets` working (see
@@ -42,6 +44,10 @@ round content staging.
    The username is `trivia` here; pick something else if you prefer.
    To add more users, drop the `c` flag: `htpasswd -m secrets/...`.
 
+1. **Enable the service and TLS.** In `hosts/skaia/default.nix` set
+   `custom.trivia.enable = true`. Nginx `forceSSL` and ACME follow this
+   flag. Do not flip it until the DNS A record exists.
+
 1. **Deploy:**
 
    ```sh
@@ -49,11 +55,11 @@ round content staging.
    make apply-host HOST=skaia
    ```
 
-   `systemd-tmpfiles` (via the `z` rule in `hosts/skaia/nginx.nix`) fixes
-   ownership to `root:nginx` mode `0640` on every boot and rebuild so
-   nginx workers can read the file — no manual chown needed. The rule is
-   tolerant of the file's absence, so this also works on a fresh deploy
-   before secrets have been revealed.
+   An activation script in `hosts/skaia/nginx.nix` sets htpasswd
+   ownership to `root:nginx` mode `0640` on every switch and boot so
+   nginx workers can read the file. It is tolerant of the file's
+   absence, so a fresh deploy before secrets have been revealed still
+   activates.
 
    If `acme-order-renew-trivia.valueof.info.service` fired before nginx
    was healthy on the same rebuild (e.g. the deploy hit a config error
@@ -137,12 +143,21 @@ sudo -u trivia mv \
   /var/lib/trivia/rounds/2026-06-07T19:40:00__round-2
 ```
 
+## After the event
+
+Set `custom.trivia.enable = false` and re-apply. Leave `trivia` out of
+ddclient (`hosts/skaia/ddclient.nix`) so the name stays NXDOMAIN. ACME
+is not attempted while disabled, which is how
+`acme-order-renew-trivia.valueof.info` stays off the failed-units list.
+
 ## In config
 
 - `modules/trivia.nix` — service module, fixture seeder, options
 - `modules/hardened-service.nix` — reusable sandbox preset
 - `assets/trivia-server.py` — FastAPI app
-- `hosts/skaia/nginx.nix` — `trivia.valueof.info` vhost, rate limit zones,
-  htpasswd permission fixup
-- `hosts/skaia/default.nix` — enables `custom.trivia`
+- `hosts/skaia/nginx.nix` — `trivia.valueof.info` vhost, rate limit
+  zones, htpasswd permission fixup; TLS/ACME follow
+  `custom.trivia.enable`
+- `hosts/skaia/default.nix` — toggles `custom.trivia.enable`
+- `hosts/skaia/ddclient.nix` — omit `trivia` between events
 - `secrets/trivia-htpasswd[.secret]` — Basic Auth credentials

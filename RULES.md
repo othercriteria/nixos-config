@@ -15,6 +15,8 @@ structure, or workflow.
   commit message standards and documentation requirements
 - **secrets-management.mdc**: Standards for the two secret rails — git-secret
   for host-level (NixOS) and SOPS+age for cluster-level (Kubernetes via Flux)
+- **security-retros.mdc**: Standards for documenting security incidents
+  as retrospectives in `docs/retro/`
 - **project-structure.mdc**: Standards for maintaining project structure
   documentation. Triggers only on structural file events (create/delete/move)
   to suggest updating STRUCTURE.md, plus separate authoring guidance when

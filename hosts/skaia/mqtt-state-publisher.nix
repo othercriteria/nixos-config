@@ -49,8 +49,10 @@ let
       [ -n "$GPU_MEM" ] && publish "nixos/skaia/gpu/memory_used" "$GPU_MEM"
     fi
 
-    # Streaming status (check if SRS has active streams)
-    if curl -sf localhost:1985/api/v1/streams/ 2>/dev/null | ${pkgs.jq}/bin/jq -e '.streams | length > 0' > /dev/null 2>&1; then
+    # Streaming status (check if SRS has active streams). The unit PATH
+    # is NixOS's systemd default (coreutils/grep/sed), so curl has to
+    # be an absolute store path or this always publishes "off".
+    if ${pkgs.curl}/bin/curl -sf localhost:1985/api/v1/streams/ 2>/dev/null | ${pkgs.jq}/bin/jq -e '.streams | length > 0' > /dev/null 2>&1; then
       publish "nixos/skaia/streaming" "on"
     else
       publish "nixos/skaia/streaming" "off"

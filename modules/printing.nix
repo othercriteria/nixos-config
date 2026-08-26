@@ -22,7 +22,4 @@
       drivers = [ pkgs.brlaser ];
     };
   };
-
-  # TODO: Printers are interactively configured via `http://localhost:631/`, but
-  # perhaps we can do this declaratively...
 }

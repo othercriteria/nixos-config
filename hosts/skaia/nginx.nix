@@ -2,7 +2,7 @@
 
 let
   # Path to the Basic Auth htpasswd file used by the trivia vhost. Created
-  # via git-secret; see docs/COLD-START.md.
+  # via git-secret; see docs/runbooks/trivia-setup.md.
   triviaHtpasswd = "/etc/nixos/secrets/trivia-htpasswd";
 
   valueofInfoStatic = pkgs.writeTextFile {
@@ -217,19 +217,20 @@ in
 
       # Trivia drip-release file server (public, Basic-Auth gated).
       # Backing service defined in modules/trivia.nix; see also
-      # docs/COLD-START.md for the htpasswd setup. The credential is
-      # shared with all contestants out-of-band (e.g. alongside the event
-      # invite); the URL is recoverable from Certificate Transparency
-      # logs, so Basic Auth is the real authentication boundary here.
+      # docs/runbooks/trivia-setup.md for the htpasswd setup. The
+      # credential is shared with all contestants out-of-band (e.g.
+      # alongside the event invite); the URL is recoverable from
+      # Certificate Transparency logs, so Basic Auth is the real
+      # authentication boundary here.
       #
-      # The backing service is typically disabled between events
-      # (custom.trivia.enable = false in hosts/skaia/default.nix). When
-      # that's the case this vhost stays defined: requests hit Basic
-      # Auth first and get 401'd, so the absent upstream never gets
-      # touched by unauth'd traffic.
+      # Between events custom.trivia.enable is false (see
+      # hosts/skaia/default.nix). The vhost stays defined so any stray
+      # hit is Basic-Auth 401'd before the absent upstream matters.
+      # TLS/ACME follow enable: the public name is NXDOMAIN when
+      # parked, and Let's Encrypt was failing the order unit daily.
       "trivia.valueof.info" = {
-        forceSSL = true;
-        enableACME = true;
+        forceSSL = config.custom.trivia.enable;
+        enableACME = config.custom.trivia.enable;
         basicAuthFile = triviaHtpasswd;
         locations."/" = {
           proxyPass = "http://127.0.0.1:8765";

@@ -81,7 +81,7 @@
       enable = true;
       settings = {
         env = {
-          # XXX: can we be using wayland-0?
+          # Sway on this host binds wayland-1 (no wayland-0 socket).
           WAYLAND_DISPLAY = "wayland-1";
         };
         font = {
@@ -323,17 +323,7 @@
     signal-desktop
     slack
     spotify
-    # TODO: simplify to just `vassal` now that _JAVA_AWT_WM_NONREPARENTING is set
-    # globally in hosts/skaia/default.nix
-    (
-      let
-        vassal-original = vassal;
-      in
-      pkgs.writeShellScriptBin "vassal-with-env" ''
-        export _JAVA_AWT_WM_NONREPARENTING=1
-        exec ${vassal-original}/bin/vassal
-      ''
-    )
+    vassal
     vlc
     warp-terminal
     wine
