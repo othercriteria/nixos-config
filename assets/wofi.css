@@ -1,16 +1,16 @@
 window {
   font-family: "Berkeley Mono";
   margin: 0px;
-  border: 1px solid rgba(0, 0, 0, 0.9);
-  background-color: rgba(29, 31, 33, 0.95);
+  border: 1px solid #333333;
+  background-color: rgba(34, 34, 34, 0.95);
   border-radius: 10px;
 }
 
 #input {
   margin: 5px;
   border: none;
-  color: #f8f8f2;
-  background-color: rgba(55, 59, 65, 0.95);
+  color: #dddddd;
+  background-color: #5f676a;
 }
 
 #inner-box {
@@ -33,7 +33,7 @@ window {
 #text {
   margin: 5px;
   border: none;
-  color: #c5c8c6;
+  color: #888888;
 }
 
 #entry {
@@ -45,7 +45,11 @@ window {
 }
 
 #entry:selected {
-  background-color: rgba(55, 59, 65, 0.95);
+  background-color: #5f676a;
   border-radius: 5px;
   border: none;
+}
+
+#entry:selected #text {
+  color: #dddddd;
 }

@@ -40,7 +40,7 @@
         "wlr/taskbar" = {
           "format" = "{icon}";
           "icon-size" = 16;
-          "icon-theme" = "hicolor";
+          "icon-theme" = "Adwaita";
           "tooltip-format" = "{title}";
           "on-click" = "activate";
           "on-click-middle" = "close";
@@ -48,12 +48,12 @@
 
         "pulseaudio" = {
           "interval" = 5;
-          "format" = " {volume:3}% {icon}";
-          "format-bluetooth" = " {volume:3}% {icon}";
-          "format-muted" = "    ";
+          "format" = "{volume:3}% {icon}";
+          "format-bluetooth" = "{volume:3}% {icon}";
+          "format-muted" = "mute {icon}";
           "format-icons" = {
-            "headphone" = "";
-            "default" = [ "" "" ];
+            "headphone" = "";
+            "default" = [ "" "" "" ];
           };
           "scroll-step" = 1;
           "on-click" = "${pkgs.pavucontrol}/bin/pavucontrol";
@@ -78,13 +78,29 @@
 
         "cpu" = {
           "format" = " {usage:3}% ";
-          "hwmon-path" = "/sys/devices/platform/nct6775.656/hwmon/hwmon14/temp2_input";
           "interval" = 5;
         };
 
         "memory" = {
           "format" = " {avail:5.1f}G ";
           "interval" = 5;
+        };
+
+        # Default thermal_zone0 on this host is iwlwifi, not the CPU.
+        # k10temp Tctl; hwmon-path-abs stays valid when hwmonN shifts.
+        "temperature" = {
+          "hwmon-path-abs" = "/sys/devices/pci0000:00/0000:00:18.3/hwmon";
+          "input-filename" = "temp1_input";
+          "critical-threshold" = 90;
+          "format" = "{temperatureC}°C";
+          "format-critical" = "{temperatureC}°C";
+          "tooltip" = true;
+        };
+
+        "clock" = {
+          "format" = "{:%a %H:%M}";
+          "tooltip-format" = "{:%Y-%m-%d}";
+          "interval" = 60;
         };
 
         # Weather + time-of-day vibe as four emojis. Pulls METAR from

@@ -1,24 +1,58 @@
 * {
-  font-family: "monospace", "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif;
+  font-family: "Berkeley Mono", "Font Awesome 6 Free",
+    "Font Awesome 6 Brands", sans-serif;
   font-size: 18px;
   font-weight: bold;
 }
 
+/* Match Sway's unfocused title bar: #222222 / #888888. */
 window#waybar {
-  background: #282828;
-  color: #ebdbb2;
+  background: #222222;
+  color: #888888;
 }
 
 #workspaces button {
   padding: 0 5px;
-  color: #ebdbb2;
+  color: #888888;
 }
 
 #workspaces button.focused {
-  background: #458588;
-  color: #282828;
+  background: #5f676a;
+  color: #dddddd;
 }
 
-#mode, #clock, #memory, #cpu, #temperature, #custom-vpn-status {
+#workspaces button.urgent {
+  background: #900000;
+  color: #ffffff;
+}
+
+#mode,
+#clock,
+#memory,
+#cpu,
+#temperature,
+#custom-vpn-status,
+#pulseaudio,
+#network,
+#custom-vibe,
+#window,
+#tray,
+#taskbar {
   padding: 0 10px;
+}
+
+#custom-vpn-status.connected {
+  color: #8a9a7a;
+}
+
+#custom-vpn-status.disconnected {
+  color: #666666;
+}
+
+#pulseaudio.muted {
+  color: #a06060;
+}
+
+#temperature.critical {
+  color: #a06060;
 }

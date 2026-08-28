@@ -77,31 +77,13 @@
       ];
     };
 
-    alacritty = {
-      enable = true;
-      settings = {
-        env = {
-          # Sway on this host binds wayland-1 (no wayland-0 socket).
-          WAYLAND_DISPLAY = "wayland-1";
-        };
-        font = {
-          normal = {
-            family = "Berkeley Mono";
-            style = "Regular";
-          };
-          size = 16;
-        };
-      };
-    };
-
-    # Ghostty: modern GPU-accelerated terminal (trialing as Alacritty replacement)
     ghostty = {
       enable = true;
       enableZshIntegration = true;
       installBatSyntax = true;
 
       settings = {
-        # Font: match Alacritty setup
+        # Font
         font-family = "Berkeley Mono";
         font-size = 16;
         font-thicken = true; # Slightly bolder for legibility over backgrounds
@@ -111,6 +93,7 @@
 
         # Window chrome: clean, minimal look
         gtk-titlebar = false;
+        window-decoration = false;
         window-padding-x = 8;
         window-padding-y = 6;
         window-padding-balance = true;
@@ -119,6 +102,7 @@
         cursor-style = "block";
         cursor-style-blink = true;
         cursor-color = "#f5e0dc"; # Catppuccin rosewater
+        mouse-hide-while-typing = true;
 
         # Visual polish: subtle transparency to see wallpaper through
         background-opacity = 0.99;
@@ -127,6 +111,8 @@
 
         # Splits and panes: nice visual separation
         split-divider-color = "#313244"; # Catppuccin surface0
+        resize-overlay = "never";
+        confirm-close-surface = false;
 
         # Shell integration for rich features (prompt marks, etc.)
         shell-integration = "zsh";

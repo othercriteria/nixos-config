@@ -1,5 +1,55 @@
 { config, pkgs, ... }:
 
+let
+  # Spotify 1.2 dropped Freedesktop Notify (and the in-app toggle). Track
+  # changes still show up on MPRIS, so this watches playerctl and asks
+  # mako to show a banner.
+  spotifyNotify = pkgs.writeShellApplication {
+    name = "spotify-notify";
+    runtimeInputs = [ pkgs.playerctl pkgs.glib pkgs.curl pkgs.coreutils ];
+    text = ''
+      set -euo pipefail
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/spotify-notify"
+      mkdir -p "$cache"
+      last=""
+      playerctl -p spotify -F metadata \
+        --format $'{{status}}\t{{artist}}\t{{title}}\t{{mpris:artUrl}}' |
+      while IFS=$'\t' read -r status artist title art_url; do
+        [ "$status" = "Playing" ] || continue
+        [ -n "$title" ] || continue
+        key="$artist|$title"
+        [ "$key" = "$last" ] && continue
+        last="$key"
+
+        # libnotify's notify-send leaves app_icon empty and stashes the
+        # file in the image-path hint, which mako ignores. Set app_icon
+        # (3rd Notify arg) to a real path instead.
+        icon=spotify-client
+        case "$art_url" in
+          file://*)
+            path="''${art_url#file://}"
+            [ -s "$path" ] && icon="$path"
+            ;;
+          http://*|https://*)
+            cover="$cache/cover.jpg"
+            if curl -fsS --max-time 5 -o "$cover.tmp" "$art_url"; then
+              mv "$cover.tmp" "$cover"
+              icon="$cover"
+            fi
+            ;;
+        esac
+
+        gdbus call --session \
+          --dest org.freedesktop.Notifications \
+          --object-path /org/freedesktop/Notifications \
+          --method org.freedesktop.Notifications.Notify \
+          Spotify 42 "$icon" "''${artist:-Spotify}" "$title" \
+          '[]' "{'desktop-entry': <'spotify'>, 'urgency': <byte 0>}" \
+          5000 >/dev/null
+      done
+    '';
+  };
+in
 {
   imports = [
     ./waybar.nix
@@ -64,11 +114,17 @@
     config = rec {
       modifier = "Mod4"; # command
 
-      terminal = "ghostty"; # trialing as Alacritty replacement
+      terminal = "ghostty";
 
       menu = "wofi --allow-images --allow-markup --show run";
 
       bars = [ ];
+
+      fonts = {
+        names = [ "Berkeley Mono" ];
+        style = "Regular";
+        size = 16.0;
+      };
 
       startup = [
         {
@@ -90,8 +146,14 @@
           always = false;
         }
         {
-          # Notification daemon
-          command = "mako";
+          # Notification daemon. Start the user unit rather than exec'ing
+          # mako directly: dbus.packages already registers mako.service, so
+          # a second process fails to take the Notifications name.
+          command = "systemctl --user start --no-block mako.service";
+          always = false;
+        }
+        {
+          command = "systemctl --user start --no-block spotify-notify.service";
           always = false;
         }
         {
@@ -115,8 +177,6 @@
 
       input * xkb_options caps:escape
 
-      font pango:mono regular 16
-
       bindsym Print       exec grim ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png
       bindsym Print+Shift exec grim -g "$(slurp)" ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png
 
@@ -138,9 +198,6 @@
       # Emoji picker (overrides existing shortcut for exiting sway)
       bindsym --no-warn Mod4+Shift+E exec wofi-emoji
 
-      # Alacritty fallback (Mod+Shift+Return) for comparison
-      bindsym Mod4+Shift+Return exec alacritty
-
       # Float uxplay window so it maintains video aspect ratio
       for_window [app_id="uxplay"] floating enable
     '';
@@ -151,14 +208,42 @@
     style = builtins.readFile ../assets/wofi.css;
   };
 
+  systemd.user.services.spotify-notify = {
+    Unit = {
+      Description = "Desktop notifications for Spotify track changes";
+      After = [ "mako.service" ];
+    };
+    Service = {
+      ExecStart = "${spotifyNotify}/bin/spotify-notify";
+      Restart = "on-failure";
+      RestartSec = "3";
+    };
+  };
+
   services.mako = {
     enable = true;
     settings = {
       layer = "overlay";
-      font = "monospace 16";
-      width = "450";
-      height = "200";
-      margin = "20";
+      font = "Berkeley Mono 16";
+      width = 450;
+      height = 200;
+      margin = 20;
+      "background-color" = "#222222";
+      "text-color" = "#cccccc";
+      "border-color" = "#333333";
+      "border-radius" = 8;
+      "border-size" = 2;
+      icons = true;
+      "max-icon-size" = 96;
+      # Spotify (and other Electron apps) send expire_timeout=1 ms.
+      # Honor our default instead of vanishing the banner immediately.
+      "default-timeout" = 8000;
+      "ignore-timeout" = 1;
+      "app-name=Spotify" = {
+        "max-icon-size" = 128;
+        "default-timeout" = 5000;
+        "ignore-timeout" = 1;
+      };
     };
   };
 }
