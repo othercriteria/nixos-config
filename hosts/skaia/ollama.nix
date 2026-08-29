@@ -64,7 +64,10 @@ in
     });
     host = "127.0.0.1"; # Bind localhost; nginx handles LAN exposure
     port = 11434;
-    loadModels = [ defaultModel haAssistantModel ];
+    loadModels = [
+      defaultModel
+      haAssistantModel
+    ];
   };
 
   # Export default model so user scripts can reference it

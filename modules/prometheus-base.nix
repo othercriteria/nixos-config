@@ -99,7 +99,12 @@ in
   config = lib.mkIf cfg.enable {
     services.prometheus = {
       enable = true;
-      inherit (cfg) port listenAddress extraFlags checkConfig;
+      inherit (cfg)
+        port
+        listenAddress
+        extraFlags
+        checkConfig
+        ;
 
       exporters.node = lib.mkIf cfg.nodeExporter.enable {
         enable = true;
@@ -110,19 +115,24 @@ in
         (lib.optional cfg.nodeExporter.defaultScrapeJob {
           job_name = "node";
           scrape_interval = cfg.scrapeInterval;
-          static_configs = [{
-            targets = [ "localhost:${toString cfg.nodeExporter.port}" ];
-          }];
+          static_configs = [
+            {
+              targets = [ "localhost:${toString cfg.nodeExporter.port}" ];
+            }
+          ];
         })
         ++ [
           {
             job_name = "prometheus";
             scrape_interval = cfg.scrapeInterval;
-            static_configs = [{
-              targets = [ "localhost:${toString cfg.port}" ];
-            }];
+            static_configs = [
+              {
+                targets = [ "localhost:${toString cfg.port}" ];
+              }
+            ];
           }
-        ] ++ cfg.extraScrapeConfigs;
+        ]
+        ++ cfg.extraScrapeConfigs;
 
       # Use rules from prometheus-rules.nix if imported
       rules = lib.mkIf (config ? prometheusRules) config.prometheusRules;

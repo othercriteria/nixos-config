@@ -41,7 +41,19 @@
 
   };
 
-  outputs = { self, nixpkgs, nixpkgs-stable, home-manager, flake-utils, pre-commit-hooks, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-stable,
+      home-manager,
+      flake-utils,
+      pre-commit-hooks,
+      pyproject-nix,
+      uv2nix,
+      pyproject-build-systems,
+      ...
+    }:
     let
       supportedSystems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -49,7 +61,7 @@
     {
       # NixOS configurations
       nixosConfigurations = {
-        skaia = nixpkgs.lib.nixosSystem rec{
+        skaia = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -76,7 +88,7 @@
           ];
         };
 
-        meteor-1 = nixpkgs.lib.nixosSystem rec{
+        meteor-1 = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -89,7 +101,7 @@
           ];
         };
 
-        meteor-2 = nixpkgs.lib.nixosSystem rec{
+        meteor-2 = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -102,7 +114,7 @@
           ];
         };
 
-        meteor-3 = nixpkgs.lib.nixosSystem rec{
+        meteor-3 = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -115,7 +127,7 @@
           ];
         };
 
-        meteor-4 = nixpkgs.lib.nixosSystem rec{
+        meteor-4 = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -128,7 +140,7 @@
           ];
         };
 
-        hive = nixpkgs.lib.nixosSystem rec{
+        hive = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
             pkgs-stable = import nixpkgs-stable {
@@ -151,7 +163,9 @@
           ];
         };
       };
-    } // (flake-utils.lib.eachSystem supportedSystems (system:
+    }
+    // (flake-utils.lib.eachSystem supportedSystems (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
@@ -163,6 +177,9 @@
           observability = import ./tests/observability.nix { inherit pkgs; };
         };
 
+        # RFC 166. Directory args to `nixfmt` itself are deprecated.
+        formatter = pkgs.nixfmt-tree;
+
         # Development environment
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
@@ -172,7 +189,7 @@
             git-secret
             gh
             jq
-            nixpkgs-fmt
+            nixfmt
             deadnix
             statix
             pre-commit
@@ -196,5 +213,6 @@
             pre-commit install
           '';
         };
-      }));
+      }
+    ));
 }

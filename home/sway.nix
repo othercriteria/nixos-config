@@ -6,7 +6,12 @@ let
   # mako to show a banner.
   spotifyNotify = pkgs.writeShellApplication {
     name = "spotify-notify";
-    runtimeInputs = [ pkgs.playerctl pkgs.glib pkgs.curl pkgs.coreutils ];
+    runtimeInputs = [
+      pkgs.playerctl
+      pkgs.glib
+      pkgs.curl
+      pkgs.coreutils
+    ];
     text = ''
       set -euo pipefail
       cache="''${XDG_CACHE_HOME:-$HOME/.cache}/spotify-notify"
@@ -109,7 +114,6 @@ in
   dconf.settings."org/gnome/desktop/interface" = {
     color-scheme = "prefer-dark";
   };
-
 
   wayland.windowManager.sway = {
     enable = true;

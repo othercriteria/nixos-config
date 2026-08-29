@@ -15,53 +15,63 @@
 pkgs.testers.nixosTest {
   name = "observability-stack";
 
-  nodes.monitor = { config, pkgs, lib, ... }: {
-    # Use the SAME modules as production hosts
-    imports = [
-      ../modules/loki.nix
-      ../modules/promtail.nix
-      ../modules/grafana.nix
-      ../modules/prometheus-base.nix
-      ../modules/prometheus-rules.nix
-      ../modules/ntfy.nix
-    ];
+  nodes.monitor =
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
+    {
+      # Use the SAME modules as production hosts
+      imports = [
+        ../modules/loki.nix
+        ../modules/promtail.nix
+        ../modules/grafana.nix
+        ../modules/prometheus-base.nix
+        ../modules/prometheus-rules.nix
+        ../modules/ntfy.nix
+      ];
 
-    # Enable observability stack via shared modules
-    custom = {
-      loki = {
-        enable = true;
-        listenAddress = "0.0.0.0"; # For test API access
+      # Enable observability stack via shared modules
+      custom = {
+        loki = {
+          enable = true;
+          listenAddress = "0.0.0.0"; # For test API access
+        };
+        promtail.enable = true;
+        grafana = {
+          enable = true;
+          addr = "0.0.0.0";
+          anonymousAccess = true; # For test API access
+          secretKeyFile = pkgs.writeText "grafana-test-secret" "test-not-a-real-secret";
+        };
+        prometheus = {
+          enable = true;
+          listenAddress = "0.0.0.0"; # For test API access
+          scrapeInterval = "5s"; # Fast scrapes for testing
+          nodeExporter.enabledCollectors = [ "systemd" ];
+        };
+        # No auth; metrics on localhost:8091. Confirms scrape wiring and
+        # that ntfy.rules load even when the production auth path is off.
+        ntfy.enable = true;
       };
-      promtail.enable = true;
-      grafana = {
-        enable = true;
-        addr = "0.0.0.0";
-        anonymousAccess = true; # For test API access
-        secretKeyFile = pkgs.writeText "grafana-test-secret" "test-not-a-real-secret";
+
+      # Set hostname for log shipping labels
+      networking.hostName = "monitor";
+
+      # Ensure we have curl for testing
+      environment.systemPackages = [
+        pkgs.curl
+        pkgs.jq
+      ];
+
+      # VM tuning for faster tests
+      virtualisation = {
+        memorySize = 1024;
+        cores = 2;
       };
-      prometheus = {
-        enable = true;
-        listenAddress = "0.0.0.0"; # For test API access
-        scrapeInterval = "5s"; # Fast scrapes for testing
-        nodeExporter.enabledCollectors = [ "systemd" ];
-      };
-      # No auth; metrics on localhost:8091. Confirms scrape wiring and
-      # that ntfy.rules load even when the production auth path is off.
-      ntfy.enable = true;
     };
-
-    # Set hostname for log shipping labels
-    networking.hostName = "monitor";
-
-    # Ensure we have curl for testing
-    environment.systemPackages = [ pkgs.curl pkgs.jq ];
-
-    # VM tuning for faster tests
-    virtualisation = {
-      memorySize = 1024;
-      cores = 2;
-    };
-  };
 
   testScript = ''
     import json

@@ -20,15 +20,19 @@
 # the public nginx vhost; wire that up in the host's nginx.nix to keep
 # Basic Auth, rate limiting, and TLS concerns in one place.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inherit (import ./hardened-service.nix { inherit lib; }) mkServiceConfig;
 
   cfg = config.custom.trivia;
 
-  appScript = pkgs.writeText "trivia-server.py"
-    (builtins.readFile ../assets/trivia-server.py);
+  appScript = pkgs.writeText "trivia-server.py" (builtins.readFile ../assets/trivia-server.py);
 
   pythonEnv = pkgs.python3.withPackages (ps: [
     ps.fastapi
@@ -238,18 +242,20 @@ in
           TRIVIA_PORT = toString cfg.listenPort;
           PYTHONDONTWRITEBYTECODE = "1";
         };
-        serviceConfig = (mkServiceConfig {
-          readOnlyPaths = [ cfg.rootDir ];
-          readWritePaths = [ ];
-          allowOutbound = false;
-        }) // {
-          Type = "exec";
-          User = "trivia";
-          Group = "trivia";
-          ExecStart = "${pythonEnv}/bin/python ${appScript}";
-          Restart = "on-failure";
-          RestartSec = "5s";
-        };
+        serviceConfig =
+          (mkServiceConfig {
+            readOnlyPaths = [ cfg.rootDir ];
+            readWritePaths = [ ];
+            allowOutbound = false;
+          })
+          // {
+            Type = "exec";
+            User = "trivia";
+            Group = "trivia";
+            ExecStart = "${pythonEnv}/bin/python ${appScript}";
+            Restart = "on-failure";
+            RestartSec = "5s";
+          };
       };
     };
   };

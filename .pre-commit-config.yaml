@@ -29,10 +29,10 @@ repos:
 
   - repo: local
     hooks:
-      - id: nixpkgs-fmt
-        name: nixpkgs-fmt
-        description: Format nix code
-        entry: nixpkgs-fmt
+      - id: nixfmt
+        name: nixfmt
+        description: Format nix code (RFC 166)
+        entry: nixfmt
         language: system
         files: \.nix$
 

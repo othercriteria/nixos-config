@@ -1,4 +1,10 @@
-{ config, pkgs, pkgs-stable, lib, ... }:
+{
+  config,
+  pkgs,
+  pkgs-stable,
+  lib,
+  ...
+}:
 
 {
   # Common system configuration
@@ -43,7 +49,11 @@
       # System features for builds
       # - big-parallel: enable parallel builds
       # - kvm, nixos-test: enable NixOS VM integration tests
-      system-features = [ "big-parallel" "kvm" "nixos-test" ];
+      system-features = [
+        "big-parallel"
+        "kvm"
+        "nixos-test"
+      ];
     };
 
     gc = {
@@ -101,7 +111,12 @@
 
   users.users.dlk = {
     isNormalUser = true;
-    extraGroups = [ "docker" "vboxusers" "wheel" "networkmanager" ];
+    extraGroups = [
+      "docker"
+      "vboxusers"
+      "wheel"
+      "networkmanager"
+    ];
     shell = pkgs.zsh;
   };
 
@@ -123,8 +138,6 @@
   systemd.user.settings.Manager = {
     DefaultEnvironment = "HOME=/home/dlk";
   };
-
-
 
   services = {
     dbus = {

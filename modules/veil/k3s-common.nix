@@ -1,4 +1,9 @@
-{ lib, pkgs, config, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 {
   options = {
     veil.k3s.commonFlags = lib.mkOption {
@@ -26,7 +31,11 @@
 
     # Drain before k3s stops, uncordon after it starts (meteors)
     systemd.services.k3s = {
-      path = [ pkgs.k3s pkgs.coreutils pkgs.util-linux ];
+      path = [
+        pkgs.k3s
+        pkgs.coreutils
+        pkgs.util-linux
+      ];
       preStop = ''
         set -e
         NODE="${config.networking.hostName}"

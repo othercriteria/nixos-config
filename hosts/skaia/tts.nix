@@ -61,7 +61,11 @@ in
 
     # Run our server script instead of default Gradio app
     # Install websockets for WebSocket endpoint support
-    cmd = [ "bash" "-c" "pip install -q websockets && python3 /app/tts-server.py" ];
+    cmd = [
+      "bash"
+      "-c"
+      "pip install -q websockets && python3 /app/tts-server.py"
+    ];
 
     # Depend on voices being set up
     dependsOn = [ ];
@@ -107,7 +111,12 @@ in
 
   # nginx reverse proxy: tts.home.arpa -> localhost:8880 (LAN only)
   services.nginx.virtualHosts."tts.home.arpa" = {
-    listen = [{ addr = "0.0.0.0"; port = 80; }];
+    listen = [
+      {
+        addr = "0.0.0.0";
+        port = 80;
+      }
+    ];
     locations."/" = {
       extraConfig = ''
         proxy_pass http://127.0.0.1:8880;

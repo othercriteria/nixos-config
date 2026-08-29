@@ -3,7 +3,12 @@
 # Uses shared modules for Alloy-backed log shipping.
 # Site-specific: node exporter and netdata child node configuration.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [

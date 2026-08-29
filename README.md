@@ -31,7 +31,7 @@ Personal NixOS configuration managed with flakes.
    cd nixos-config
    ```
 
-1. Enter the dev shell (provides tools like git-secret, nixpkgs-fmt, etc.):
+1. Enter the dev shell (provides tools like git-secret, nixfmt, etc.):
 
    ```bash
    nix develop

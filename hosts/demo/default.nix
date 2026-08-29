@@ -15,7 +15,12 @@
 #   - Grafana: http://localhost:13000 (anonymous access enabled)
 #   - Loki: http://localhost:13100
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -114,9 +119,21 @@
       # Forward ports for web access from host
       # Use 10xxx offset to avoid conflicts with host services
       forwardPorts = [
-        { from = "host"; host.port = 19090; guest.port = 9090; } # Prometheus
-        { from = "host"; host.port = 13000; guest.port = 3000; } # Grafana
-        { from = "host"; host.port = 13100; guest.port = 3100; } # Loki
+        {
+          from = "host";
+          host.port = 19090;
+          guest.port = 9090;
+        } # Prometheus
+        {
+          from = "host";
+          host.port = 13000;
+          guest.port = 3000;
+        } # Grafana
+        {
+          from = "host";
+          host.port = 13100;
+          guest.port = 3100;
+        } # Loki
       ];
     };
   };

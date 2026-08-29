@@ -8,9 +8,20 @@
   systemd.services.k3s-coredns-forward = {
     description = "Configure CoreDNS forwards for veil/home.arpa";
     wantedBy = [ "multi-user.target" ];
-    after = [ "k3s.service" "network.target" "network-online.target" ];
-    requires = [ "k3s.service" "network.target" "network-online.target" ];
-    path = [ pkgs.k3s pkgs.coreutils ];
+    after = [
+      "k3s.service"
+      "network.target"
+      "network-online.target"
+    ];
+    requires = [
+      "k3s.service"
+      "network.target"
+      "network-online.target"
+    ];
+    path = [
+      pkgs.k3s
+      pkgs.coreutils
+    ];
     environment.KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
     serviceConfig = {
       Type = "oneshot";

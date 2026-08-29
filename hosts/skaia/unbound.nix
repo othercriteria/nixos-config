@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # COLD START: Router DHCP must be updated to point LAN DNS to 192.168.0.160
@@ -7,7 +12,10 @@
     settings = {
       server = {
         # Bind on loopback for local resolution and on LAN IP for network clients
-        interface = [ "127.0.0.1" "192.168.0.160" ];
+        interface = [
+          "127.0.0.1"
+          "192.168.0.160"
+        ];
         access-control = [
           "127.0.0.0/8 allow"
           "192.168.0.0/24 allow"
@@ -88,7 +96,11 @@
         {
           name = ".";
           # Upstream resolvers: router first, then Cloudflare
-          forward-addr = [ "192.168.0.1" "1.1.1.1" "1.0.0.1" ];
+          forward-addr = [
+            "192.168.0.1"
+            "1.1.1.1"
+            "1.0.0.1"
+          ];
         }
       ];
     };

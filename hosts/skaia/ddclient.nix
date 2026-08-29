@@ -10,7 +10,15 @@
     server = "dynamicdns.park-your-domain.com";
     # `trivia` is omitted on purpose between events so the name stays
     # NXDOMAIN. Add it when hosting; TLS/ACME follow custom.trivia.enable.
-    domains = [ "@" "teleport" "urbit" "stiletto-demo" "stream" "assistant" "ntfy" ];
+    domains = [
+      "@"
+      "teleport"
+      "urbit"
+      "stiletto-demo"
+      "stream"
+      "assistant"
+      "ntfy"
+    ];
     username = "valueof.info";
     passwordFile = "/etc/nixos/secrets/ddclient-password";
     protocol = "namecheap";

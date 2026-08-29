@@ -14,7 +14,12 @@
 # - nixos/hive/+          : System state from hive (future)
 # - homeassistant/+       : HA state/commands
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   services.mosquitto = {

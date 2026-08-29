@@ -1,4 +1,10 @@
-{ config, pkgs, pkgs-stable, lib, ... }:
+{
+  config,
+  pkgs,
+  pkgs-stable,
+  lib,
+  ...
+}:
 
 {
   imports = [
@@ -111,7 +117,10 @@
 
   users.users.dlk = {
     isNormalUser = true;
-    extraGroups = [ "docker" "wheel" ];
+    extraGroups = [
+      "docker"
+      "wheel"
+    ];
     shell = pkgs.zsh;
   };
 

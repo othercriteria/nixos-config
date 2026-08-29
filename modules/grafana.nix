@@ -8,7 +8,12 @@
 #   custom.grafana.enable = true;
 #   custom.grafana.anonymousAccess = true;  # For demos
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.grafana;

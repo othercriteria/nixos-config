@@ -79,8 +79,14 @@ flake-restore: ## Restore flake.lock to last committed version
 	git restore flake.lock
 	@echo "Restored flake.lock to last committed version"
 
-check: ## Lint the configuration files using nix fmt and markdownlint
-	nixpkgs-fmt .
+check: ## Lint the configuration files using nixfmt and markdownlint
+	find . -name '*.nix' \
+	  -not -path './result*' \
+	  -not -path './.git/*' \
+	  -not -path './gitops-veil/*' \
+	  -not -path './private-assets/*' \
+	  -print0 | xargs -0 nixfmt --check
+	markdownlint "**/*.md"
 	markdownlint "**/*.md"
 
 init-security: ## Initialize security tools

@@ -1,11 +1,21 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   security = {
     rtkit.enable = true;
     polkit.enable = true;
     pam.loginLimits = [
-      { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
+      {
+        domain = "@users";
+        item = "rtprio";
+        type = "-";
+        value = 1;
+      }
     ];
   };
 

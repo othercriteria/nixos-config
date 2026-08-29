@@ -1,4 +1,10 @@
-{ config, lib, pkgs, pkgs-stable, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  pkgs-stable,
+  ...
+}:
 
 {
   imports = [
@@ -63,7 +69,8 @@
   };
 
   nixpkgs.overlays = [
-    (_final: prev:
+    (
+      _final: prev:
       let
         withOfflineGo = import ../../overlays/netdata-offline-go.nix;
       in
@@ -82,7 +89,8 @@
           # sandboxed builds; keep the package version and skip only checks.
           doCheck = false;
         });
-      })
+      }
+    )
   ];
 
   # COLD START: Generate a fine-grained PAT scoped to

@@ -9,76 +9,80 @@ let
   # FHS environment for running the installer
   fhsEnv = pkgs.buildFHSEnv {
     name = "tws-installer-env";
-    targetPkgs = pkgs: with pkgs; [
-      # Basic requirements
-      bash
-      coreutils
-      gawk
-      gnugrep
-      gnused
-      gnutar
-      gzip
-      which
+    targetPkgs =
+      pkgs: with pkgs; [
+        # Basic requirements
+        bash
+        coreutils
+        gawk
+        gnugrep
+        gnused
+        gnutar
+        gzip
+        which
 
-      # X11/GUI requirements
-      libx11
-      libxext
-      libxrender
-      libxtst
-      libxi
-      gtk2
-      gtk3
-      glib
-      pango
-      cairo
-      gdk-pixbuf
-      atk
+        # X11/GUI requirements
+        libx11
+        libxext
+        libxrender
+        libxtst
+        libxi
+        gtk2
+        gtk3
+        glib
+        pango
+        cairo
+        gdk-pixbuf
+        atk
 
-      # Java/system requirements
-      zlib
-      libGL
-      alsa-lib
-      freetype
-      fontconfig
-    ];
+        # Java/system requirements
+        zlib
+        libGL
+        alsa-lib
+        freetype
+        fontconfig
+      ];
     runScript = "bash";
   };
 
   # Runtime library path for TWS
-  libPath = pkgs.lib.makeLibraryPath (with pkgs; [
-    alsa-lib
-    at-spi2-atk
-    cairo
-    cups
-    dbus
-    expat
-    ffmpeg
-    fontconfig
-    freetype
-    gdk-pixbuf
-    glib
-    gtk2
-    gtk3
-    libdrm
-    libGL
-    libxkbcommon
-    mesa
-    nspr
-    nss
-    pango
-    libx11
-    libxcomposite
-    libxdamage
-    libxext
-    libxfixes
-    libxi
-    libxrandr
-    libxrender
-    libxtst
-    libxxf86vm
-    libxcb
-    zlib
-  ]);
+  libPath = pkgs.lib.makeLibraryPath (
+    with pkgs;
+    [
+      alsa-lib
+      at-spi2-atk
+      cairo
+      cups
+      dbus
+      expat
+      ffmpeg
+      fontconfig
+      freetype
+      gdk-pixbuf
+      glib
+      gtk2
+      gtk3
+      libdrm
+      libGL
+      libxkbcommon
+      mesa
+      nspr
+      nss
+      pango
+      libx11
+      libxcomposite
+      libxdamage
+      libxext
+      libxfixes
+      libxi
+      libxrandr
+      libxrender
+      libxtst
+      libxxf86vm
+      libxcb
+      zlib
+    ]
+  );
 
   installer = pkgs.fetchurl {
     url = "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh";

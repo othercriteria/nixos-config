@@ -4,8 +4,7 @@
   # Home-manager writes XDG (`~/.config/tmux/tmux.conf`). Older tmux
   # sessions still have `prefix-r` bound to `source-file ~/.tmux.conf`,
   # and some tools look there first. Keep both paths as the same file.
-  home.file.".tmux.conf".source =
-    config.xdg.configFile."tmux/tmux.conf".source;
+  home.file.".tmux.conf".source = config.xdg.configFile."tmux/tmux.conf".source;
 
   programs.tmux = {
     enable = true;

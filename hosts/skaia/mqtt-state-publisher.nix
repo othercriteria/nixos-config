@@ -11,7 +11,12 @@
 # - nixos/skaia/streaming        : on/off (OBS streaming status)
 # - nixos/skaia/vpn              : connected/disconnected
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   mqttHost = "localhost";
@@ -71,7 +76,10 @@ in
 
   systemd.services.mqtt-state-publisher = {
     description = "Publish NixOS state to MQTT for Home Assistant";
-    after = [ "network.target" "mosquitto.service" ];
+    after = [
+      "network.target"
+      "mosquitto.service"
+    ];
     wants = [ "mosquitto.service" ];
     wantedBy = [ "multi-user.target" ];
 

@@ -53,17 +53,26 @@
 # may include subdirectories. Allowed entries that do not exist on
 # disk are simply allowed-when-they-show-up; the scrub is delete-only.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.hostSecretsManifest;
 
-  manifestFile = pkgs.writeText "host-secrets-allowlist.txt"
-    (lib.concatStringsSep "\n" (lib.sort (a: b: a < b) cfg.allowed) + "\n");
+  manifestFile = pkgs.writeText "host-secrets-allowlist.txt" (
+    lib.concatStringsSep "\n" (lib.sort (a: b: a < b) cfg.allowed) + "\n"
+  );
 
   scrubScript = pkgs.writeShellApplication {
     name = "scrub-host-secrets";
-    runtimeInputs = [ pkgs.coreutils pkgs.findutils ];
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.findutils
+    ];
     text = ''
       set -euo pipefail
 
@@ -112,7 +121,10 @@ in
     allowed = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "veil-k3s-token" "teleport/meteor-1.token" ];
+      example = [
+        "veil-k3s-token"
+        "teleport/meteor-1.token"
+      ];
       description = ''
         Relative paths under `secretsDir` that this host is allowed to
         keep on disk after activation. Files present in `secretsDir`

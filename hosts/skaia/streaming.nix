@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 # Self-hosted WebRTC streaming failover using SRS (Simple Realtime Server)
 #

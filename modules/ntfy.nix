@@ -17,7 +17,12 @@
 #     };
 #   };
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.ntfy;
@@ -120,7 +125,12 @@ in
       enable = lib.mkEnableOption "authentication for ntfy";
 
       defaultAccess = lib.mkOption {
-        type = lib.types.enum [ "read-write" "read-only" "write-only" "deny-all" ];
+        type = lib.types.enum [
+          "read-write"
+          "read-only"
+          "write-only"
+          "deny-all"
+        ];
         default = "deny-all";
         description = "Default access level for unauthenticated users.";
       };
@@ -139,50 +149,57 @@ in
     };
 
     extraUsers = lib.mkOption {
-      type = lib.types.listOf (lib.types.submodule {
-        options = {
-          username = lib.mkOption {
-            type = lib.types.str;
-            description = "Username. Must match ntfy's accepted characters (alphanumerics, -, _).";
+      type = lib.types.listOf (
+        lib.types.submodule {
+          options = {
+            username = lib.mkOption {
+              type = lib.types.str;
+              description = "Username. Must match ntfy's accepted characters (alphanumerics, -, _).";
+            };
+            passwordFile = lib.mkOption {
+              type = lib.types.str;
+              description = "Path to a file containing the user's password.";
+            };
+            role = lib.mkOption {
+              type = lib.types.enum [
+                "admin"
+                "user"
+              ];
+              default = "user";
+              description = ''
+                ntfy role. 'user' is subject to defaultAccess plus explicit
+                grants; 'admin' has unrestricted access regardless of grants.
+              '';
+            };
+            grants = lib.mkOption {
+              type = lib.types.listOf (
+                lib.types.submodule {
+                  options = {
+                    topic = lib.mkOption {
+                      type = lib.types.str;
+                      description = ''
+                        Topic name. ntfy supports wildcards via '*' (e.g.
+                        'veil-*' grants on all veil-prefixed topics).
+                      '';
+                    };
+                    access = lib.mkOption {
+                      type = lib.types.enum [
+                        "read-write"
+                        "read-only"
+                        "write-only"
+                        "deny-all"
+                      ];
+                      description = "Access level on this topic.";
+                    };
+                  };
+                }
+              );
+              default = [ ];
+              description = "Per-topic ACL grants applied via 'ntfy access'.";
+            };
           };
-          passwordFile = lib.mkOption {
-            type = lib.types.str;
-            description = "Path to a file containing the user's password.";
-          };
-          role = lib.mkOption {
-            type = lib.types.enum [ "admin" "user" ];
-            default = "user";
-            description = ''
-              ntfy role. 'user' is subject to defaultAccess plus explicit
-              grants; 'admin' has unrestricted access regardless of grants.
-            '';
-          };
-          grants = lib.mkOption {
-            type = lib.types.listOf (lib.types.submodule {
-              options = {
-                topic = lib.mkOption {
-                  type = lib.types.str;
-                  description = ''
-                    Topic name. ntfy supports wildcards via '*' (e.g.
-                    'veil-*' grants on all veil-prefixed topics).
-                  '';
-                };
-                access = lib.mkOption {
-                  type = lib.types.enum [
-                    "read-write"
-                    "read-only"
-                    "write-only"
-                    "deny-all"
-                  ];
-                  description = "Access level on this topic.";
-                };
-              };
-            });
-            default = [ ];
-            description = "Per-topic ACL grants applied via 'ntfy access'.";
-          };
-        };
-      });
+        }
+      );
       default = [ ];
       description = ''
         Additional, non-admin ntfy users with optional per-topic ACL
@@ -205,10 +222,10 @@ in
       adminCredId = "admin-password";
       extraCredId = user: "extrauser-${user.username}-password";
 
-      adminCredArg = lib.optional (cfg.auth.passwordFile != null)
-        "${adminCredId}:${cfg.auth.passwordFile}";
-      extraCredArgs = map (u: "${extraCredId u}:${u.passwordFile}")
-        cfg.extraUsers;
+      adminCredArg = lib.optional (
+        cfg.auth.passwordFile != null
+      ) "${adminCredId}:${cfg.auth.passwordFile}";
+      extraCredArgs = map (u: "${extraCredId u}:${u.passwordFile}") cfg.extraUsers;
 
       # User-provisioning script, run as an ExecStartPre of
       # ntfy-sh.service. Embedding the provisioning in the main service
@@ -220,7 +237,11 @@ in
       # /var/lib/ntfy-sh contents.
       provisionUsers = pkgs.writeShellApplication {
         name = "ntfy-sh-provision-users";
-        runtimeInputs = [ pkgs.ntfy-sh pkgs.coreutils pkgs.gnugrep ];
+        runtimeInputs = [
+          pkgs.ntfy-sh
+          pkgs.coreutils
+          pkgs.gnugrep
+        ];
         text = ''
           set -euo pipefail
 
@@ -264,9 +285,7 @@ in
         '';
       };
 
-      needsProvisioning =
-        cfg.auth.enable
-        && (cfg.auth.passwordFile != null || cfg.extraUsers != [ ]);
+      needsProvisioning = cfg.auth.enable && (cfg.auth.passwordFile != null || cfg.extraUsers != [ ]);
     in
     {
       services.ntfy-sh = {
@@ -299,7 +318,8 @@ in
 
           # Logging
           log-level = "info";
-        } // lib.optionalAttrs cfg.auth.enable {
+        }
+        // lib.optionalAttrs cfg.auth.enable {
           # Authentication
           auth-file = "/var/lib/ntfy-sh/user.db";
           auth-default-access = cfg.auth.defaultAccess;
@@ -318,7 +338,10 @@ in
         # Poll_request POSTs to ntfy.sh. At boot ntfy was coming up
         # before Unbound, so the first publishes logged
         # "lookup ntfy.sh: no such host" and iOS never got a wakeup.
-        after = [ "network-online.target" "nss-lookup.target" ];
+        after = [
+          "network-online.target"
+          "nss-lookup.target"
+        ];
         wants = [ "network-online.target" ];
         serviceConfig = lib.mkIf needsProvisioning {
           ExecStartPre = [ "${provisionUsers}/bin/ntfy-sh-provision-users" ];
@@ -330,16 +353,21 @@ in
       # the same host. Job name is "ntfy" so prometheus-rules.nix can
       # match it. Inherit custom.prometheus.scrapeInterval when that
       # module is in play (5s in the observability VM test, 15s default).
-      services.prometheus.scrapeConfigs = lib.mkIf config.services.prometheus.enable [{
-        job_name = "ntfy";
-        scrape_interval =
-          if (config.custom ? prometheus && config.custom.prometheus.enable)
-          then config.custom.prometheus.scrapeInterval
-          else "15s";
-        static_configs = [{
-          targets = [ "127.0.0.1:${toString cfg.metricsPort}" ];
-        }];
-      }];
+      services.prometheus.scrapeConfigs = lib.mkIf config.services.prometheus.enable [
+        {
+          job_name = "ntfy";
+          scrape_interval =
+            if (config.custom ? prometheus && config.custom.prometheus.enable) then
+              config.custom.prometheus.scrapeInterval
+            else
+              "15s";
+          static_configs = [
+            {
+              targets = [ "127.0.0.1:${toString cfg.metricsPort}" ];
+            }
+          ];
+        }
+      ];
     }
   );
 }

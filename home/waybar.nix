@@ -19,7 +19,11 @@
         position = "top";
         height = 34;
 
-        modules-left = [ "sway/workspaces" "wlr/taskbar" "tray" ];
+        modules-left = [
+          "sway/workspaces"
+          "wlr/taskbar"
+          "tray"
+        ];
         modules-center = [ "sway/window" ];
         modules-right = [
           "pulseaudio"
@@ -53,7 +57,11 @@
           "format-muted" = "mute {icon}";
           "format-icons" = {
             "headphone" = "";
-            "default" = [ "" "" "" ];
+            "default" = [
+              ""
+              ""
+              ""
+            ];
           };
           "scroll-step" = 1;
           "on-click" = "${pkgs.pavucontrol}/bin/pavucontrol";

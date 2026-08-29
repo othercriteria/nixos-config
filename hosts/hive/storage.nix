@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # Additional storage mounts for hive
@@ -53,7 +58,10 @@
     "/attic" = {
       device = "/dev/disk/by-label/ATTIC";
       fsType = "ext4";
-      options = [ "noatime" "nofail" ];
+      options = [
+        "noatime"
+        "nofail"
+      ];
     };
   };
 

@@ -7,7 +7,12 @@
 #   imports = [ ../../modules/shutdown-visibility.nix ];
 #   custom.shutdownVisibility.enable = true;
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.shutdownVisibility;
@@ -40,8 +45,18 @@ in
         # Log shutdown events to a dedicated file
         log-shutdown-reason = {
           description = "Log shutdown/reboot reason";
-          wantedBy = [ "halt.target" "poweroff.target" "reboot.target" "kexec.target" ];
-          before = [ "halt.target" "poweroff.target" "reboot.target" "kexec.target" ];
+          wantedBy = [
+            "halt.target"
+            "poweroff.target"
+            "reboot.target"
+            "kexec.target"
+          ];
+          before = [
+            "halt.target"
+            "poweroff.target"
+            "reboot.target"
+            "kexec.target"
+          ];
           # Don't block shutdown if this fails
           serviceConfig = {
             Type = "oneshot";

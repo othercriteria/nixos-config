@@ -4,9 +4,20 @@
   systemd.services.gpu-operator-setup = {
     description = "Deploy GPU Operator and apply Kyverno patch";
     wantedBy = [ "multi-user.target" ];
-    after = [ "k3s.service" "network.target" "network-online.target" ];
-    requires = [ "k3s.service" "network.target" "network-online.target" ];
-    path = [ pkgs.k3s pkgs.kubernetes-helm ];
+    after = [
+      "k3s.service"
+      "network.target"
+      "network-online.target"
+    ];
+    requires = [
+      "k3s.service"
+      "network.target"
+      "network-online.target"
+    ];
+    path = [
+      pkgs.k3s
+      pkgs.kubernetes-helm
+    ];
     environment = {
       KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
     };

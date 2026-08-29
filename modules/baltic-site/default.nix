@@ -19,7 +19,12 @@
 # modules/prometheus-rules.nix alerts on both a failing deploy and a timer
 # that has stopped firing.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.balticSite;
@@ -32,7 +37,12 @@ let
 
   deploy = pkgs.writeShellApplication {
     name = "baltic-site-deploy";
-    runtimeInputs = with pkgs; [ git nix coreutils findutils ];
+    runtimeInputs = with pkgs; [
+      git
+      nix
+      coreutils
+      findutils
+    ];
     text = ''
       state="${cfg.stateDir}"
       link="${cfg.docRoot}"
@@ -190,36 +200,41 @@ in
 
     systemd.services.baltic-site-deploy = {
       description = "Build and publish the-baltic-approaches static site";
-      after = [ "network-online.target" "nix-daemon.socket" ];
+      after = [
+        "network-online.target"
+        "nix-daemon.socket"
+      ];
       wants = [ "network-online.target" ];
 
-      serviceConfig = (mkServiceConfig {
-        # Reaches GitHub for the source and the substituters for the
-        # toolchain, so the loopback-only default does not apply.
-        allowOutbound = true;
-        # Nix's client mmaps writable+executable while evaluating.
-        memoryDenyWriteExecute = false;
-      }) // {
-        Type = "oneshot";
-        User = "baltic-site";
-        Group = "baltic-site";
-        ExecStart = lib.getExe deploy;
+      serviceConfig =
+        (mkServiceConfig {
+          # Reaches GitHub for the source and the substituters for the
+          # toolchain, so the loopback-only default does not apply.
+          allowOutbound = true;
+          # Nix's client mmaps writable+executable while evaluating.
+          memoryDenyWriteExecute = false;
+        })
+        // {
+          Type = "oneshot";
+          User = "baltic-site";
+          Group = "baltic-site";
+          ExecStart = lib.getExe deploy;
 
-        # 0755 so the nginx worker can traverse to the published symlink.
-        StateDirectory = "baltic-site";
-        StateDirectoryMode = "0755";
+          # 0755 so the nginx worker can traverse to the published symlink.
+          StateDirectory = "baltic-site";
+          StateDirectoryMode = "0755";
 
-        Environment = [
-          "HOME=${cfg.stateDir}"
-          "XDG_CACHE_HOME=${cfg.stateDir}/.cache"
-          "NIX_REMOTE=daemon"
-          "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
-        ];
+          Environment = [
+            "HOME=${cfg.stateDir}"
+            "XDG_CACHE_HOME=${cfg.stateDir}/.cache"
+            "NIX_REMOTE=daemon"
+            "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
+          ];
 
-        # A first build renders the cover through xelatex and can take a
-        # couple of minutes cold; well short of this.
-        TimeoutStartSec = "30min";
-      };
+          # A first build renders the cover through xelatex and can take a
+          # couple of minutes cold; well short of this.
+          TimeoutStartSec = "30min";
+        };
     };
 
     systemd.timers.baltic-site-deploy = {
@@ -232,11 +247,14 @@ in
         # first run after the timer unit itself starts (boot, switch,
         # or systemctl restart).
         OnActiveSec = "5m";
-        OnCalendar = {
-          "15m" = "*:0/15";
-          "30m" = "*:0/30";
-          "1h" = "hourly";
-        }.${cfg.interval} or (throw "custom.balticSite.interval '${cfg.interval}' has no OnCalendar mapping");
+        OnCalendar =
+          {
+            "15m" = "*:0/15";
+            "30m" = "*:0/30";
+            "1h" = "hourly";
+          }
+          .${cfg.interval}
+            or (throw "custom.balticSite.interval '${cfg.interval}' has no OnCalendar mapping");
         # Spread the GitHub poll so it doesn't land on the minute boundary
         # alongside every other timer on the host.
         RandomizedDelaySec = "2m";

@@ -28,7 +28,6 @@
 
 {
   config = lib.mkIf config.services.prometheus.exporters.node.enable {
-    systemd.services.prometheus-node-exporter.serviceConfig.Sockets =
-      "prometheus-node-exporter.socket";
+    systemd.services.prometheus-node-exporter.serviceConfig.Sockets = "prometheus-node-exporter.socket";
   };
 }

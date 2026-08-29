@@ -54,7 +54,12 @@
     serviceConfig = {
       Type = "oneshot";
     };
-    path = [ pkgs.docker pkgs.coreutils pkgs.gawk pkgs.findutils ];
+    path = [
+      pkgs.docker
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.findutils
+    ];
     script = ''
       set -euo pipefail
 

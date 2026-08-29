@@ -26,10 +26,11 @@
             rules = [
               {
                 alert = "PrometheusDiskSpaceLow";
-                expr =
-                  "(node_filesystem_avail_bytes{mountpoint=\"/zfs/prometheus\"} / node_filesystem_size_bytes{mountpoint=\"/zfs/prometheus\"}) * 100 < 15";
+                expr = "(node_filesystem_avail_bytes{mountpoint=\"/zfs/prometheus\"} / node_filesystem_size_bytes{mountpoint=\"/zfs/prometheus\"}) * 100 < 15";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Low disk space on Prometheus volume";
                   description = "Less than 15% free on /zfs/prometheus for 5m.";
@@ -39,7 +40,9 @@
                 alert = "PrometheusDown";
                 expr = "up{job=\"skaia\"} == 0";
                 "for" = "2m";
-                labels = { severity = "critical"; };
+                labels = {
+                  severity = "critical";
+                };
                 annotations = {
                   summary = "Prometheus process is down";
                   description = "Prometheus is not responding to scrapes.";
@@ -49,7 +52,9 @@
                 alert = "PrometheusScrapeFailures";
                 expr = "increase(prometheus_target_scrapes_failed_total[5m]) > 0";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Prometheus scrape failures detected";
                   description = "One or more targets are failing scrapes.";
@@ -64,7 +69,9 @@
                 alert = "ScrapeTargetDown";
                 expr = "up == 0";
                 "for" = "15m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Scrape target {{ $labels.job }} on {{ $labels.instance }} is down";
                   description = "Prometheus has been unable to scrape {{ $labels.job }} at {{ $labels.instance }} for 15 minutes (up == 0).";
@@ -82,7 +89,9 @@
                   sum(increase(nginx_http_requests_total{server="assistant.valueof.info", status=~"401|403"}[5m])) > 10
                 '';
                 "for" = "2m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "High rate of Home Assistant auth failures";
                   description = "More than 10 failed auth attempts in 5 minutes. Possible brute-force attack.";
@@ -92,7 +101,9 @@
                 alert = "HomeAssistantDown";
                 expr = "up{job=\"homeassistant\"} == 0";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Home Assistant is unreachable";
                   description = "Cannot scrape Home Assistant metrics for 5 minutes.";
@@ -108,7 +119,9 @@
                 alert = "UrbitUnresponsive";
                 expr = "probe_success{job=\"urbit-health\"} == 0";
                 "for" = "3m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Urbit ship ~{{ $labels.ship }} is unresponsive";
                   description = "Urbit web interface at {{ $labels.instance }} has not responded for 3 minutes.";
@@ -118,7 +131,9 @@
                 alert = "UrbitSlow";
                 expr = "probe_duration_seconds{job=\"urbit-health\"} > 5";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Urbit ship ~{{ $labels.ship }} responding slowly";
                   description = "Urbit web interface is taking >5s to respond for 5 minutes.";
@@ -146,7 +161,9 @@
                 # 30m means at least two consecutive failures and a
                 # transient GitHub or substituter blip stays quiet.
                 "for" = "30m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "the-baltic-approaches site deploy is failing";
                   description = "baltic-site-deploy.service on {{ $labels.instance }} has been in the failed state for 30 minutes, so valueof.info/the-baltic-approaches/ is still serving the previously published build. Check `journalctl -u baltic-site-deploy`: either the book repo's test suite is red on main or the build/fetch is broken.";
@@ -165,7 +182,9 @@
                   time() - node_systemd_timer_last_trigger_seconds{name="baltic-site-deploy.timer"} > 3600
                 '';
                 "for" = "10m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "the-baltic-approaches deploy timer has stopped firing";
                   description = "baltic-site-deploy.timer on {{ $labels.instance }} last triggered over an hour ago, against a 15m schedule. New commits on the book repo's main are not reaching valueof.info/the-baltic-approaches/. Check `systemctl list-timers baltic-site-deploy`.";
@@ -185,7 +204,9 @@
                 # smartctl_device_smart_status: 1 = passed, 0 = failed
                 expr = "smartctl_device_smart_status == 0";
                 "for" = "5m";
-                labels = { severity = "critical"; };
+                labels = {
+                  severity = "critical";
+                };
                 annotations = {
                   summary = "SMART self-assessment failing on {{ $labels.device }}";
                   description = "smartctl reports SMART overall-health FAILED on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Investigate / replace immediately.";
@@ -195,7 +216,9 @@
                 alert = "NvmeCriticalWarning";
                 expr = "smartctl_device_critical_warning > 0";
                 "for" = "5m";
-                labels = { severity = "critical"; };
+                labels = {
+                  severity = "critical";
+                };
                 annotations = {
                   summary = "NVMe critical warning on {{ $labels.device }}";
                   description = "smartctl_device_critical_warning is {{ $value }} on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Any non-zero value indicates an NVMe controller-reported critical condition.";
@@ -205,7 +228,9 @@
                 alert = "NvmeMediaErrors";
                 expr = "increase(smartctl_device_media_errors_total[1h]) > 0";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "New NVMe media/integrity errors on {{ $labels.device }}";
                   description = "smartctl_device_media_errors_total increased by {{ $value }} in the last hour on {{ $labels.device }} at {{ $labels.instance }}.";
@@ -215,7 +240,9 @@
                 alert = "NvmeWearHigh";
                 expr = "smartctl_device_percentage_used > 80";
                 "for" = "1h";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "NVMe wear above 80% on {{ $labels.device }}";
                   description = "Percentage Used is {{ $value }}% on {{ $labels.device }} ({{ $labels.model_name }}) at {{ $labels.instance }}. Plan replacement before the drive enters read-only fallback at 100%.";
@@ -228,7 +255,9 @@
                 # (typically 10), the controller raises a critical warning.
                 expr = "smartctl_device_available_spare < 20";
                 "for" = "10m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "NVMe available spare low on {{ $labels.device }}";
                   description = "Available Spare is {{ $value }}% on {{ $labels.device }} at {{ $labels.instance }}. Approaching the controller's available_spare_threshold; replacement should be planned.";
@@ -244,7 +273,9 @@
                 alert = "DiskIOBacklogHigh";
                 expr = "rate(node_disk_io_time_weighted_seconds_total[5m]) > 10";
                 "for" = "15m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "High disk I/O backlog on {{ $labels.instance }}";
                   description = "Disk {{ $labels.device }} has weighted I/O time >10 for 15 minutes. This indicates I/O pressure that may cause system slowdowns.";
@@ -252,10 +283,11 @@
               }
               {
                 alert = "DiskSpaceLow";
-                expr =
-                  "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"}) * 100 < 15";
+                expr = "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"}) * 100 < 15";
                 "for" = "5m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "Low disk space on {{ $labels.instance }}";
                   description = "Disk space is below 15% free on mount {{ $labels.mountpoint }}.";
@@ -263,10 +295,11 @@
               }
               {
                 alert = "HighCPUTemperature";
-                expr =
-                  "node_hwmon_temp_celsius{chip=\"platform_nct6775_656\", sensor=\"temp1\"} > 80";
+                expr = "node_hwmon_temp_celsius{chip=\"platform_nct6775_656\", sensor=\"temp1\"} > 80";
                 "for" = "5m";
-                labels = { severity = "critical"; };
+                labels = {
+                  severity = "critical";
+                };
                 annotations = {
                   summary = "High CPU Temperature on {{ $labels.instance }}";
                   description = "CPU temperature is above 80°C for more than 5 minutes.";
@@ -286,7 +319,9 @@
                 alert = "NtfyDown";
                 expr = "up{job=\"ntfy\"} == 0";
                 "for" = "2m";
-                labels = { severity = "critical"; };
+                labels = {
+                  severity = "critical";
+                };
                 annotations = {
                   summary = "ntfy is not being scraped";
                   description = "Prometheus cannot scrape ntfy at {{ $labels.instance }} for 2 minutes. iOS/Android push and Alertmanager webhooks will fail until ntfy-sh.service recovers.";
@@ -296,7 +331,9 @@
                 alert = "NtfyPublishFailures";
                 expr = "increase(ntfy_messages_published_failure[15m]) > 5";
                 "for" = "15m";
-                labels = { severity = "warning"; };
+                labels = {
+                  severity = "warning";
+                };
                 annotations = {
                   summary = "ntfy publish failures";
                   description = "{{ $value }} ntfy publishes failed in 15 minutes (auth, rate-limit, or upstream). Check ntfy-sh.service logs.";

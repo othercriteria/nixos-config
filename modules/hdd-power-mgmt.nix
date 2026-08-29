@@ -30,7 +30,12 @@
 # already done isn't reversible, but this stops it from getting worse and
 # is documented in docs/COLD-START.md as a default we want everywhere we
 # run spinning disks.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.hddPowerMgmt;

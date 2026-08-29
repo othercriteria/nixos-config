@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   enableKubeconfig = config.services.k3s.enable or false;
@@ -62,7 +67,14 @@ in
       description = "Populate ~/.kube/config for ${username} from local k3s kubeconfig";
       wantedBy = [ "multi-user.target" ];
       after = [ "k3s.service" ];
-      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin pkgs.k3s ];
+      path = [
+        pkgs.coreutils
+        pkgs.gnugrep
+        pkgs.gnused
+        pkgs.util-linux
+        pkgs.glibc.bin
+        pkgs.k3s
+      ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;

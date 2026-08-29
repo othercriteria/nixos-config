@@ -8,7 +8,8 @@
   # the book repo for the contract this implements.
   inputs.baltic.url = "github:othercriteria/the-baltic-approaches";
 
-  outputs = { self, baltic }:
+  outputs =
+    { self, baltic }:
     let
       system = "x86_64-linux";
       pkgs = baltic.inputs.nixpkgs.legacyPackages.${system};

@@ -69,16 +69,18 @@ in
         };
 
         schema_config = {
-          configs = [{
-            from = "2020-10-24";
-            store = "tsdb";
-            object_store = "filesystem";
-            schema = "v13";
-            index = {
-              prefix = "index_";
-              period = "24h";
-            };
-          }];
+          configs = [
+            {
+              from = "2020-10-24";
+              store = "tsdb";
+              object_store = "filesystem";
+              schema = "v13";
+              index = {
+                prefix = "index_";
+                period = "24h";
+              };
+            }
+          ];
         };
       };
     };

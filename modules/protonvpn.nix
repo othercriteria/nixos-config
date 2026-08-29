@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 # CAVEAT: this module only adds polkit/NM glue so the user can drive
 # ProtonVPN from the GUI. NetworkManager's default ProtonVPN connection

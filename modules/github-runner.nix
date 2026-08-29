@@ -13,7 +13,12 @@
 #
 # The runner will auto-register on first start and re-register as needed.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.githubRunner;
@@ -108,7 +113,7 @@ in
         # Linting tools (so workflows don't need to nix run each time)
         statix
         deadnix
-        nixpkgs-fmt
+        nixfmt
       ];
 
       # Environment for nix commands

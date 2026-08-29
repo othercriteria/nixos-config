@@ -279,12 +279,14 @@
     # Speaks each line as it arrives, with coherent voice across lines
     (
       let
-        tailsayPython = pkgs.writers.writePython3Bin "tailsay-py"
-          {
-            libraries = [ pkgs.python3Packages.websockets ];
-            flakeIgnore = [ "E265" "E501" "W503" ];
-          }
-          (builtins.readFile ../assets/wscatsay.py);
+        tailsayPython = pkgs.writers.writePython3Bin "tailsay-py" {
+          libraries = [ pkgs.python3Packages.websockets ];
+          flakeIgnore = [
+            "E265"
+            "E501"
+            "W503"
+          ];
+        } (builtins.readFile ../assets/wscatsay.py);
       in
       pkgs.writeShellScriptBin "tailsay" ''
         export PATH="${pkgs.ffmpeg}/bin:$PATH"
@@ -297,7 +299,6 @@
     codex
 
     twsPackage # Interactive Brokers TWS (provides `tws` command)
-
 
     links2
     pandoc

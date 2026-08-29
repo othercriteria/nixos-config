@@ -7,19 +7,25 @@ let
 
   # ntfy notification helper - instant push notifications
   # Uses basic auth from secrets file
-  sendNtfyEvent = { event, priority ? "default", tags ? "computer" }: ''
-        NTFY_PASS=$(cat /etc/nixos/secrets/ntfy-password)
-        ${pkgs.curl}/bin/curl -s \
-          -u "dlk:$NTFY_PASS" \
-          -H "Title: ${hostName} ${event}" \
-          -H "Priority: ${priority}" \
-          -H "Tags: ${tags}" \
-          -d "$(${pkgs.coreutils}/bin/date --iso-8601=seconds)
+  sendNtfyEvent =
+    {
+      event,
+      priority ? "default",
+      tags ? "computer",
+    }:
+    ''
+          NTFY_PASS=$(cat /etc/nixos/secrets/ntfy-password)
+          ${pkgs.curl}/bin/curl -s \
+            -u "dlk:$NTFY_PASS" \
+            -H "Title: ${hostName} ${event}" \
+            -H "Priority: ${priority}" \
+            -H "Tags: ${tags}" \
+            -d "$(${pkgs.coreutils}/bin/date --iso-8601=seconds)
 
-    zpool status:
-    $(${pkgs.zfs}/bin/zpool status)" \
-          http://127.0.0.1:8090/system-events || true
-  '';
+      zpool status:
+      $(${pkgs.zfs}/bin/zpool status)" \
+            http://127.0.0.1:8090/system-events || true
+    '';
 
   # Email notification helper - audit trail
   sendEmailEvent = { event }: ''
@@ -29,10 +35,16 @@ let
   '';
 
   # Combined notification - ntfy for instant alert, email for records
-  sendBothEvents = { event, priority ? "default", tags ? "computer" }: ''
-    ${sendNtfyEvent { inherit event priority tags; }}
-    ${sendEmailEvent { inherit event; }}
-  '';
+  sendBothEvents =
+    {
+      event,
+      priority ? "default",
+      tags ? "computer",
+    }:
+    ''
+      ${sendNtfyEvent { inherit event priority tags; }}
+      ${sendEmailEvent { inherit event; }}
+    '';
 in
 {
   nixpkgs.config.packageOverrides = pkgs: {
@@ -71,18 +83,29 @@ in
     };
     "boot-mail-alert" = {
       wantedBy = [ "multi-user.target" ];
-      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
+      after = [
+        "hydroxide.service"
+        "ntfy-sh.service"
+        "network-online.target"
+      ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
       };
-      script = sendBothEvents { event = "just booted"; tags = "white_check_mark,computer"; };
+      script = sendBothEvents {
+        event = "just booted";
+        tags = "white_check_mark,computer";
+      };
     };
     "shutdown-mail-alert" = {
       wantedBy = [ "multi-user.target" ];
-      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
+      after = [
+        "hydroxide.service"
+        "ntfy-sh.service"
+        "network-online.target"
+      ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
       serviceConfig = {
@@ -90,14 +113,25 @@ in
         RemainAfterExit = true;
       };
       script = "true";
-      preStop = sendBothEvents { event = "is shutting down"; priority = "high"; tags = "warning,computer"; };
+      preStop = sendBothEvents {
+        event = "is shutting down";
+        priority = "high";
+        tags = "warning,computer";
+      };
     };
     "weekly-mail-alert" = {
       serviceConfig.Type = "oneshot";
-      after = [ "hydroxide.service" "ntfy-sh.service" "network-online.target" ];
+      after = [
+        "hydroxide.service"
+        "ntfy-sh.service"
+        "network-online.target"
+      ];
       wants = [ "network-online.target" ];
       requires = [ "hydroxide.service" ];
-      script = sendBothEvents { event = "is still alive"; tags = "heartbeat"; };
+      script = sendBothEvents {
+        event = "is still alive";
+        tags = "heartbeat";
+      };
     };
   };
 

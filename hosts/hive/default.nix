@@ -1,4 +1,10 @@
-{ config, lib, pkgs, pkgs-stable, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  pkgs-stable,
+  ...
+}:
 
 {
   imports = [
@@ -68,7 +74,10 @@
       ];
       # Urbit uses high UDP ports for Ames protocol
       allowedUDPPortRanges = [
-        { from = 13337; to = 65535; }
+        {
+          from = 13337;
+          to = 65535;
+        }
       ];
     };
   };

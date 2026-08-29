@@ -1,4 +1,9 @@
-{ pkgs, pkgs-stable, config, ... }:
+{
+  pkgs,
+  pkgs-stable,
+  config,
+  ...
+}:
 
 {
   home.packages = with pkgs; [

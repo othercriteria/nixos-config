@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 # UxPlay - AirPlay mirroring server for receiving iPhone screen mirrors
 #
@@ -19,14 +24,17 @@
 let
   # GStreamer plugin path shared between services
   # gst-vaapi was removed in GStreamer 1.28; VA-API lives in gst-plugins-bad now
-  gstPluginPath = lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [
-    gst_all_1.gstreamer
-    gst_all_1.gst-plugins-base
-    gst_all_1.gst-plugins-good
-    gst_all_1.gst-plugins-bad
-    gst_all_1.gst-plugins-ugly
-    pipewire
-  ]);
+  gstPluginPath = lib.makeSearchPath "lib/gstreamer-1.0" (
+    with pkgs;
+    [
+      gst_all_1.gstreamer
+      gst_all_1.gst-plugins-base
+      gst_all_1.gst-plugins-good
+      gst_all_1.gst-plugins-bad
+      gst_all_1.gst-plugins-ugly
+      pipewire
+    ]
+  );
 
   # Common environment for user services
   serviceEnv = {
@@ -40,8 +48,16 @@ let
   # Fixed ports for firewall configuration
   # Using ports in 7000 range (AirPlay traditional range)
   airplayPorts = {
-    tcp = [ 7000 7001 7100 ];
-    udp = [ 6000 6001 7011 ];
+    tcp = [
+      7000
+      7001
+      7100
+    ];
+    udp = [
+      6000
+      6001
+      7011
+    ];
   };
 in
 {

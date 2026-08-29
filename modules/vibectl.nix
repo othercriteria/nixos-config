@@ -1,4 +1,12 @@
-{ config, lib, pkgs, uv2nix, pyprojectNix, pyprojectBuildSystems, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  uv2nix,
+  pyprojectNix,
+  pyprojectBuildSystems,
+  ...
+}:
 
 with lib;
 
@@ -12,11 +20,13 @@ let
   # nixpkgs anthropic/openai pull inline-snapshot as a check input; its docs
   # tests currently fail against black formatting on some interpreters
   # (seen on 3.12: 3 failed / 1428 passed).
-  pythonPackages = pkgs.python313Packages.overrideScope (_final: prev: {
-    inline-snapshot = prev.inline-snapshot.overridePythonAttrs (_old: {
-      doCheck = false;
-    });
-  });
+  pythonPackages = pkgs.python313Packages.overrideScope (
+    _final: prev: {
+      inline-snapshot = prev.inline-snapshot.overridePythonAttrs (_old: {
+        doCheck = false;
+      });
+    }
+  );
 in
 {
   options.custom.vibectl = {
@@ -79,7 +89,11 @@ in
           };
 
           # Determine if the llm-anthropic plugin should be included
-          pluginNeeded = if cfg.anthropicPlugin != null then cfg.anthropicPlugin else (cfg.anthropicApiKey != null || cfg.anthropicApiKeyFile != null);
+          pluginNeeded =
+            if cfg.anthropicPlugin != null then
+              cfg.anthropicPlugin
+            else
+              (cfg.anthropicApiKey != null || cfg.anthropicApiKeyFile != null);
 
           # Optional llm-anthropic plugin derivation
           anthropicPluginDrv = pythonPackages.buildPythonPackage rec {
@@ -91,38 +105,50 @@ in
               inherit pname version;
               sha256 = "sha256-L14atbfrmoS40HRzqGlwiLZZ/U8ZQdloY88Yz4z7nrA="; # pragma: allowlist secret
             };
-            propagatedBuildInputs = with pythonPackages; [ llm anthropic ];
+            propagatedBuildInputs = with pythonPackages; [
+              llm
+              anthropic
+            ];
             pythonImportsCheck = [ "llm_anthropic" ];
           };
 
-          pythonSet = (pkgs.callPackage pyprojectNix.build.packages {
-            inherit python;
-          }).overrideScope (lib.composeManyExtensions [
-            pyprojectBuildSystems.overlays.default
-            overlay
-          ]);
+          pythonSet =
+            (pkgs.callPackage pyprojectNix.build.packages {
+              inherit python;
+            }).overrideScope
+              (
+                lib.composeManyExtensions [
+                  pyprojectBuildSystems.overlays.default
+                  overlay
+                ]
+              );
 
           base = pythonSet.mkVirtualEnv "vibectl-env" workspace.deps.default;
 
-
         in
-        base.overrideAttrs (old:
+        base.overrideAttrs (
+          old:
           let
             pythonVer = lib.versions.majorMinor python.version; # e.g. "3.13"
             sitePkgs = "$out/lib/python${pythonVer}/site-packages";
           in
           {
-            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ] ++ lib.optional pluginNeeded anthropicPluginDrv;
+            nativeBuildInputs =
+              (old.nativeBuildInputs or [ ])
+              ++ [ pkgs.makeWrapper ]
+              ++ lib.optional pluginNeeded anthropicPluginDrv;
 
-            postInstall = (old.postInstall or "") + lib.optionalString pluginNeeded ''
-              # Include llm-anthropic plugin in the virtualenv
-              pluginSitePkgs=${anthropicPluginDrv}/lib/python${pythonVer}/site-packages
-              cp -r "$pluginSitePkgs"/* "${sitePkgs}/"
+            postInstall =
+              (old.postInstall or "")
+              + lib.optionalString pluginNeeded ''
+                # Include llm-anthropic plugin in the virtualenv
+                pluginSitePkgs=${anthropicPluginDrv}/lib/python${pythonVer}/site-packages
+                cp -r "$pluginSitePkgs"/* "${sitePkgs}/"
 
-              # Also copy the required anthropic dependency
-              anthropicSitePkgs=${pythonPackages.anthropic}/lib/python${pythonVer}/site-packages
-              cp -r "$anthropicSitePkgs"/* "${sitePkgs}/"
-            '';
+                # Also copy the required anthropic dependency
+                anthropicSitePkgs=${pythonPackages.anthropic}/lib/python${pythonVer}/site-packages
+                cp -r "$anthropicSitePkgs"/* "${sitePkgs}/"
+              '';
 
             postFixup = (old.postFixup or "") + ''
               for prog in $out/bin/vibectl $out/bin/vibectl-server; do
@@ -135,15 +161,28 @@ in
                   makeWrapper "$prog.orig" "$prog" \
                     --set PYTHONPATH "${sitePkgs}" \
                     --prefix PATH : "${pkgs.kubectl}/bin" \
-                    ${optionalString (cfg.anthropicApiKey     != null) "--set VIBECTL_ANTHROPIC_API_KEY ${cfg.anthropicApiKey}"} \
-                    ${optionalString (cfg.anthropicApiKeyFile != null) "--set VIBECTL_ANTHROPIC_API_KEY_FILE ${cfg.anthropicApiKeyFile}"} \
-                    ${optionalString (cfg.openaiApiKey        != null) "--set VIBECTL_OPENAI_API_KEY ${cfg.openaiApiKey}"} \
-                    ${optionalString (cfg.openaiApiKeyFile    != null) "--set VIBECTL_OPENAI_API_KEY_FILE ${cfg.openaiApiKeyFile}"}
+                    ${
+                      optionalString (
+                        cfg.anthropicApiKey != null
+                      ) "--set VIBECTL_ANTHROPIC_API_KEY ${cfg.anthropicApiKey}"
+                    } \
+                    ${
+                      optionalString (
+                        cfg.anthropicApiKeyFile != null
+                      ) "--set VIBECTL_ANTHROPIC_API_KEY_FILE ${cfg.anthropicApiKeyFile}"
+                    } \
+                    ${
+                      optionalString (cfg.openaiApiKey != null) "--set VIBECTL_OPENAI_API_KEY ${cfg.openaiApiKey}"
+                    } \
+                    ${optionalString (
+                      cfg.openaiApiKeyFile != null
+                    ) "--set VIBECTL_OPENAI_API_KEY_FILE ${cfg.openaiApiKeyFile}"}
 
                 fi
               done
             '';
-          })
+          }
+        )
       )
     ];
   };

@@ -12,7 +12,12 @@
 #   custom.netdataChild.enable = true;
 #   # parent and apiKey have working defaults for residence-1.
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.netdataChild;
@@ -49,8 +54,12 @@ in
           "update every" = 1;
         };
         # Parent runs ML and health checks; children just emit metrics.
-        ml = { "enabled" = "no"; };
-        health = { "enabled" = "no"; };
+        ml = {
+          "enabled" = "no";
+        };
+        health = {
+          "enabled" = "no";
+        };
       };
       configDir = {
         "stream.conf" = pkgs.writeText "stream.conf" ''

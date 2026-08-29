@@ -1,4 +1,9 @@
-{ config, pkgs, pkgs-stable, ... }:
+{
+  config,
+  pkgs,
+  pkgs-stable,
+  ...
+}:
 
 {
   imports = [
@@ -84,7 +89,10 @@
     serviceConfig = {
       Type = "oneshot";
     };
-    path = [ pkgs.k3s pkgs.coreutils ];
+    path = [
+      pkgs.k3s
+      pkgs.coreutils
+    ];
     script = ''
       set -euo pipefail
       echo "Pruning stopped containers..."

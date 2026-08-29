@@ -11,7 +11,12 @@
 # - Netdata parent node (receives streams from hive)
 # - ZFS snapshot service for Prometheus data
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -49,15 +54,19 @@
       # COLD START: Requires /etc/nixos/secrets/ntfy-veil-alerts-password
       # to exist (provisioned via git-secret reveal). See cold-start docs
       # for veil-alerts-credentials Kubernetes Secret bootstrap.
-      extraUsers = [{
-        username = "veil-alerts";
-        passwordFile = "/etc/nixos/secrets/ntfy-veil-alerts-password";
-        role = "user";
-        grants = [{
-          topic = "veil-critical";
-          access = "write-only";
-        }];
-      }];
+      extraUsers = [
+        {
+          username = "veil-alerts";
+          passwordFile = "/etc/nixos/secrets/ntfy-veil-alerts-password";
+          role = "user";
+          grants = [
+            {
+              topic = "veil-critical";
+              access = "write-only";
+            }
+          ];
+        }
+      ];
     };
     promtail.enable = true;
     # Bypass Netdata's "5 active nodes" UI nerf by stamping all registered
@@ -77,7 +86,12 @@
       port = 9001;
       nodeExporter = {
         port = 9002;
-        enabledCollectors = [ "perf" "sysctl" "systemd" "tcpstat" ];
+        enabledCollectors = [
+          "perf"
+          "sysctl"
+          "systemd"
+          "tcpstat"
+        ];
         defaultScrapeJob = false; # skaia defines custom 'skaia' job in extraScrapeConfigs
       };
       extraFlags = [ "--storage.tsdb.retention.time=30d" ];
@@ -135,7 +149,10 @@
               regex = "(.+)";
             }
             {
-              source_labels = [ "__address__" "__meta_kubernetes_service_annotation_prometheus_io_port" ];
+              source_labels = [
+                "__address__"
+                "__meta_kubernetes_service_annotation_prometheus_io_port"
+              ];
               action = "replace";
               target_label = "__address__";
               regex = "([^:]+)(?::\\d+)?;(\\d+)";
@@ -165,9 +182,11 @@
           {
             job_name = "skaia";
             scrape_interval = "30s";
-            static_configs = [{
-              targets = [ "127.0.0.1:${toString config.custom.prometheus.nodeExporter.port}" ];
-            }];
+            static_configs = [
+              {
+                targets = [ "127.0.0.1:${toString config.custom.prometheus.nodeExporter.port}" ];
+              }
+            ];
           }
           # SMART/NVMe health metrics. Lets us see things like
           # smartctl_device_critical_warning, percentage_used, available_spare,
@@ -180,19 +199,23 @@
             # (see services.prometheus.exporters.smartctl below), so we just
             # need a slow-ish scrape here. Fast scrapes don't yield fresh data.
             scrape_interval = "60s";
-            static_configs = [{
-              targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.smartctl.port}" ];
-              labels = {
-                instance = "skaia";
-              };
-            }];
+            static_configs = [
+              {
+                targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.smartctl.port}" ];
+                labels = {
+                  instance = "skaia";
+                };
+              }
+            ];
           }
           {
             job_name = "hive";
             scrape_interval = "30s";
-            static_configs = [{
-              targets = [ "hive.home.arpa:9002" ];
-            }];
+            static_configs = [
+              {
+                targets = [ "hive.home.arpa:9002" ];
+              }
+            ];
           }
           # Blackbox probe for Urbit web interface health
           {
@@ -203,13 +226,15 @@
             params = {
               module = [ "http_2xx_3xx" ];
             };
-            static_configs = [{
-              targets = [ "http://hive.home.arpa:8080/" ];
-              labels = {
-                service = "urbit";
-                ship = "taptev-donwyx";
-              };
-            }];
+            static_configs = [
+              {
+                targets = [ "http://hive.home.arpa:8080/" ];
+                labels = {
+                  service = "urbit";
+                  ship = "taptev-donwyx";
+                };
+              }
+            ];
             relabel_configs = [
               {
                 source_labels = [ "__address__" ];
@@ -229,13 +254,19 @@
             job_name = "kubernetes-apiservers";
             scheme = "https";
             tls_config = baseTlsConfig;
-            kubernetes_sd_configs = [{
-              role = "endpoints";
-              inherit (baseK8sSdConfig) api_server tls_config;
-            }];
+            kubernetes_sd_configs = [
+              {
+                role = "endpoints";
+                inherit (baseK8sSdConfig) api_server tls_config;
+              }
+            ];
             relabel_configs = [
               {
-                source_labels = [ "__meta_kubernetes_namespace" "__meta_kubernetes_service_name" "__meta_kubernetes_endpoint_port_name" ];
+                source_labels = [
+                  "__meta_kubernetes_namespace"
+                  "__meta_kubernetes_service_name"
+                  "__meta_kubernetes_endpoint_port_name"
+                ];
                 action = "keep";
                 regex = "default;kubernetes;https";
               }
@@ -249,10 +280,12 @@
             job_name = "kubernetes-nodes";
             scheme = "https";
             tls_config = baseTlsConfig;
-            kubernetes_sd_configs = [{
-              role = "node";
-              inherit (baseK8sSdConfig) api_server tls_config;
-            }];
+            kubernetes_sd_configs = [
+              {
+                role = "node";
+                inherit (baseK8sSdConfig) api_server tls_config;
+              }
+            ];
             relabel_configs = nodeRelabelConfigs;
           }
           {
@@ -260,20 +293,24 @@
             scheme = "https";
             metrics_path = "/metrics/cadvisor";
             tls_config = baseTlsConfig;
-            kubernetes_sd_configs = [{
-              role = "node";
-              inherit (baseK8sSdConfig) api_server tls_config;
-            }];
+            kubernetes_sd_configs = [
+              {
+                role = "node";
+                inherit (baseK8sSdConfig) api_server tls_config;
+              }
+            ];
             relabel_configs = nodeRelabelConfigs;
           }
           {
             job_name = "kubernetes-service-endpoints";
             scheme = "http";
             tls_config = baseTlsConfig;
-            kubernetes_sd_configs = [{
-              role = "endpoints";
-              inherit (baseK8sSdConfig) api_server tls_config;
-            }];
+            kubernetes_sd_configs = [
+              {
+                role = "endpoints";
+                inherit (baseK8sSdConfig) api_server tls_config;
+              }
+            ];
             relabel_configs = serviceRelabelConfigs;
           }
         ];

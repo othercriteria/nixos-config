@@ -27,7 +27,12 @@
 #   b) Stop the service, run interactively: cd $pierPath && ./.run taptev-donwyx
 #   c) Use hood commands via HTTP (advanced)
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # The pier directory contains .run (runtime) and the ship data in .urb/
@@ -105,7 +110,10 @@ in
     documentation = [ "https://docs.urbit.org" ];
 
     # Start after network is available
-    after = [ "network.target" "local-fs.target" ];
+    after = [
+      "network.target"
+      "local-fs.target"
+    ];
     wants = [ "network.target" ];
 
     # Start automatically on boot
@@ -160,8 +168,16 @@ in
   # This ensures clean Urbit shutdown even during system maintenance
   systemd.services.urbit-taptev-donwyx-stop = {
     description = "Ensure Urbit stops cleanly before shutdown";
-    before = [ "shutdown.target" "reboot.target" "halt.target" ];
-    wantedBy = [ "shutdown.target" "reboot.target" "halt.target" ];
+    before = [
+      "shutdown.target"
+      "reboot.target"
+      "halt.target"
+    ];
+    wantedBy = [
+      "shutdown.target"
+      "reboot.target"
+      "halt.target"
+    ];
 
     serviceConfig = {
       Type = "oneshot";

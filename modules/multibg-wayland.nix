@@ -1,4 +1,8 @@
-{ lib, rustPlatform, fetchFromGitHub }:
+{
+  lib,
+  rustPlatform,
+  fetchFromGitHub,
+}:
 
 rustPlatform.buildRustPackage rec {
   pname = "multibg-wayland";
@@ -16,7 +20,10 @@ rustPlatform.buildRustPackage rec {
   meta = with lib; {
     description = "Set a different wallpaper for the background of each Sway workspace";
     homepage = "https://github.com/gergo-salyi/multibg-wayland";
-    license = with licenses; [ asl20 mit ];
+    license = with licenses; [
+      asl20
+      mit
+    ];
     platforms = platforms.linux;
   };
 }

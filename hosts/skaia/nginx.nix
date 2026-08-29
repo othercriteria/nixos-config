@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # Path to the Basic Auth htpasswd file used by the trivia vhost. Created
@@ -262,7 +267,12 @@ in
 
       # Private Forgejo web UI (LAN only for MVP)
       "forgejo.home.arpa" = {
-        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 80;
+          }
+        ];
         locations."/" = {
           # Use raw proxy config so the forwarded Host header stays as
           # forgejo.home.arpa. The proxyPass helper combined with recommended
@@ -284,7 +294,12 @@ in
 
       # Netdata real-time monitoring (LAN only)
       "netdata.home.arpa" = {
-        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 80;
+          }
+        ];
         locations."/" = {
           proxyPass = "http://127.0.0.1:19999";
           proxyWebsockets = true;
@@ -295,7 +310,12 @@ in
 
       # Harmonia Nix binary cache (LAN only)
       "cache.home.arpa" = {
-        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 80;
+          }
+        ];
         locations."/" = {
           proxyPass = "http://127.0.0.1:5380";
           # recommendedProxySettings already injects Host/X-Forwarded-*.
@@ -305,7 +325,12 @@ in
       # Ollama LLM API (LAN only)
       # OpenAI-compatible endpoint at /v1/chat/completions for MCP integration
       "ollama.home.arpa" = {
-        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 80;
+          }
+        ];
         locations."/" = {
           # Use raw config to avoid recommendedProxySettings overriding Host header
           # (Ollama rejects requests with Host != localhost for DNS rebinding protection)

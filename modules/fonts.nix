@@ -2,7 +2,11 @@
 
 let
   berkeleyMonoZip = ../private-assets/fonts/berkeley-mono/berkeley-mono-typeface-2.002.zip;
-  berkeleyMonoPkg = if builtins.pathExists berkeleyMonoZip then [ (pkgs.callPackage ./berkeley-mono-typeface.nix { }) ] else [ ];
+  berkeleyMonoPkg =
+    if builtins.pathExists berkeleyMonoZip then
+      [ (pkgs.callPackage ./berkeley-mono-typeface.nix { }) ]
+    else
+      [ ];
 in
 {
   fonts = {
@@ -20,7 +24,8 @@ in
     };
 
     enableGhostscriptFonts = true;
-    packages = with pkgs;
+    packages =
+      with pkgs;
       [
         anonymousPro
         cantarell-fonts
@@ -47,6 +52,7 @@ in
         nerd-fonts.droid-sans-mono
         nerd-fonts.fira-code
         nerd-fonts.jetbrains-mono
-      ] ++ berkeleyMonoPkg; # COLD START: Optional private font asset if present
+      ]
+      ++ berkeleyMonoPkg; # COLD START: Optional private font asset if present
   };
 }

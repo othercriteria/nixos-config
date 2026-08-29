@@ -7,7 +7,12 @@
 #   Import this module and set the dataset if needed:
 #     services.prometheusZfsSnapshot.dataset = "/zfs/prometheus";
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inherit (config.services.prometheusZfsSnapshot) dataset;

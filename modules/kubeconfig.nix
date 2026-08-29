@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   enableKubeconfig = config.services.k3s.enable or false;
@@ -99,8 +104,20 @@ in
       description = "Populate ~/.kube/config for ${username} (skaia + veil contexts)";
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
-      after = [ "k3s.service" "network-online.target" ];
-      path = [ pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.util-linux pkgs.glibc.bin pkgs.k3s pkgs.openssh pkgs.yq-go ];
+      after = [
+        "k3s.service"
+        "network-online.target"
+      ];
+      path = [
+        pkgs.coreutils
+        pkgs.gnugrep
+        pkgs.gnused
+        pkgs.util-linux
+        pkgs.glibc.bin
+        pkgs.k3s
+        pkgs.openssh
+        pkgs.yq-go
+      ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;

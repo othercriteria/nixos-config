@@ -1,7 +1,11 @@
 { config, pkgs, ... }:
 
 {
-  boot.kernelModules = [ "nct6775" "jc42" "lm75" ];
+  boot.kernelModules = [
+    "nct6775"
+    "jc42"
+    "lm75"
+  ];
 
   environment.systemPackages = with pkgs; [
     # May need to run `sudo sensors-detect` to configure sensors

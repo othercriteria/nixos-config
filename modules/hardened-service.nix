@@ -42,37 +42,41 @@ in
       # Filesystem paths the service is allowed to read (in addition to the
       # nix store, which is always available). Use this for the service's
       # data directory.
-      readOnlyPaths ? [ ]
+      readOnlyPaths ? [ ],
 
-    , # Filesystem paths the service is allowed to write. Empty means the
+      # Filesystem paths the service is allowed to write. Empty means the
       # service can write nowhere persistent (PrivateTmp still gives it a
       # private /tmp).
-      readWritePaths ? [ ]
+      readWritePaths ? [ ],
 
-    , # If true, the service may make outbound network connections. Default
+      # If true, the service may make outbound network connections. Default
       # false: only loopback is reachable.
-      allowOutbound ? false
+      allowOutbound ? false,
 
-    , # Address families the service may use. The default permits IPv4, IPv6,
+      # Address families the service may use. The default permits IPv4, IPv6,
       # and AF_UNIX (the last is needed by some Python stdlib paths, journald,
       # and systemd notify sockets).
-      addressFamilies ? [ "AF_INET" "AF_INET6" "AF_UNIX" ]
+      addressFamilies ? [
+        "AF_INET"
+        "AF_INET6"
+        "AF_UNIX"
+      ],
 
-    , # IP allowlist used when allowOutbound is false. Listing "localhost"
+      # IP allowlist used when allowOutbound is false. Listing "localhost"
       # permits accepting connections from 127.0.0.0/8 and ::1, which is what
       # we want for a service that binds to loopback and is fronted by nginx
       # on the same host.
-      ipAddressAllow ? [ "localhost" ]
+      ipAddressAllow ? [ "localhost" ],
 
-    , # Additional syscall filter entries appended to the default set.
+      # Additional syscall filter entries appended to the default set.
       # Example: [ "@chown" ] if the service legitimately needs chown(2).
-      systemCallFilterExtra ? [ ]
+      systemCallFilterExtra ? [ ],
 
-    , # Some interpreted languages (notably anything that JIT-compiles or
+      # Some interpreted languages (notably anything that JIT-compiles or
       # uses ctypes heavily) need writable+executable memory mappings. Set
       # this to false to relax MemoryDenyWriteExecute when needed; leave at
       # true for plain CPython without JIT extensions.
-      memoryDenyWriteExecute ? true
+      memoryDenyWriteExecute ? true,
     }:
     {
       ProtectSystem = "strict";
@@ -105,7 +109,8 @@ in
         "@system-service"
         "~@privileged"
         "~@resources"
-      ] ++ systemCallFilterExtra;
+      ]
+      ++ systemCallFilterExtra;
       SystemCallArchitectures = "native";
     }
     // optionalAttrs (!allowOutbound) {

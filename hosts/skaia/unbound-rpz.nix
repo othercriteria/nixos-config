@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # Hostnames the ntfy iOS app needs to resolve for FCM/APNs. StevenBlack
@@ -21,16 +26,14 @@ let
   # data forwards to upstream resolvers, overriding always_nxdomain for
   # the same name as long as this file is loaded last.
   allowlistConf = pkgs.writeText "unbound-rpz-allowlist.conf" (
-    lib.concatMapStrings
-      (d: ''
-        local-zone: "${d}." transparent
-      '')
-      fcmAllowlist
+    lib.concatMapStrings (d: ''
+      local-zone: "${d}." transparent
+    '') fcmAllowlist
   );
 
-  allowlistPattern = lib.concatMapStringsSep "|"
-    (d: lib.replaceStrings [ "." ] [ "\\." ] d)
-    fcmAllowlist;
+  allowlistPattern = lib.concatMapStringsSep "|" (
+    d: lib.replaceStrings [ "." ] [ "\\." ] d
+  ) fcmAllowlist;
 
   updateScript = pkgs.writeShellScript "update-unbound-rpz" ''
     		set -euo pipefail

@@ -117,11 +117,13 @@
 { pkgs, ... }:
 
 let
-  wyomingF5Tts = pkgs.writeText "wyoming-f5-tts.py"
-    (builtins.readFile ../../assets/wyoming-f5-tts.py);
+  wyomingF5Tts = pkgs.writeText "wyoming-f5-tts.py" (
+    builtins.readFile ../../assets/wyoming-f5-tts.py
+  );
 
-  wyomingKokoro = pkgs.writeText "wyoming-kokoro.py"
-    (builtins.readFile ../../assets/wyoming-kokoro.py);
+  wyomingKokoro = pkgs.writeText "wyoming-kokoro.py" (
+    builtins.readFile ../../assets/wyoming-kokoro.py
+  );
 
   # Shared Python env for the Wyoming bridges. Both scripts only need
   # wyoming + httpx; using one env keeps the closure smaller.
@@ -135,11 +137,13 @@ let
   # then re-resolve wyoming-faster-whisper against the CUDA python set.
   # faster-whisper picks up the CUDA ctranslate2 transitively.
   ctranslate2Cuda = pkgs.ctranslate2.override { withCUDA = true; };
-  python3PackagesCuda = pkgs.python3Packages.overrideScope (_: pyPrev: {
-    ctranslate2 = pyPrev.ctranslate2.override {
-      ctranslate2-cpp = ctranslate2Cuda;
-    };
-  });
+  python3PackagesCuda = pkgs.python3Packages.overrideScope (
+    _: pyPrev: {
+      ctranslate2 = pyPrev.ctranslate2.override {
+        ctranslate2-cpp = ctranslate2Cuda;
+      };
+    }
+  );
   wyomingFasterWhisperCuda = pkgs.wyoming-faster-whisper.override {
     python3Packages = python3PackagesCuda;
   };
@@ -150,8 +154,7 @@ let
   # initial download of a model and any subsequent --model swaps.
   hfTokenFile = "/etc/nixos/secrets/huggingface-token-2025-12-14";
 
-  prepWyomingFasterWhisperEnv = pkgs.writeShellScript
-    "wyoming-faster-whisper-prep-env" ''
+  prepWyomingFasterWhisperEnv = pkgs.writeShellScript "wyoming-faster-whisper-prep-env" ''
     set -euo pipefail
     umask 077
     install -d -m 0700 -o root -g root /run/wyoming-faster-whisper
@@ -194,7 +197,10 @@ in
     wyoming-f5-tts = {
       description = "Wyoming protocol bridge to local F5-TTS server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" "docker-tts.service" ];
+      after = [
+        "network.target"
+        "docker-tts.service"
+      ];
 
       serviceConfig = {
         ExecStart = ''
@@ -224,7 +230,10 @@ in
     wyoming-kokoro = {
       description = "Wyoming protocol bridge to local Kokoro-FastAPI server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" "docker-kokoro.service" ];
+      after = [
+        "network.target"
+        "docker-kokoro.service"
+      ];
 
       serviceConfig = {
         ExecStart = ''

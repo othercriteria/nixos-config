@@ -19,10 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Check Nix formatting (nixpkgs-fmt)
+      - name: Check Nix formatting (nixfmt)
         run: |
-          nixpkgs-fmt --check \
-            $(find . -name '*.nix' -not -path './result*' -not -path './.git/*')
+          find . -name '*.nix' \
+            -not -path './result*' \
+            -not -path './.git/*' \
+            -not -path './gitops-veil/*' \
+            -not -path './private-assets/*' \
+            -print0 | xargs -0 nixfmt --check
 
       - name: Static analysis (statix)
         run: statix check .

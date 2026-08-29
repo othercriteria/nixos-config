@@ -1,7 +1,17 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
-  inherit (lib) mkEnableOption mkIf mkOption types;
+  inherit (lib)
+    mkEnableOption
+    mkIf
+    mkOption
+    types
+    ;
 
   cfg = config.custom.teleportNode;
 
@@ -84,7 +94,10 @@ in
     labels = mkOption {
       type = types.attrsOf types.str;
       default = { };
-      example = { role = "k3s"; location = "residence-1"; };
+      example = {
+        role = "k3s";
+        location = "residence-1";
+      };
       description = "Static labels assigned to this Teleport node.";
     };
   };
@@ -103,7 +116,10 @@ in
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
-      path = [ pkgs.coreutils pkgs.teleport_18 ];
+      path = [
+        pkgs.coreutils
+        pkgs.teleport_18
+      ];
       serviceConfig = {
         ExecStart = startScript;
         Environment = [

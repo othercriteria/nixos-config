@@ -20,14 +20,23 @@
 #   imports = [ ../../modules/netdata-unlock-nodes.nix ];
 #   custom.netdataUnlockNodes.enable = true;
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.custom.netdataUnlockNodes;
 
   updateScript = pkgs.writeShellApplication {
     name = "netdata-unlock-nodes-update";
-    runtimeInputs = [ pkgs.curl pkgs.jq pkgs.coreutils ];
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+      pkgs.coreutils
+    ];
     text = ''
       set -euo pipefail
 
@@ -76,8 +85,7 @@ let
 in
 {
   options.custom.netdataUnlockNodes = {
-    enable = lib.mkEnableOption
-      "Pre-populate Netdata settings to bypass the 5-active-node UI nerf";
+    enable = lib.mkEnableOption "Pre-populate Netdata settings to bypass the 5-active-node UI nerf";
 
     port = lib.mkOption {
       type = lib.types.port;
@@ -105,10 +113,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [{
-      assertion = config.services.netdata.enable;
-      message = "custom.netdataUnlockNodes requires services.netdata.enable = true";
-    }];
+    assertions = [
+      {
+        assertion = config.services.netdata.enable;
+        message = "custom.netdataUnlockNodes requires services.netdata.enable = true";
+      }
+    ];
 
     systemd.services.netdata-unlock-nodes = {
       description = "Stamp all registered machine_guids into Netdata's preferred_node_ids";

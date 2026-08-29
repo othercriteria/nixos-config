@@ -18,7 +18,12 @@
 # - All traffic forced to TLS with HSTS
 # - WebSocket support for HA's real-time features
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # Home Assistant Yellow on the LAN. assistant-direct.home.arpa is the
@@ -148,7 +153,12 @@ in
 
       # LAN-only access (no TLS, direct IP)
       virtualHosts."assistant.home.arpa" = {
-        listen = [{ addr = "0.0.0.0"; port = 80; }];
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 80;
+          }
+        ];
         locations."/" = {
           proxyPass = "http://${haUpstream}";
           proxyWebsockets = true;
@@ -188,12 +198,14 @@ in
         scrape_interval = "60s";
         metrics_path = "/api/prometheus";
         bearer_token_file = "/run/prometheus/homeassistant-token";
-        static_configs = [{
-          targets = [ haUpstream ];
-          labels = {
-            instance = "homeassistant";
-          };
-        }];
+        static_configs = [
+          {
+            targets = [ haUpstream ];
+            labels = {
+              instance = "homeassistant";
+            };
+          }
+        ];
       }
     ];
   };
