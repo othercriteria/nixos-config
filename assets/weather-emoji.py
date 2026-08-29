@@ -2,7 +2,7 @@
 """Weather vibe as four emojis for Waybar.
 
 Pipeline:
-  fetch METAR -> qwen3:8b-q8_0 picks 4 emojis matching weather +
+  fetch METAR -> qwen3.5:9b-q8_0 picks 4 emojis matching weather +
               time-of-day -> emit to Waybar.
 
 This is a tiny art project: quirkiness is a feature, accuracy is not.
@@ -10,27 +10,21 @@ There's a window right next to the bar; the emojis are vibe, not gauge.
 On any failure we show four question marks rather than fake meaningful
 data with a hand-coded decoder.
 
-Reliability decisions (overhauled 2026-05):
+Reliability decisions (overhauled 2026-05, prompt/cache 2026-08):
 
-- Hardcoded to MODEL = qwen3:8b-q8_0 to share VRAM with the HA voice
-  conversation agent. The previous llama3.2:3b model claimed ~2.8 GB
-  but actually allocated ~7.5 GB of VRAM (32k context cache), which
-  contended with the voice agent on the 24 GB 4090. By using the same
-  model that voice already keeps resident, the script costs zero
-  additional VRAM. One-off: this is intentionally NOT wired to
-  ollama.nix's vibeModel/haAssistantModel - if voice ever moves to
-  a different model we'll re-decide.
-- Native /api/chat with think=false and format="json" (Ollama guarantees
-  JSON output). Tried think=true to give it a more deliberate vibe; in
-  practice qwen3's reasoning mode and Ollama's JSON-format constraint
-  fight each other - the model never decides it's "done thinking" when
-  the answer is constrained to a small JSON object, and runs out the
-  num_predict budget (verified: 2048 tokens / 24s with empty content).
-  Without thinking, this is one POST and ~0.5s of warm GPU.
+- Hardcoded to MODEL = qwen3.5:9b-q8_0 to share VRAM with the HA
+  voice conversation agent (see hosts/skaia/ollama.nix). Same q8
+  slot as the previous qwen3:8b-q8_0 (~13 GB resident with KV
+  cache). A dedicated smaller vibe model would be a second load.
+- Native /api/chat with think=false and a JSON schema (Ollama
+  guarantees the shape). Thinking + a tiny JSON object still does
+  not converge well (verified on Qwen3: 2048 tokens / 24s empty
+  content). Keep thinking off for this poll.
 - File cache keyed on (METAR observation hash, time-of-day bucket).
-  METAR refreshes hourly; we bucket by 3-hour slices of the day so the
-  emoji "vibe" still shifts morning -> afternoon -> evening -> night
-  without burning Ollama for every poll.
+  METAR refreshes hourly; we bucket by 3-hour slices of the day so
+  the emoji "vibe" still shifts morning -> afternoon -> evening ->
+  night without burning Ollama for every poll. Expired entries are
+  deleted so the cache dir does not grow without bound.
 - No deterministic fallback. On Ollama outage we render four ?'s.
 
 Output (Waybar JSON shape):
@@ -55,7 +49,14 @@ from urllib.request import Request, urlopen
 AIRPORTS = os.environ.get("METAR_AIRPORTS", "KLGA,KTEB")  # LaGuardia, Teterboro
 LOCATION_LABEL = os.environ.get("WAYBAR_VIBE_LOCATION", "Manhattan area")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama.home.arpa")
-MODEL = "qwen3:8b-q8_0"  # See module docstring.
+MODEL = "qwen3.5:9b-q8_0"  # See module docstring.
+
+# NOAA asks clients to identify themselves. Default urllib UA gets
+# throttled or 403'd.
+METAR_USER_AGENT = os.environ.get(
+    "METAR_USER_AGENT",
+    "nixos-config/weather-emoji (skaia; KLGA,KTEB)",
+)
 
 CACHE_DIR = Path(
     os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))
@@ -70,10 +71,24 @@ NUM_EMOJIS = 4
 
 UNKNOWN_GLYPH = "❓"
 
+EMOJI_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "emojis": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": NUM_EMOJIS,
+            "maxItems": NUM_EMOJIS,
+        }
+    },
+    "required": ["emojis"],
+}
+
 # ----- Emoji handling --------------------------------------------------
 
 # Match Unicode emoji codepoints. Used to strip CJK / Latin / punctuation
-# stragglers from LLM output before we trust it.
+# stragglers from LLM output before we trust it. ZWJ keeps sequences
+# like ⛈️ as one glyph instead of splitting on the joiner.
 EMOJI_PATTERN = re.compile(
     "["
     "\U0001f300-\U0001f5ff"  # Misc Symbols and Pictographs
@@ -85,6 +100,7 @@ EMOJI_PATTERN = re.compile(
     "\U00002600-\U000026ff"  # Misc symbols (sun, cloud, etc.)
     "\U00002700-\U000027bf"  # Dingbats
     "\U0001f1e0-\U0001f1ff"  # Flags
+    "\u200d"                # Zero-width joiner
     "\ufe0f"                # Variation selector
     "]+"
 )
@@ -112,8 +128,9 @@ def fetch_metar() -> str | None:
     url = (
         f"https://aviationweather.gov/api/data/metar?ids={AIRPORTS}&format=raw"
     )
+    req = Request(url, headers={"User-Agent": METAR_USER_AGENT})
     try:
-        with urlopen(url, timeout=METAR_TIMEOUT) as resp:
+        with urlopen(req, timeout=METAR_TIMEOUT) as resp:
             return resp.read().decode("utf-8", "replace").strip() or None
     except (URLError, UnicodeDecodeError, TimeoutError):
         return None
@@ -127,9 +144,36 @@ def time_bucket(now: datetime) -> str:
     return f"{now.strftime('%Y%m%d')}-{now.hour // 3:02d}"
 
 
+def day_period(now: datetime) -> str:
+    """Human period for the prompt. Clock hour, not METAR time."""
+    h = now.hour
+    if 5 <= h < 8:
+        return "early morning / sunrise"
+    if 8 <= h < 12:
+        return "morning"
+    if 12 <= h < 17:
+        return "afternoon"
+    if 17 <= h < 21:
+        return "evening / sunset"
+    return "night"
+
+
 def cache_key(metar: str, bucket: str) -> str:
     raw = f"{MODEL}|{bucket}|{metar}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def cache_prune() -> None:
+    try:
+        cutoff = time.time() - CACHE_TTL_SECS
+        for path in CACHE_DIR.glob("*.json"):
+            try:
+                if path.stat().st_mtime < cutoff:
+                    path.unlink()
+            except OSError:
+                continue
+    except OSError:
+        pass
 
 
 def cache_load(key: str) -> dict | None:
@@ -161,17 +205,21 @@ def cache_store(key: str, payload: dict) -> None:
 
 SYSTEM_PROMPT = (
     "You translate weather + time-of-day into a 4-emoji vibe for a status "
-    "bar. Pick emojis that match the actual weather (rain, sun, wind, "
-    "clouds, fog, snow, temperature) AND the time of day (sunrise, midday, "
-    "evening, night). Be a bit playful. Use Unicode weather/nature emoji "
-    "only - no Chinese characters, no text. Always return exactly 4."
+    "bar. Pick emojis that match the actual METAR (rain, sun, wind, "
+    "clouds, fog, snow, temperature) AND the period of day the user "
+    "names. Time-of-day glyphs must match that period only: no moons, "
+    "stars, or night cityscapes in the afternoon; no sunrise at dusk. "
+    "Be a bit playful. Unicode weather/nature emoji only - no Chinese "
+    "characters, no letters. Always return exactly 4 emoji strings."
 )
 
 
 def build_user_prompt(metar: str, when: datetime) -> str:
     when_str = when.strftime("%A, %B %-d, %Y at %-I:%M %p (%Z)")
+    period = day_period(when)
     return (
         f"Date/time: {when_str}\n"
+        f"Period of day: {period}\n"
         f"Location: {LOCATION_LABEL}\n"
         f"METAR:\n{metar}\n\n"
         'Reply with JSON: {"emojis":["e1","e2","e3","e4"]}'
@@ -192,12 +240,15 @@ def call_ollama(metar: str, when: datetime) -> dict | None:
                 {"role": "user", "content": build_user_prompt(metar, when)},
             ],
             "stream": False,
-            # See module docstring on why thinking is off. tl;dr: qwen3
-            # reasoning + Ollama format=json never converges.
+            # See module docstring on why thinking is off. tl;dr:
+            # reasoning + a JSON constraint never converges.
             "think": False,
-            "format": "json",
+            "format": EMOJI_SCHEMA,
+            # Share the HA-resident weights; do not unload after this
+            # 10-minute poll.
+            "keep_alive": "30m",
             "options": {
-                "temperature": 0.5,
+                "temperature": 0.4,
                 # 120 = enough headroom for {"emojis":[...]}.
                 "num_predict": 120,
             },
@@ -271,7 +322,8 @@ def build_tooltip(
 
 
 def main() -> None:
-    when = datetime.now()
+    when = datetime.now().astimezone()
+    cache_prune()
     metar = fetch_metar()
     if not metar:
         emit_unknown("METAR unavailable", when)
@@ -283,7 +335,9 @@ def main() -> None:
     if cached and isinstance(cached.get("emojis"), list):
         emit(
             shape(cached["emojis"]),
-            build_tooltip(metar, when, f"cache ({bucket})", cached.get("thinking")),
+            build_tooltip(
+                metar, when, f"cache ({bucket})", cached.get("thinking")
+            ),
         )
 
     result = call_ollama(metar, when)

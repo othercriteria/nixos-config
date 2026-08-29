@@ -24,8 +24,8 @@
 #
 # VRAM budget: Kokoro-82M is ~330MB on disk and uses well under 1 GB
 # of VRAM at inference time. Comfortably coexists with F5-TTS (~3 GB),
-# qwen2.5:14b-instruct-q8_0 (~12 GB), and qwen3:8b-q8_0 (~9 GB) on
-# the 24 GB 4090 - everything fits with margin.
+# qwen2.5:14b-instruct-q8_0 (~12 GB), and qwen3.5:9b-q8_0 (~11 GB
+# weights) on the 24 GB 4090 - everything fits with margin.
 
 _:
 

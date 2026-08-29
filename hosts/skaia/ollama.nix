@@ -13,7 +13,7 @@
 #
 # Used by:
 # - Home Assistant Assist (Settings -> Devices & Services -> Ollama),
-#   pointed at http://ollama.home.arpa with the qwen3:8b-q8_0 model
+#   pointed at http://ollama.home.arpa with the qwen3.5:9b-q8_0 model
 #   (see haAssistantModel below). HA's CoreDNS forwards home.arpa to
 #   skaia's unbound (set on the HA Yellow via `ha dns options
 #   --servers dns://192.168.0.160`), so the Ollama integration container
@@ -33,22 +33,21 @@ let
   # Conversation agent for Home Assistant Assist (Phase C of the voice
   # build-out). Wired into HA via the Ollama integration; the model is
   # responsible for parsing free-form user requests, picking the right
-  # HA tools, and stitching them together. Picked qwen3:8b-q8_0
-  # because as of mid-2026 the local-LLM-for-HA community has converged
-  # on Qwen3 8B as the sweet spot in the ~8B class for tool calling
-  # (better than Llama 3.1 8B, and the q8_0 variant fits comfortably
-  # in our remaining ~12 GB VRAM headroom alongside the qwen2.5:14b
-  # default model). Trade up to qwen3:14b or qwen2.5:32b if multi-step
-  # reasoning ever blocks us; trade down to phi-4-mini if we want to
-  # see how snappy a smaller model can be.
+  # HA tools, and stitching them together.
   #
-  # Also serves as the model used by waybar's weather-emoji vibe script
-  # (assets/weather-emoji.py). Used to be its own llama3.2:3b, but the
-  # 32k context cache pushed real allocation to ~7.5 GB and contended
-  # with the voice agent. Sharing one resident model removes the
-  # contention. The script hardcodes the name (one-off) rather than
-  # being wired to a Nix-side reference.
-  haAssistantModel = "qwen3:8b-q8_0";
+  # 2026-08: qwen3:8b-q8_0 -> qwen3.5:9b-q8_0. Same q8 slot (~11 GB
+  # weights; a warm Qwen3 8B sat at ~13 GB with KV cache). Qwen3.5 9B
+  # is the current 8–9B default and matches the 14b-instruct-q8_0
+  # quant we already trust for quality. Official library tag, not a
+  # fork. HA's Ollama integration stores the model name in the HA UI
+  # (Settings -> Devices & Services -> Ollama) - change it there after
+  # apply or Assist keeps calling the old tag.
+  #
+  # Also used by waybar's weather-emoji vibe script
+  # (assets/weather-emoji.py). Sharing one resident model avoids a
+  # second VRAM load. The script hardcodes the name (one-off) rather
+  # than being wired to a Nix-side reference.
+  haAssistantModel = "qwen3.5:9b-q8_0";
 in
 {
   services.ollama = {

@@ -112,7 +112,7 @@
         };
 
         # Weather + time-of-day vibe as four emojis. Pulls METAR from
-        # NOAA, asks Ollama (qwen3:8b-q8_0, the same model HA Assist
+        # NOAA, asks Ollama (qwen3.5:9b-q8_0, the same model HA Assist
         # uses for voice) to translate it into a vibe. The script
         # caches per (METAR, 3-hour-of-day bucket) so most polls return
         # instantly from disk; the LLM only runs when conditions or
