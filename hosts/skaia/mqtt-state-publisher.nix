@@ -59,7 +59,7 @@ let
     fi
 
     # VPN status (check NetworkManager)
-    if ${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE con show --active 2>/dev/null | grep -q "vpn:activated"; then
+    if ${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE con show --active 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "vpn:activated"; then
       publish "nixos/skaia/vpn" "connected"
     else
       publish "nixos/skaia/vpn" "disconnected"

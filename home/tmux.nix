@@ -1,8 +1,12 @@
 { config, pkgs, ... }:
 
 {
-  # TODO: for plugins, see:
-  # https://haseebmajid.dev/posts/2023-07-10-setting-up-tmux-with-nix-home-manager/
+  # Home-manager writes XDG (`~/.config/tmux/tmux.conf`). Older tmux
+  # sessions still have `prefix-r` bound to `source-file ~/.tmux.conf`,
+  # and some tools look there first. Keep both paths as the same file.
+  home.file.".tmux.conf".source =
+    config.xdg.configFile."tmux/tmux.conf".source;
+
   programs.tmux = {
     enable = true;
 
@@ -16,9 +20,13 @@
     mouse = true;
 
     extraConfig = ''
-      # Aesthetics
-      set-option -g status-bg colour235  # base02
-      set-option -g status-fg colour136  # yellow
+      # Same drab chrome as Sway's unfocused title bar / Waybar.
+      set-option -g status-style "bg=#222222,fg=#888888"
+      set-option -g window-status-current-style "bg=#5f676a,fg=#dddddd"
+      set-option -g pane-border-style "fg=#333333"
+      set-option -g pane-active-border-style "fg=#5f676a"
+      set-option -g message-style "bg=#222222,fg=#dddddd"
+      set-option -g mode-style "bg=#5f676a,fg=#dddddd"
 
       # Remap prefix to Ctrl-a
       unbind C-b
@@ -45,7 +53,7 @@
 
       # Force a reload of the tmux configuration
       unbind r
-      bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
+      bind r source-file ${config.xdg.configHome}/tmux/tmux.conf \; display-message "Config reloaded..."
 
       # Enable activity monitoring
       set -g visual-activity off
@@ -55,8 +63,8 @@
       setw -g mode-keys emacs
 
       # Copy to the Wayland clipboard
-      bind-key -T copy-mode-emacs C-w send-keys -X copy-pipe-and-cancel "wl-copy"
-      bind-key -T copy-mode-emacs MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "wl-copy"
+      bind-key -T copy-mode-emacs C-w send-keys -X copy-pipe-and-cancel "${pkgs.wl-clipboard}/bin/wl-copy"
+      bind-key -T copy-mode-emacs MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "${pkgs.wl-clipboard}/bin/wl-copy"
     '';
   };
 }

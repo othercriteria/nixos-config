@@ -63,7 +63,7 @@ in
       pavucontrol # audio control
       slurp # screenshots
       (pkgs.callPackage ../modules/multibg-wayland.nix { }) # per-workspace wallpapers
-      waybar # status bar
+      libnotify # notify-send for screenshot banners
       wlroots # Wayland compositor
       wl-clipboard # clipboard manager
       wofi-emoji # emoji picker
@@ -84,6 +84,30 @@ in
       package = pkgs.adwaita-icon-theme;
       size = 32;
     };
+  };
+
+  # GTK/Qt file dialogs, Thunar, pavucontrol, etc. otherwise stay
+  # Adwaita-light against the drab Sway/Waybar chrome.
+  gtk = {
+    enable = true;
+    font = {
+      name = "Berkeley Mono";
+      size = 12;
+    };
+    iconTheme = {
+      name = "Adwaita";
+      package = pkgs.adwaita-icon-theme;
+    };
+    gtk3.extraConfig = {
+      gtk-application-prefer-dark-theme = true;
+    };
+    gtk4.extraConfig = {
+      gtk-application-prefer-dark-theme = true;
+    };
+  };
+
+  dconf.settings."org/gnome/desktop/interface" = {
+    color-scheme = "prefer-dark";
   };
 
 
@@ -177,8 +201,8 @@ in
 
       input * xkb_options caps:escape
 
-      bindsym Print       exec grim ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png
-      bindsym Print+Shift exec grim -g "$(slurp)" ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png
+      bindsym Print       exec mkdir -p ~/screenshots && grim ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
+      bindsym Print+Shift exec mkdir -p ~/screenshots && grim -g "$(slurp)" ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
 
       bindsym XF86AudioRaiseVolume exec 'wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+'
       bindsym XF86AudioLowerVolume exec 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-'

@@ -11,6 +11,18 @@
 # Put the following inside `$XDG_CONFIG_HOME/zathura/zathurarc
 
 ## niceties
+# Same drab chrome as Sway's unfocused title bar / Waybar.
+set default-bg "#222222"
+set default-fg "#cccccc"
+set statusbar-bg "#222222"
+set statusbar-fg "#888888"
+set inputbar-bg "#222222"
+set inputbar-fg "#dddddd"
+set notification-bg "#222222"
+set notification-fg "#cccccc"
+set recolor-lightcolor "#222222"
+set recolor-darkcolor "#cccccc"
+
 # when selecting text with mouse,
 # copy to clipboard
 set selection-clipboard clipboard

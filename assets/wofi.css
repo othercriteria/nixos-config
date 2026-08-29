@@ -1,5 +1,6 @@
 window {
   font-family: "Berkeley Mono";
+  font-size: 16px;
   margin: 0px;
   border: 1px solid #333333;
   background-color: rgba(34, 34, 34, 0.95);

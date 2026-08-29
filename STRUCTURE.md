@@ -102,10 +102,12 @@ output). Synced to `/etc/nixos` via `Makefile` `SYNC_PATHS`. Currently:
 
 Home Manager user configuration:
 
-- `default.nix`: Main user config (packages, Git, direnv, etc.)
+- `default.nix`: Main user config (packages, Git, Ghostty, etc.)
 - `docker.nix`: Docker tooling (persistent `registry-cache` buildx
   builder for registry-backed BuildKit caches)
-- `sway.nix`: Sway window manager configuration
+- `sway.nix`: Sway window manager configuration (Mako, Wofi,
+  Spotify track-change notifications)
+- `waybar.nix`: Status bar modules (started from Sway, not systemd)
 - `zsh.nix`: Zsh shell configuration with Powerlevel10k
 - `tmux.nix`: Tmux configuration
 - `keyboard.nix`: Keyboard layout settings
