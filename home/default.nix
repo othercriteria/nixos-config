@@ -41,7 +41,18 @@
 
     fzf.enable = true;
 
-    direnv.enable = true;
+    # nix-direnv caches flake/direnv evals so `cd` into a project is
+    # not a full Nix instantiate. The stock direnv nix hook from ~2023
+    # does not.
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
+
+    # Ghostty already installs a bat syntax; without bat itself that
+    # setting is inert. fd is the usual counterpart to ripgrep.
+    bat.enable = true;
+    fd.enable = true;
 
     zathura = {
       enable = true;
@@ -155,6 +166,7 @@
 
     python3
     python3Packages.virtualenv
+    uv # replaces most ad-hoc virtualenv/pip workflows
 
     # Creative
     asunder
@@ -280,7 +292,7 @@
       ''
     )
 
-    amp-cli # TODO: migrate to ampcode
+    amp-cli # Amp (ampcode.com); nixpkgs attr is still amp-cli, binary is `amp`
     claude-code
     codex
 
@@ -311,7 +323,6 @@
     spotify
     vassal
     vlc
-    warp-terminal
     wine
     zoom-us
   ];

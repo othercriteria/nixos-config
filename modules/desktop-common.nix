@@ -13,7 +13,10 @@
     gnupg.agent = {
       enable = true;
       enableSSHSupport = true;
-      pinentryPackage = pkgs.pinentry-curses;
+      # curses is right on headless hosts (server-common). On skaia a
+      # GTK pinentry matches the rest of the desktop and does not steal
+      # a Ghostty window into raw-mode passphrase entry.
+      pinentryPackage = pkgs.pinentry-gnome3;
     };
 
     thunar = {
