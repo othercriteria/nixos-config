@@ -217,6 +217,21 @@
               }
             ];
           }
+          # ZFS pool/dataset health (pdf/zfs_exporter). Complements
+          # filesystem alerts, which cannot see pool-level DEGRADED
+          # or free space hidden behind dataset quotas.
+          {
+            job_name = "zfs";
+            scrape_interval = "60s";
+            static_configs = [
+              {
+                targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.zfs.port}" ];
+                labels = {
+                  instance = "skaia";
+                };
+              }
+            ];
+          }
           # Blackbox probe for Urbit web interface health
           {
             job_name = "urbit-health";
@@ -329,6 +344,11 @@
       Group = "prometheus";
     };
 
+    # /dev/zfs is typically 0660 root:disk. The stock exporter unit is a
+    # DynamicUser with PrivateDevices=false but no group, so pool scrapes
+    # fail closed without this.
+    prometheus-zfs-exporter.serviceConfig.SupplementaryGroups = [ "disk" ];
+
     # Ensure the smartctl-exporter-access ACL is present on /dev/nvme*
     # before the exporter scans devices. The NixOS module ships a udev
     # rule that ACL-grants the smartctl-exporter-access group on
@@ -414,37 +434,42 @@
 
     # Prometheus exporters and alertmanager
     prometheus = {
-      # smartctl_exporter: SMART/NVMe metrics for the two Samsung 990 PROs
-      # backing fastdisk plus the SATA disks in slowdisk. Bound to localhost
-      # only (Prometheus scrapes on the same host). The NixOS module already
-      # grants the necessary CAP_SYS_RAWIO/CAP_SYS_ADMIN and DeviceAllow rules
-      # so we can run it as an unprivileged smartctl-exporter user.
-      exporters.smartctl = {
-        enable = true;
-        listenAddress = "127.0.0.1";
-        # Default port is 9633; leave as-is. Polling interval defaults to 60s,
-        # which matches our scrape_interval above.
-      };
+      exporters = {
+        # SMART/NVMe metrics for the two Samsung 990 PROs backing
+        # fastdisk plus the SATA disks in slowdisk. Bound to localhost
+        # only. The NixOS module already grants CAP_SYS_RAWIO /
+        # CAP_SYS_ADMIN and DeviceAllow so this can run unprivileged.
+        # Default port 9633; poll interval defaults to 60s.
+        smartctl = {
+          enable = true;
+          listenAddress = "127.0.0.1";
+        };
 
-      # Blackbox exporter for HTTP/TCP probe monitoring
-      # Used to check if services like Urbit are responding
-      exporters.blackbox = {
-        enable = true;
-        port = 9115;
-        configFile = pkgs.writeText "blackbox.yml" ''
-          modules:
-            http_2xx_3xx:
-              prober: http
-              timeout: 5s
-              http:
-                valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
-                valid_status_codes: [200, 301, 302, 303, 307, 308]
-                method: GET
-                follow_redirects: false
-                fail_if_ssl: false
-                fail_if_not_ssl: false
-                preferred_ip_protocol: "ip4"
-        '';
+        # Pool health / capacity (zfs_pool_health, zfs_pool_free_bytes).
+        zfs = {
+          enable = true;
+          listenAddress = "127.0.0.1";
+        };
+
+        # HTTP/TCP probes (Urbit web, etc.)
+        blackbox = {
+          enable = true;
+          port = 9115;
+          configFile = pkgs.writeText "blackbox.yml" ''
+            modules:
+              http_2xx_3xx:
+                prober: http
+                timeout: 5s
+                http:
+                  valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+                  valid_status_codes: [200, 301, 302, 303, 307, 308]
+                  method: GET
+                  follow_redirects: false
+                  fail_if_ssl: false
+                  fail_if_not_ssl: false
+                  preferred_ip_protocol: "ip4"
+          '';
+        };
       };
 
       # Alertmanager with ntfy + email notifications

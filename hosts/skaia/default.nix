@@ -66,6 +66,9 @@
 
     # GitHub Actions self-hosted runner for CI (nixos-config repo)
     githubRunner.enable = true;
+
+    # k3s + nginx + docker produce more journal than the 500M default.
+    shutdownVisibility.journalMaxSize = "2G";
   };
 
   nixpkgs.overlays = [
@@ -140,6 +143,10 @@
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
+      # Cap leftover generations so the ESP cannot fill and block the
+      # next rebuild. hive/server-common use 8; desktop keeps a few more
+      # for rollback room.
+      systemd-boot.configurationLimit = 12;
     };
     kernel.sysctl."kernel.perf_event_paranoid" = 0;
     kernelParams = [
@@ -210,6 +217,14 @@
         monthly = 12;
       };
     };
+
+    # Scheduled SMART self-tests + journal alerts. Complements the
+    # smartctl exporter (metrics/Prom rules) which does not run tests.
+    smartd.enable = true;
+
+    # Firmware updates for NVMe / NIC / GPU / motherboard. Useful on
+    # this host after the 2026-04 Samsung 990 PRO APST incident.
+    fwupd.enable = true;
 
     xserver = {
       enable = true;

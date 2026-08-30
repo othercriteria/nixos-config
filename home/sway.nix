@@ -1,4 +1,10 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  osConfig,
+  ...
+}:
 
 let
   # Spotify 1.2 dropped Freedesktop Notify (and the in-app toggle). Track
@@ -197,38 +203,43 @@ in
       ];
     };
 
-    # TODO: the display settings should be host-specific
-    extraConfig = ''
-      output DP-1 mode 3840x2160@144Hz
-      output DP-1 adaptive_sync on
-      output DP-1 subpixel rgb
+    extraConfig =
+      let
+        hostName = osConfig.networking.hostName or "";
+        skaiaOutputs = lib.optionalString (hostName == "skaia") ''
+          output DP-1 mode 3840x2160@144Hz
+          output DP-1 adaptive_sync on
+          output DP-1 subpixel rgb
+        '';
+      in
+      ''
+          ${skaiaOutputs}
+          input * xkb_options caps:escape
 
-      input * xkb_options caps:escape
+        bindsym Print       exec mkdir -p ~/screenshots && grim ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
+        bindsym Print+Shift exec mkdir -p ~/screenshots && grim -g "$(slurp)" ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
 
-      bindsym Print       exec mkdir -p ~/screenshots && grim ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
-      bindsym Print+Shift exec mkdir -p ~/screenshots && grim -g "$(slurp)" ~/screenshots/screenshot_$(date +"%Y-%m-%d_%H-%M-%S").png && notify-send -a grim Screenshot saved
+        bindsym XF86AudioRaiseVolume exec 'wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+'
+        bindsym XF86AudioLowerVolume exec 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-'
+        bindsym XF86AudioMute exec 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle'
 
-      bindsym XF86AudioRaiseVolume exec 'wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+'
-      bindsym XF86AudioLowerVolume exec 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-'
-      bindsym XF86AudioMute exec 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle'
+        # Media control
+        bindsym XF86AudioPlay exec playerctl play-pause
+        bindsym XF86AudioNext exec playerctl next
+        bindsym XF86AudioPrev exec playerctl previous
 
-      # Media control
-      bindsym XF86AudioPlay exec playerctl play-pause
-      bindsym XF86AudioNext exec playerctl next
-      bindsym XF86AudioPrev exec playerctl previous
+        # Interactive workspace renaming
+        bindsym Mod4+Shift+R exec /etc/nixos/assets/rename-workspace.sh
 
-      # Interactive workspace renaming
-      bindsym Mod4+Shift+R exec /etc/nixos/assets/rename-workspace.sh
+        # Dismiss all notifications
+        bindsym Mod4+Period exec makoctl dismiss -a
 
-      # Dismiss all notifications
-      bindsym Mod4+Period exec makoctl dismiss -a
+        # Emoji picker (overrides existing shortcut for exiting sway)
+        bindsym --no-warn Mod4+Shift+E exec wofi-emoji
 
-      # Emoji picker (overrides existing shortcut for exiting sway)
-      bindsym --no-warn Mod4+Shift+E exec wofi-emoji
-
-      # Float uxplay window so it maintains video aspect ratio
-      for_window [app_id="uxplay"] floating enable
-    '';
+        # Float uxplay window so it maintains video aspect ratio
+        for_window [app_id="uxplay"] floating enable
+      '';
   };
 
   programs.wofi = {

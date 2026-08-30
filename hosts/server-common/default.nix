@@ -36,6 +36,9 @@
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
+    # Keep the ESP from filling with leftover generations. hive sets
+    # the same value explicitly; meteors inherit this.
+    systemd-boot.configurationLimit = 8;
   };
 
   # State version for new servers

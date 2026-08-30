@@ -58,6 +58,7 @@ hosts reside.
     - `skaia.home.arpa` → 192.168.0.160
     - `netdata.home.arpa` → 192.168.0.160 (Netdata dashboard on skaia)
     - `cache.home.arpa` → 192.168.0.160 (Harmonia nix binary cache)
+    - `forgejo.home.arpa` → 192.168.0.160 (private Forgejo, LAN HTTP)
     - `meteor-1.home.arpa` → 192.168.0.121
     - `meteor-2.home.arpa` → 192.168.0.122
     - `meteor-3.home.arpa` → 192.168.0.123

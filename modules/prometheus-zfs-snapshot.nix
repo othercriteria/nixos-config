@@ -1,7 +1,8 @@
 # Prometheus ZFS snapshot automation module
 #
 # Sets up a systemd service and timer to snapshot the ZFS dataset for Prometheus
-# (default: /zfs/prometheus) every hour and prune snapshots older than 7 days.
+# (e.g. fastdisk/prometheus, mounted at /var/lib/prometheus2) every hour and
+# prune snapshots older than 7 days.
 #
 # Usage:
 #   Import this module and set the dataset if needed:

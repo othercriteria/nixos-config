@@ -55,6 +55,24 @@ Use ZFS send/receive to back up snapshots to another host or disk:
 zfs send fastdisk/prometheus@snapshot | ssh backup-host zfs receive backupzpool/prometheus
 ```
 
+## Disk, ZFS, and SMART alerts
+
+Filesystem alerts live in `modules/prometheus-rules.nix`:
+
+- `PrometheusDiskSpaceLow`: `/var/lib/prometheus2` below 15% (the
+  dedicated `fastdisk/prometheus` dataset)
+- `DiskSpaceLow`: any real filesystem below 15% (ZFS datasets
+  included; tmpfs/overlay/fuse excluded)
+- `BootDiskSpaceLow`: `/boot` below 20%, so leftover systemd-boot
+  generations cannot fill the ESP unnoticed
+- `ZfsPoolUnhealthy` / `ZfsPoolOutOfSpace`: pool state and capacity
+  from the zfs exporter on skaia (`127.0.0.1:9134`, job `zfs`)
+- SMART/NVMe rules (`SmartHealthFailing`, `NvmeCriticalWarning`,
+  etc.) from `smartctl_exporter`
+
+skaia also runs `smartd` for scheduled self-tests (journal only;
+metrics still come from the exporter).
+
 ## Metrics Retention
 
 Prometheus is configured to retain metrics for 30 days (customizable).

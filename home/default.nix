@@ -69,6 +69,9 @@
 
     git = {
       enable = true;
+      # gitFull includes git-credential-libsecret so we can keep tokens
+      # in gnome-keyring instead of ~/.git-credentials.
+      package = pkgs.gitFull;
       lfs.enable = true;
       signing.format = "openpgp";
       settings = {
@@ -76,8 +79,26 @@
           name = "Daniel Klein";
           email = "othercriteria@gmail.com";
         };
-        credential.helper = "store";
+        credential.helper = "libsecret";
       };
+    };
+
+    # hosts.yml stays unmanaged (login tokens).
+    gh = {
+      enable = true;
+      settings = {
+        git_protocol = "https";
+        prompt = "enabled";
+        prefer_editor_prompt = "disabled";
+        aliases.co = "pr checkout";
+      };
+    };
+
+    eza = {
+      enable = true;
+      enableZshIntegration = true;
+      git = true;
+      extraOptions = [ "--group-directories-first" ];
     };
 
     vscode = {
@@ -155,7 +176,6 @@
   home.packages = with pkgs; [
     dive
     git-crypt
-    git-lfs
     gnupg
     ripgrep
     jq

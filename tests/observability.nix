@@ -122,6 +122,8 @@ pkgs.testers.nixosTest {
         assert "self-monitoring.rules" in group_names, f"Expected self-monitoring.rules group, got {group_names}"
         assert "node.rules" in group_names, f"Expected node.rules group, got {group_names}"
         assert "ntfy.rules" in group_names, f"Expected ntfy.rules group, got {group_names}"
+        assert "zfs.rules" in group_names, f"Expected zfs.rules group, got {group_names}"
+        assert "smart.rules" in group_names, f"Expected smart.rules group, got {group_names}"
 
     with subtest("Grafana starts and is accessible"):
         monitor.wait_for_unit("grafana.service")

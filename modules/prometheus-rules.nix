@@ -26,14 +26,18 @@
             rules = [
               {
                 alert = "PrometheusDiskSpaceLow";
-                expr = "(node_filesystem_avail_bytes{mountpoint=\"/zfs/prometheus\"} / node_filesystem_size_bytes{mountpoint=\"/zfs/prometheus\"}) * 100 < 15";
+                # Dataset is fastdisk/prometheus, mounted at
+                # /var/lib/prometheus2 (see docs/OBSERVABILITY.md). The
+                # old /zfs/prometheus mountpoint never existed, so this
+                # rule could not fire.
+                expr = "(node_filesystem_avail_bytes{mountpoint=\"/var/lib/prometheus2\"} / node_filesystem_size_bytes{mountpoint=\"/var/lib/prometheus2\"}) * 100 < 15";
                 "for" = "5m";
                 labels = {
                   severity = "warning";
                 };
                 annotations = {
                   summary = "Low disk space on Prometheus volume";
-                  description = "Less than 15% free on /zfs/prometheus for 5m.";
+                  description = "Less than 15% free on /var/lib/prometheus2 for 5m.";
                 };
               }
               {
@@ -265,6 +269,36 @@
               }
             ];
           }
+          # ZFS pool health from pdf/zfs_exporter (skaia). 0 = ONLINE.
+          {
+            name = "zfs.rules";
+            rules = [
+              {
+                alert = "ZfsPoolUnhealthy";
+                expr = "zfs_pool_health > 0";
+                "for" = "2m";
+                labels = {
+                  severity = "critical";
+                };
+                annotations = {
+                  summary = "ZFS pool {{ $labels.pool }} is unhealthy";
+                  description = "zfs_pool_health is {{ $value }} on {{ $labels.pool }} at {{ $labels.instance }} (0=ONLINE, 1=DEGRADED, 2=FAULTED, 3=OFFLINE, 4=UNAVAIL, 5=REMOVED, 6=SUSPENDED). Check `zpool status`.";
+                };
+              }
+              {
+                alert = "ZfsPoolOutOfSpace";
+                expr = "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and zfs_pool_size_bytes > 0";
+                "for" = "10m";
+                labels = {
+                  severity = "warning";
+                };
+                annotations = {
+                  summary = "ZFS pool {{ $labels.pool }} is below 10% free";
+                  description = "Pool {{ $labels.pool }} on {{ $labels.instance }} has {{ $value }}% free. Dataset-level quotas can hide this from filesystem alerts.";
+                };
+              }
+            ];
+          }
           # Node-level monitoring rules
           {
             name = "node.rules";
@@ -283,14 +317,32 @@
               }
               {
                 alert = "DiskSpaceLow";
-                expr = "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"}) * 100 < 15";
+                # Watch every real filesystem, not just /. skaia splits
+                # /var, /nix, /home, /bulk, and service datasets onto
+                # their own ZFS datasets; filling any of those would
+                # previously stay silent.
+                expr = "(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|aufs|devtmpfs|fuse.*\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|aufs|devtmpfs|fuse.*\"}) * 100 < 15";
                 "for" = "5m";
                 labels = {
                   severity = "warning";
                 };
                 annotations = {
-                  summary = "Low disk space on {{ $labels.instance }}";
-                  description = "Disk space is below 15% free on mount {{ $labels.mountpoint }}.";
+                  summary = "Low disk space on {{ $labels.instance }} {{ $labels.mountpoint }}";
+                  description = "Disk space is below 15% free on mount {{ $labels.mountpoint }} ({{ $labels.fstype }}).";
+                };
+              }
+              {
+                alert = "BootDiskSpaceLow";
+                # EFI vfat is small; leftover systemd-boot generations
+                # fill it and the next rebuild cannot install a kernel.
+                expr = "(node_filesystem_avail_bytes{mountpoint=\"/boot\"} / node_filesystem_size_bytes{mountpoint=\"/boot\"}) * 100 < 20";
+                "for" = "15m";
+                labels = {
+                  severity = "warning";
+                };
+                annotations = {
+                  summary = "Low space on /boot on {{ $labels.instance }}";
+                  description = "Less than 20% free on /boot. systemd-boot will fail to install a new generation once the ESP is full.";
                 };
               }
               {
