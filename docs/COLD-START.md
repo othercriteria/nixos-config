@@ -1360,16 +1360,14 @@ Prometheus/Grafana, and fail2ban protection against brute-force attacks.
    - Click "Enable Multi-factor Authentication"
    - Set up TOTP with your authenticator app
 
-1. **Configure trusted proxies in Home Assistant** (required for nginx proxy):
+1. **Configure trusted proxies in Home Assistant** (required for nginx
+   proxy). Since Core 2026.8 this is UI-only; an `http:` block in
+   `configuration.yaml` is ignored and raises a repair.
 
-   Edit `configuration.yaml` via the File Editor add-on and add:
+   Settings → System → Network → HTTP server:
 
-   ```yaml
-   http:
-     use_x_forwarded_for: true
-     trusted_proxies:
-       - 192.168.0.160  # skaia (nginx proxy)
-   ```
+   - Enable "Use X-Forwarded-For header"
+   - Add trusted proxy `192.168.0.160/32` (skaia nginx)
 
    Without this, HA returns `400 Bad Request` for proxied requests.
 
