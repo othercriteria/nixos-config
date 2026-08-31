@@ -69,6 +69,9 @@ hosts reside.
       skaia: TLS, rate limits, fail2ban)
     - `assistant-direct.home.arpa` → 192.168.0.184 (HA Yellow direct,
       no proxy: SSH, nginx upstream target)
+    - `homeassistant.home.arpa` → 192.168.0.184 (HA Yellow, DHCP
+      hostname; same target as `assistant-direct`. The `home.arpa`
+      zone is static, so this has to be an explicit A record.)
     - `ollama.home.arpa` → 192.168.0.160 (Ollama LLM API via nginx)
     - `tts.home.arpa` → 192.168.0.160 (F5-TTS via nginx)
     - `projector.home.arpa` → 192.168.0.146 (Fire TV Stick 4K Max)

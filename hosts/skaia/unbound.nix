@@ -74,6 +74,10 @@
           "\"tts.home.arpa. A 192.168.0.160\""
           # Direct access to HA Yellow (for SSH, bypasses proxy)
           "\"assistant-direct.home.arpa. A 192.168.0.184\""
+          # DHCP hostname of the Yellow. Same IP as assistant-direct.
+          # HAOS / my.home-assistant.io construct this name; the
+          # home.arpa static zone would NXDOMAIN it otherwise.
+          "\"homeassistant.home.arpa. A 192.168.0.184\""
           # Fire TV Stick attached to living room projector
           "\"projector.home.arpa. A 192.168.0.146\""
           # M5Stack Atom Echo - voice assistant satellite. Dev-only device:
