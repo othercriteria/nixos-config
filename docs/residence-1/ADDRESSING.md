@@ -9,6 +9,11 @@ hosts reside.
 - LAN: 192.168.0.0/24
 - Router: 192.168.0.1 (TP-Link AC2300)
 - DHCP pool (router-managed): 192.168.0.100–192.168.0.219
+- Reservations live *inside* that pool (TP-Link Address Reservation).
+  Sequential blocks are only used for numbered series (`meteor-*`,
+  `voice-*`). Everything else is pinned at the address DHCP already
+  assigned. MetalLB is the only range held *outside* the pool. Do not
+  invent a people/phone block or move a working lease for tidiness.
 - Static DHCP reservations:
   - `skaia` → 192.168.0.160 (MAC F0-2F-74-CA-3E-AA)
   - `meteor-1` → 192.168.0.121 (MAC 58-47-CA-7F-20-99)
@@ -29,6 +34,14 @@ hosts reside.
     Assistant Voice PE, ESP32-S3 with far-field mic + AEC + HW mute,
     office). Voice satellites use serial-numbered names so they survive
     hardware swaps; the HA friendly_name carries the vendor/model.
+  - `phone-daniel` → 192.168.0.211 (MAC 76-F9-7C-7C-1C-4F, iPhone 14
+    Pro / HA `Cell Mk 1` / iCloud `yuefasanzhang`). This is the iOS
+    Private Wi-Fi MAC for SSID `Kara's Angel`, not the printed
+    hardware address. It stays stable until Private Wi-Fi Address is
+    reset for this network.
+  - `phone-allison` → 192.168.0.198 (MAC BE-A5-04-15-26-C1). The other
+    unnamed iOS lockdownd client on this LAN once `.211` was
+    identified as Daniel's. Same Private Wi-Fi caveat.
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
@@ -79,6 +92,8 @@ hosts reside.
       satellite, ESPHome firmware)
     - `voice-1.home.arpa` → 192.168.0.173 (Nabu Casa Home Assistant
       Voice PE, office)
+    - `phone-daniel.home.arpa` → 192.168.0.211 (Daniel iPhone 14 Pro)
+    - `phone-allison.home.arpa` → 192.168.0.198 (Allison iPhone)
 
   - Split-horizon public names (LAN A record; WAN still via ddclient):
 
