@@ -34,9 +34,10 @@
   # offers (which only runs `docker system prune -f` and won't touch tagged
   # images or build cache).
   #
-  # Context: the `skaia-rpm` GitHub Actions runner builds
-  # `localhost:5000/decapod:git-<sha>` images and pushes them to the local
-  # registry. Nothing on the Docker daemon itself consumes those images (k3s
+  # Context: the RPM GitHub Actions runners (`skaia-rpm`,
+  # `skaia-rpm-2`) build `localhost:5000/decapod:git-<sha>` images
+  # and push them to the local registry. Nothing on the Docker daemon
+  # itself consumes those images (k3s
   # pulls from localhost:5000 via its own containerd), but each build leaves
   # the tagged image plus build-cache layers behind. Left unpruned, this
   # caused dockerd + the system containerd to burn ~3-4 CPU cores each

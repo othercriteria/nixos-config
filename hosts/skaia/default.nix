@@ -6,6 +6,45 @@
   ...
 }:
 
+let
+  # Identical RPM CI runners (issue othercriteria/remedial-portfolio-management#1379).
+  # A second ephemeral instance lets GitHub assignment latency overlap the
+  # other runner's work. Distinct `name` keeps workdirs/services isolated.
+  rpmRunner = name: {
+    enable = true;
+    url = "https://github.com/othercriteria/remedial-portfolio-management";
+    tokenFile = "/etc/nixos/secrets/github-runner-token-rpm";
+    inherit name;
+    # Node 24-only runtime (see modules/github-runner.nix): the RPM repo's
+    # workflows were migrated to node24 actions, so the EOL node20 runtime is
+    # dropped here too, keeping it out of the system closure.
+    nodeRuntimes = [ "node24" ];
+    extraLabels = [ "nixos" ];
+    extraPackages = with pkgs; [
+      nix
+      git
+      coreutils
+      bash
+      kubectl
+    ];
+    extraEnvironment = {
+      NIX_CONFIG = "experimental-features = nix-command flakes";
+      HOME = "/var/lib/github-runner";
+    };
+    user = "github-runner";
+    group = "github-runner";
+    ephemeral = true;
+    replace = true;
+    serviceOverrides = {
+      ProtectHome = "read-only";
+      ProtectSystem = "strict";
+      ReadWritePaths = [
+        "/nix/var"
+        "/var/lib/github-runner"
+      ];
+    };
+  };
+in
 {
   imports = [
     ../common
@@ -103,39 +142,11 @@
   #   echo -n 'github_pat_...' > secrets/github-runner-token-rpm
   #   git secret add secrets/github-runner-token-rpm
   #   git secret hide
-  services.github-runners.skaia-rpm = {
-    enable = true;
-    url = "https://github.com/othercriteria/remedial-portfolio-management";
-    tokenFile = "/etc/nixos/secrets/github-runner-token-rpm";
-    name = "skaia-rpm";
-    # Node 24-only runtime (see modules/github-runner.nix): the RPM repo's
-    # workflows were migrated to node24 actions, so the EOL node20 runtime is
-    # dropped here too, keeping it out of the system closure.
-    nodeRuntimes = [ "node24" ];
-    extraLabels = [ "nixos" ];
-    extraPackages = with pkgs; [
-      nix
-      git
-      coreutils
-      bash
-      kubectl
-    ];
-    extraEnvironment = {
-      NIX_CONFIG = "experimental-features = nix-command flakes";
-      HOME = "/var/lib/github-runner";
-    };
-    user = "github-runner";
-    group = "github-runner";
-    ephemeral = true;
-    replace = true;
-    serviceOverrides = {
-      ProtectHome = "read-only";
-      ProtectSystem = "strict";
-      ReadWritePaths = [
-        "/nix/var"
-        "/var/lib/github-runner"
-      ];
-    };
+  #
+  # Shared by skaia-rpm and skaia-rpm-2; no second token.
+  services.github-runners = {
+    skaia-rpm = rpmRunner "skaia-rpm";
+    skaia-rpm-2 = rpmRunner "skaia-rpm-2";
   };
 
   boot = {

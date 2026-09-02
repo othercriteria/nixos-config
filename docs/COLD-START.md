@@ -315,7 +315,9 @@ use NetworkManager for its own connectivity.
    - Forward other queries to upstream resolvers (router or public)
 1. Open firewall on `skaia` for TCP/UDP 53.
 1. Update the router's DHCP settings so the LAN DNS server is
-   `192.168.0.160`.
+   `192.168.0.160`. Copy Address Reservations (MAC → IP) from
+   `docs/residence-1/ADDRESSING.md`. iPhone entries use the Private
+   Wi-Fi MAC for this SSID, not the printed hardware address.
 1. Validate from a LAN client with
    `dig +short @192.168.0.160 ingress.veil.home.arpa`.
 
@@ -1146,15 +1148,19 @@ The web interface is exposed on port 8080 and proxied through skaia's nginx at
 
 ## GitHub Actions self-hosted runners
 
-**Context:** CI runs on self-hosted runners on `skaia`. Two runner instances
-are configured:
+**Context:** CI runs on self-hosted runners on `skaia`. Three runner
+instances are configured:
 
 - **skaia** (nixos-config): Full toolchain with KVM access for NixOS
   integration tests. Builds populate the Harmonia cache.
-- **skaia-rpm** (remedial-portfolio-management): Minimal runner that relies
-  on `nix develop` for the full Python toolchain.
+- **skaia-rpm** and **skaia-rpm-2**
+  (remedial-portfolio-management): Two identical ephemeral runners.
+  A second instance lets GitHub assignment latency overlap the other
+  runner's work. Minimal packages; `nix develop` provides the Python
+  toolchain.
 
-Both runners share the `github-runner` user/group and run in ephemeral mode.
+All three share the `github-runner` user/group and run in ephemeral
+mode. Both RPM runners share `secrets/github-runner-token-rpm`.
 
 ### nixos-config runner
 
@@ -1210,12 +1216,13 @@ NixOS `services.github-runners` module.
    - Should show: `skaia` with status **Idle** and labels
      `self-hosted`, `Linux`, `X64`, `nixos`, `kvm`
 
-### RPM runner
+### RPM runners
 
 Configured directly in `hosts/skaia/default.nix` using
-`services.github-runners.skaia-rpm`. Uses minimal `extraPackages`
-because `nix develop` provides the full Python/uv/pyright/ruff
-toolchain.
+`services.github-runners.skaia-rpm` and
+`services.github-runners.skaia-rpm-2` (same URL, labels, token).
+Uses minimal `extraPackages` because `nix develop` provides the
+full Python/uv/pyright/ruff toolchain.
 
 1. Create a fine-grained PAT scoped to
    `othercriteria/remedial-portfolio-management` with
@@ -1238,10 +1245,11 @@ toolchain.
    make apply-host HOST=skaia
    ```
 
-1. Verify the runner registered:
+1. Verify both runners registered:
 
    ```sh
    systemctl status github-runner-skaia-rpm
+   systemctl status github-runner-skaia-rpm-2
    # Should show: Active: active (running)
    # And: Listening for Jobs
    ```
@@ -1249,17 +1257,17 @@ toolchain.
 1. Verify in GitHub UI:
 
    - Repository → Settings → Actions → Runners
-   - Should show: `skaia-rpm` with status **Idle** and labels
-     `self-hosted`, `Linux`, `X64`, `nixos`
+   - Should show: `skaia-rpm` and `skaia-rpm-2`, each **Idle** with
+     labels `self-hosted`, `Linux`, `X64`, `nixos`
 
 **In config:**
 
 - `modules/github-runner.nix` — nixos-config runner module
-- `hosts/skaia/default.nix` — RPM runner definition
+- `hosts/skaia/default.nix` — RPM runner definitions
 - `.github/workflows/ci.yml` — CI workflow using
   `runs-on: self-hosted`
-- Both runners share the `github-runner` user with KVM access
-  (nixos-config) or minimal packages (RPM)
+- All three runners share the `github-runner` user; nixos-config
+  has KVM access, RPM runners use minimal packages
 - nixos-config builds populate `/nix/store`, served by Harmonia
 
 ---
