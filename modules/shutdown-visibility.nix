@@ -30,10 +30,10 @@ in
 
   config = lib.mkIf cfg.enable {
     # Persistent journal storage - survives reboots
-    services.journald.extraConfig = ''
-      Storage=persistent
-      SystemMaxUse=${cfg.journalMaxSize}
-    '';
+    services.journald.settings.Journal = {
+      Storage = "persistent";
+      SystemMaxUse = cfg.journalMaxSize;
+    };
 
     systemd = {
       # Ensure journal directory exists with correct permissions
@@ -42,31 +42,6 @@ in
       ];
 
       services = {
-        # Log shutdown events to a dedicated file
-        log-shutdown-reason = {
-          description = "Log shutdown/reboot reason";
-          wantedBy = [
-            "halt.target"
-            "poweroff.target"
-            "reboot.target"
-            "kexec.target"
-          ];
-          before = [
-            "halt.target"
-            "poweroff.target"
-            "reboot.target"
-            "kexec.target"
-          ];
-          # Don't block shutdown if this fails
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            ExecStop = "${pkgs.bash}/bin/bash -c '${pkgs.coreutils}/bin/date \"+%Y-%m-%d %H:%M:%S - Shutdown initiated (target: $JOURNAL_TARGET)\" >> /var/log/shutdown-reasons.log'";
-          };
-          # Capture which target triggered the shutdown
-          environment.JOURNAL_TARGET = "%i";
-        };
-
         # Also log unexpected shutdowns by checking last boot
         log-boot-check = {
           description = "Check for unexpected shutdown on boot";
@@ -87,14 +62,15 @@ in
                 -u systemd-shutdown.service 2>/dev/null | tail -1 || true)
               [ -z "$LAST_SHUTDOWN" ] && LAST_SHUTDOWN="unknown"
 
-              # Count how many of halt/poweroff/reboot targets were reached
-              # in the previous boot. Using `grep -c` here is fragile under
-              # `set -e` because grep exits 1 when there are zero matches,
-              # and a `|| echo 0` rescue concatenates a literal "0" onto the
-              # already-numeric "0" output. Compute the count without grep's
-              # exit code surfacing.
+              # Count how many of halt/poweroff/reboot/kexec targets were
+              # reached in the previous boot. Using `grep -c` here is
+              # fragile under `set -e` because grep exits 1 when there
+              # are zero matches, and a `|| echo 0` rescue concatenates
+              # a literal "0" onto the already-numeric "0" output.
+              # Compute the count without grep's exit code surfacing.
               REACHED_LINES=$(${pkgs.systemd}/bin/journalctl -b -1 \
                 -u halt.target -u poweroff.target -u reboot.target \
+                -u kexec.target \
                 --output=cat 2>/dev/null \
                 || true)
               CLEAN_SHUTDOWN=$(printf '%s\n' "$REACHED_LINES" \
@@ -117,7 +93,32 @@ in
             '';
           };
         };
-      };
+      }
+      // lib.listToAttrs (
+        map
+          (target: {
+            name = "log-shutdown-reason-${target}";
+            value = {
+              description = "Log ${target} reason";
+              wantedBy = [ "${target}.target" ];
+              before = [ "${target}.target" ];
+              serviceConfig = {
+                Type = "oneshot";
+                RemainAfterExit = true;
+                ExecStop = pkgs.writeShellScript "log-shutdown-${target}" ''
+                  ${pkgs.coreutils}/bin/date "+%Y-%m-%d %H:%M:%S - Shutdown initiated (target: ${target})" \
+                    >> /var/log/shutdown-reasons.log
+                '';
+              };
+            };
+          })
+          [
+            "halt"
+            "poweroff"
+            "reboot"
+            "kexec"
+          ]
+      );
     };
   };
 }

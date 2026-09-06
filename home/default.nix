@@ -334,7 +334,6 @@
     })
     gnome-keyring # For ProtonVPN
     keepassxc
-    keybase-gui
     kdePackages.ktorrent
     lutris
     maestral
