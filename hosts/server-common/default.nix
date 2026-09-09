@@ -17,8 +17,13 @@
     ../../modules/prometheus-node-exporter-fix.nix
   ];
 
-  # Enable shutdown visibility for better crash diagnostics
-  custom.shutdownVisibility.enable = true;
+  # Enable shutdown visibility for better crash diagnostics.
+  # 500M vacuumed meteor-2's kernel history down to ~3 weeks, so the
+  # remount-ro line was already gone when we looked. Match skaia.
+  custom.shutdownVisibility = {
+    enable = true;
+    journalMaxSize = "2G";
+  };
 
   # Headless server baseline (no GUI)
   # Imports: none of the desktop modules
@@ -40,6 +45,13 @@
     # the same value explicitly; meteors inherit this.
     systemd-boot.configurationLimit = 8;
   };
+
+  # Forbid deep NVMe APST states. AMD + NVMe is a known-bad combo: the
+  # drive can fail to wake and I/O dies, after which ext4 remounts root
+  # read-only. Hit on skaia (Samsung 990 PRO, 2026-04-22) and consistent
+  # with meteor-2 sitting RO from 2026-08-06 until reboot 2026-09-09.
+  # See skaia's kernelParams for the full write-up.
+  boot.kernelParams = [ "nvme_core.default_ps_max_latency_us=0" ];
 
   # State version for new servers
   # COLD START: Update to the actual NixOS release used for initial install
