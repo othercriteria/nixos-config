@@ -56,10 +56,7 @@
   networking = {
     hostName = "hive";
     hostId = "a8c06e01"; # unique hostId for hive
-    # Uses systemd-networkd (inherited from server-common)
-
-    # Use skaia as DNS for .home.arpa resolution (local services like cache.home.arpa)
-    nameservers = [ "192.168.0.160" ];
+    # Uses systemd-networkd + skaia DNS (inherited from server-common)
 
     firewall = {
       enable = true;

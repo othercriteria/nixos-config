@@ -142,12 +142,29 @@
     fi
   '';
 
-  # Networking stack: systemd-networkd by default for servers
+  # Networking stack: systemd-networkd by default for servers.
+  # Pin DNS to Unbound on skaia. DHCP from the TP-Link also hands
+  # out the router (192.168.0.1); that resolver NXDOMAINs home.arpa
+  # (AS112), and systemd-resolved treats NXDOMAIN as final, so names
+  # like cache.home.arpa never reach skaia.
   networking = {
     useNetworkd = true;
     useDHCP = lib.mkDefault true;
     networkmanager.enable = false;
+    nameservers = [ "192.168.0.160" ];
   };
+  systemd.network.networks =
+    let
+      ignoreDhcpDns = {
+        dhcpV4Config.UseDNS = false;
+        dhcpV6Config.UseDNS = false;
+        ipv6AcceptRAConfig.UseDNS = false;
+      };
+    in
+    {
+      "99-ethernet-default-dhcp" = ignoreDhcpDns;
+      "99-wireless-client-dhcp" = ignoreDhcpDns;
+    };
   services.resolved = {
     enable = true;
     # Allow mDNS if desired for .local discovery

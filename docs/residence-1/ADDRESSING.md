@@ -50,6 +50,11 @@ hosts reside.
 
 - LAN DNS is served by `unbound` on `skaia` (192.168.0.160).
 
+- NixOS servers (`hive`, `meteor-*`) pin `networking.nameservers` to
+  skaia and ignore DHCP-provided DNS. The TP-Link also advertises
+  itself as a nameserver; that resolver NXDOMAINs `home.arpa`
+  (AS112), and systemd-resolved treats that as final.
+
 - Private zones:
 
   - `veil.home.arpa` (cluster services, all via ingress-nginx at 192.168.0.220)
