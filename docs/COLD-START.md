@@ -317,7 +317,8 @@ use NetworkManager for its own connectivity.
 1. Update the router's DHCP settings so the LAN DNS server is
    `192.168.0.160`. Copy Address Reservations (MAC → IP) from
    `docs/residence-1/ADDRESSING.md`. iPhone entries use the Private
-   Wi-Fi MAC for this SSID, not the printed hardware address.
+   Wi-Fi MAC for this SSID with Private Wi-Fi Address set to
+   **Fixed**, not the printed hardware address and not Rotating.
 1. Validate from a LAN client with
    `dig +short @192.168.0.160 ingress.veil.home.arpa`.
 

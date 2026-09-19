@@ -92,10 +92,11 @@
           # MAC 20:F8:3B:0A:CD:8C, lives in the office.
           "\"voice-1.home.arpa. A 192.168.0.173\""
           # COLD START: Router Address Reservation must pin these MACs
-          # (iOS Private Wi-Fi addresses for SSID Kara's Angel, not the
-          # printed hardware MACs). See docs/residence-1/ADDRESSING.md.
-          "\"phone-daniel.home.arpa. A 192.168.0.211\""
-          "\"phone-allison.home.arpa. A 192.168.0.198\""
+          # (iOS Private Wi-Fi Address = Fixed for SSID Kara's Angel,
+          # not Rotating, not the printed hardware MAC).
+          # See docs/residence-1/ADDRESSING.md.
+          "\"phone-daniel.home.arpa. A 192.168.0.212\""
+          "\"phone-allison.home.arpa. A 192.168.0.155\""
           # Public ntfy hostname, LAN IP. WAN still comes from ddclient.
           "\"ntfy.valueof.info. A 192.168.0.160\""
         ];
