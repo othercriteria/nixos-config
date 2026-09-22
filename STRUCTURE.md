@@ -88,16 +88,6 @@ Reusable NixOS modules:
   - `firewall.nix`: Firewall defaults for meteors
   - `kubeconfig.nix`: Veil-specific kubeconfig handling
 
-### `overlays/`
-
-Package overlays applied from host modules (not a flake `overlays`
-output). Synced to `/etc/nixos` via `Makefile` `SYNC_PATHS`. Currently:
-
-- `netdata-offline-go.nix`: Rewrite leftover `GOPROXY=proxy.golang.org`
-  in netdata 2.11.0 `CMakeLists.txt` so the SNMP trap-profile `go run`
-  works in the Nix sandbox. Imported from `hosts/skaia` (with Cloud UI)
-  and `hosts/server-common`.
-
 ### `home/`
 
 Home Manager user configuration:

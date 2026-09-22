@@ -379,10 +379,9 @@
     # Configured as parent node - receives streams from child nodes (e.g., hive)
     netdata = {
       enable = true;
-      # Cloud UI + GOPROXY sandbox patch come from the skaia overlay
-      # in hosts/skaia/default.nix. Do not `.override { withCloudUi }`
-      # here: that re-invokes unpatched nixpkgs netdata.
-      package = pkgs.netdata;
+      # Cloud UI is the parent dashboard at netdata.home.arpa. The
+      # 5-node cap is bypassed by modules/netdata-unlock-nodes.nix.
+      package = pkgs.netdata.override { withCloudUi = true; };
       config = {
         global = {
           # Bind to LAN interface to receive streams from child nodes
