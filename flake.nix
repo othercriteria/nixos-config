@@ -4,9 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # This should be the latest stable release, used to
-    # rollback broken versions in unstable
-    # TODO: bump this!
+    # Rollback pin for nvidia-container-toolkit on skaia and meteor-4.
+    # Stay on 24.11: nixos-25.11's toolkit is 1.18, the 1.17+ series
+    # documented in hosts/skaia/k3s/default.nix.
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     home-manager = {
