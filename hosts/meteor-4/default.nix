@@ -12,6 +12,7 @@
     ../../modules/veil/firewall.nix
     ./gpu.nix
     ./k3s
+    ./mqtt-gpu.nix
   ];
 
   networking = {
@@ -39,6 +40,8 @@
       allowed = [
         "veil-k3s-token"
         "teleport/meteor-4.token"
+        # Shared nixos MQTT user, for hosts/meteor-4/mqtt-gpu.nix.
+        "mqtt-nixos-password"
       ];
     };
 

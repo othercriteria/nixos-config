@@ -11,6 +11,7 @@
 #
 # Topics:
 # - nixos/skaia/+         : System state from skaia
+# - nixos/meteor-4/gpu/+  : GPU metrics from meteor-4
 # - nixos/hive/+          : System state from hive (future)
 # - homeassistant/+       : HA state/commands
 

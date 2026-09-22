@@ -1572,6 +1572,9 @@ between NixOS infrastructure and Home Assistant.
    - Skaia Status
    - Skaia Streaming
    - Skaia VPN
+   - Meteor-4 GPU Temperature
+   - Meteor-4 GPU Utilization
+   - Meteor-4 GPU Memory Used
 
 **Published MQTT topics:**
 
@@ -1581,11 +1584,37 @@ between NixOS infrastructure and Home Assistant.
 - `nixos/skaia/gpu/memory_used` — GPU memory in MiB
 - `nixos/skaia/streaming` — on/off (SRS WebRTC status)
 - `nixos/skaia/vpn` — connected/disconnected
+- `nixos/meteor-4/gpu/temperature` — GPU temp in °C
+- `nixos/meteor-4/gpu/utilization` — GPU utilization %
+- `nixos/meteor-4/gpu/memory_used` — GPU memory in MiB
+
+meteor-4's sensors are not in this repo. They are MQTT sensor entries
+in `/config/configuration.yaml` on the HA Yellow, parallel to skaia's.
+On a new Yellow, add:
+
+```yaml
+    - name: "Meteor-4 GPU Temperature"
+      state_topic: "nixos/meteor-4/gpu/temperature"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "Meteor-4 GPU Utilization"
+      state_topic: "nixos/meteor-4/gpu/utilization"
+      unit_of_measurement: "%"
+      state_class: measurement
+
+    - name: "Meteor-4 GPU Memory Used"
+      state_topic: "nixos/meteor-4/gpu/memory_used"
+      unit_of_measurement: "MiB"
+      state_class: measurement
+```
 
 **In config:**
 
 - `hosts/skaia/mqtt.nix` — Mosquitto broker configuration
 - `hosts/skaia/mqtt-state-publisher.nix` — NixOS state publisher service
+- `hosts/meteor-4/mqtt-gpu.nix` — meteor-4 GPU publisher
 
 ---
 

@@ -30,6 +30,7 @@ Per-host NixOS configurations:
     parallel for A/B comparison)
 - `meteor-{1,2,3,4}/`: Veil cluster k3s server nodes
   - GPU support on meteor-4
+  - meteor-4 publishes GPU metrics to skaia's MQTT broker
   - Node exporter for Prometheus scraping
 - `hive/`: Headless server for Urbit and misc services
   - Streams metrics/logs to skaia (node exporter, Netdata child, Alloy)
