@@ -61,6 +61,8 @@ Reusable NixOS modules:
   activation; prunes `/etc/nixos/secrets/` to the declared subset after
   `make sync-to-system` rsyncs the full set
 - `kubeconfig.nix`: Kubeconfig management for k3s hosts
+- `k3s-nvidia-runtime.nix`: Host NVIDIA container runtime for k3s
+  (unstable toolkit, legacy mode) on skaia and meteor-4
 - `netdata-child.nix`: Netdata child-role module; streams to a parent
   (default: `skaia.home.arpa:19999`) without keeping a local dbengine
 - `netdata-unlock-nodes.nix`: Parent-side workaround for Netdata's

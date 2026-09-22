@@ -4,11 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Rollback pin for nvidia-container-toolkit on skaia and meteor-4.
-    # Stay on 24.11: nixos-25.11's toolkit is 1.18, the 1.17+ series
-    # documented in hosts/skaia/k3s/default.nix.
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -45,7 +40,6 @@
     {
       self,
       nixpkgs,
-      nixpkgs-stable,
       home-manager,
       flake-utils,
       pre-commit-hooks,
@@ -64,10 +58,6 @@
         skaia = nixpkgs.lib.nixosSystem rec {
           system = "x86_64-linux";
           specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
             inherit uv2nix;
             pyprojectNix = pyproject-nix;
             pyprojectBuildSystems = pyproject-build-systems;
@@ -88,66 +78,36 @@
           ];
         };
 
-        meteor-1 = nixpkgs.lib.nixosSystem rec {
+        meteor-1 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          };
           modules = [
             ./hosts/meteor-1
           ];
         };
 
-        meteor-2 = nixpkgs.lib.nixosSystem rec {
+        meteor-2 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          };
           modules = [
             ./hosts/meteor-2
           ];
         };
 
-        meteor-3 = nixpkgs.lib.nixosSystem rec {
+        meteor-3 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          };
           modules = [
             ./hosts/meteor-3
           ];
         };
 
-        meteor-4 = nixpkgs.lib.nixosSystem rec {
+        meteor-4 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          };
           modules = [
             ./hosts/meteor-4
           ];
         };
 
-        hive = nixpkgs.lib.nixosSystem rec {
+        hive = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            pkgs-stable = import nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          };
           modules = [
             ./hosts/hive
           ];
