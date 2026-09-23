@@ -53,6 +53,7 @@ in
     ./airplay.nix
     ./audio.nix
     ../../modules/baltic-site
+    ../../modules/resume-site
     ./ddclient.nix
     ./email-alerts.nix
     ./firewall.nix
@@ -101,6 +102,10 @@ in
     # The book page at valueof.info/the-baltic-approaches/. Polls the book
     # repo and republishes on new commits; the vhost path is in ./nginx.nix.
     balticSite.enable = true;
+    # The résumé at valueof.info/daniel-klein-resume/, published the same way
+    # from github:othercriteria/resume. The module follows that repo's
+    # master branch.
+    resumeSite.enable = true;
 
     # GitHub Actions self-hosted runner for CI (nixos-config repo)
     githubRunner.enable = true;

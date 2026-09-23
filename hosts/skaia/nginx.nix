@@ -10,55 +10,15 @@ let
   # via git-secret; see docs/runbooks/trivia-setup.md.
   triviaHtpasswd = "/etc/nixos/secrets/trivia-htpasswd";
 
-  valueofInfoStatic = pkgs.writeTextFile {
-    name = "valueof-info-index";
-    destination = "/index.html";
-    text = ''
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="utf-8" />
-          <title>valueof.info</title>
-          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <style>
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                sans-serif;
-              margin: 0;
-              min-height: 100vh;
-              display: grid;
-              place-items: center;
-              background: #0d1117;
-              color: #d0d7de;
-            }
-            main {
-              text-align: center;
-              padding: 3rem 2rem;
-              border: 1px solid rgba(210, 218, 226, 0.1);
-              border-radius: 12px;
-              background: rgba(13, 17, 23, 0.75);
-              max-width: 45ch;
-            }
-            h1 {
-              font-weight: 600;
-              margin-bottom: 1rem;
-            }
-            p {
-              margin: 0.5rem 0 0;
-              line-height: 1.5;
-            }
-          </style>
-        </head>
-        <body>
-          <main>
-            <h1>valueof.info</h1>
-            <p>This site is intentionally minimal while ingress is being stood up.</p>
-          </main>
-        </body>
-      </html>
-    '';
-  };
+  # The apex page. Static files checked in under assets/valueof-info/ and
+  # copied into the store, so the page ships with the system closure; the
+  # vhost's CSP is default-src 'self', which is why styling is a file and
+  # not an inline <style> block.
+  valueofInfoStatic = pkgs.runCommand "valueof-info-static" { } ''
+    mkdir -p "$out"
+    cp ${../../assets/valueof-info/index.html} "$out/index.html"
+    cp ${../../assets/valueof-info/site.css} "$out/site.css"
+  '';
 in
 {
   # COLD START: Configure the TP-Link router to forward TCP 80 and 443 to skaia
@@ -127,6 +87,30 @@ in
               # document's encoding.
               charset utf-8;
               charset_types text/css text/plain text/javascript application/javascript;
+            '';
+          };
+
+          # The résumé page, same shape as the book page: published by
+          # modules/resume-site from github:othercriteria/resume, served as a
+          # path under the apex so it needs no DNS record or certificate of
+          # its own. The location redeclares every header because nginx's
+          # add_header inheritance is all-or-nothing per level.
+          "= /daniel-klein-resume" = {
+            return = "301 /daniel-klein-resume/";
+          };
+
+          "/daniel-klein-resume/" = {
+            alias = "${config.custom.resumeSite.docRoot}/";
+            index = "index.html";
+            extraConfig = ''
+              add_header Content-Security-Policy "default-src 'none'; style-src 'self'" always;
+              add_header Referrer-Policy "no-referrer" always;
+              add_header Strict-Transport-Security "max-age=31536000" always;
+              add_header X-Content-Type-Options "nosniff" always;
+              add_header X-Frame-Options "DENY" always;
+
+              charset utf-8;
+              charset_types text/css text/plain;
             '';
           };
         };

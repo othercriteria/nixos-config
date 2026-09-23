@@ -1,0 +1,72 @@
+/* valueof.info apex. Same palette and two-face setup as the résumé and
+   book pages so the three read as one site. System font stacks only. */
+
+:root {
+  --ink: #111;
+  --paper: #fffdf8;
+  --muted: #5a5348;
+  --rule: #2a2a2a;
+  --accent: #1f4f7a;
+  --chrome: "TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --text: "TeX Gyre Pagella", Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e6e1d6;
+    --paper: #14130f;
+    --muted: #a9a294;
+    --rule: #cfc8ba;
+    --accent: #8db7dd;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 3rem 1rem 3rem;
+}
+
+header { margin-bottom: 1.5rem; }
+h1 {
+  font-family: var(--chrome);
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.5rem;
+}
+h1 .cjk { font-weight: normal; letter-spacing: 0.1em; }
+.tagline { margin: 0; color: var(--muted); }
+
+h2 {
+  font-family: var(--chrome);
+  font-size: 0.9rem;
+  font-weight: normal;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 2.2rem 0 0.7rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+}
+
+ul { padding-left: 1.2rem; margin: 0; }
+li { margin-bottom: 0.7rem; }
+a { color: inherit; text-decoration-color: var(--muted); }
+a:hover { color: var(--accent); }
+code { font-size: 0.9em; }
+
+footer {
+  margin-top: 3rem;
+  font-family: var(--chrome);
+  font-size: 0.75rem;
+  color: var(--muted);
+}

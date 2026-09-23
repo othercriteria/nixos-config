@@ -196,6 +196,50 @@
               }
             ];
           }
+          # Same two rules for the résumé page (modules/resume-site).
+          {
+            name = "resume-site.rules";
+            rules = [
+              {
+                alert = "ResumeSiteDeployFailing";
+                expr = ''
+                  node_systemd_unit_state{name="resume-site-deploy.service",state="failed"} == 1
+                '';
+                # The timer fires every 15m (plus up to 2m of jitter), so
+                # 30m means at least two consecutive failures and a
+                # transient GitHub or substituter blip stays quiet.
+                "for" = "30m";
+                labels = {
+                  severity = "warning";
+                };
+                annotations = {
+                  summary = "résumé site deploy is failing";
+                  description = "resume-site-deploy.service on {{ $labels.instance }} has been in the failed state for 30 minutes, so valueof.info/daniel-klein-resume/ is still serving the previously published build. Check `journalctl -u resume-site-deploy`: either the résumé repo's deploy gate (make test) is red on master or the build/fetch is broken.";
+                };
+              }
+              {
+                alert = "ResumeSiteDeployStalled";
+                # Catches the case the failure alert cannot see: the timer
+                # itself stopped firing (masked, disabled, or lost across a
+                # rebuild), so the service never runs and never fails. The
+                # `> 0` guard keeps this quiet after a reboot, before the
+                # timer has triggered for the first time.
+                expr = ''
+                  node_systemd_timer_last_trigger_seconds{name="resume-site-deploy.timer"} > 0
+                  and
+                  time() - node_systemd_timer_last_trigger_seconds{name="resume-site-deploy.timer"} > 3600
+                '';
+                "for" = "10m";
+                labels = {
+                  severity = "warning";
+                };
+                annotations = {
+                  summary = "résumé deploy timer has stopped firing";
+                  description = "resume-site-deploy.timer on {{ $labels.instance }} last triggered over an hour ago, against a 15m schedule. New commits on the résumé repo's master are not reaching valueof.info/daniel-klein-resume/. Check `systemctl list-timers resume-site-deploy`.";
+                };
+              }
+            ];
+          }
           # SMART/NVMe health rules. Driven by smartctl_exporter where it
           # is enabled (currently only skaia). These give us early warning
           # for the kind of NVMe issue that left fastdisk in a precarious

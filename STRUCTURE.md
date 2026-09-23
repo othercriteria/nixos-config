@@ -49,6 +49,9 @@ Reusable NixOS modules:
   consumes `hardened-service.nix`)
   - `site-flake/`: Single-input flake building the page from the book
     repo's own devShell toolchain
+- `resume-site/`: Publishes the résumé at
+  `valueof.info/daniel-klein-resume/` from `github:othercriteria/resume`;
+  a near-verbatim sibling of `baltic-site/`.
 - `desktop-common.nix`: Shared desktop settings (Thunar, XDG portals, polkit)
 - `greetd.nix`: TTY greeter using tuigreet to launch Sway
 - `fonts.nix`: System font configuration
@@ -182,6 +185,8 @@ These directories are created during cold-start and are essential to operation:
   `fastdisk/services/forgejo/lfs`)
 - `/var/lib/trivia/rounds`: Per-round subdirectories for the trivia drip
   server (no dedicated ZFS dataset; ~150 MB total, ephemeral per event)
+- `/var/lib/resume-site`: Published résumé page, same layout as
+  `/var/lib/baltic-site`.
 - `/var/lib/baltic-site`: Published book page plus the deploy unit's Nix
   eval cache (~300 KB per release, two kept; no dedicated ZFS dataset)
 
