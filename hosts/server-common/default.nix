@@ -91,6 +91,19 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  nixpkgs.overlays = [
+    (_final: prev: {
+      glances = prev.glances.overridePythonAttrs (old: {
+        # The REST fixture starts uvicorn and the client connects before
+        # it is listening. A sandboxed build then fails with connection
+        # refused on 61234/61235 after the rest of the suite has passed.
+        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
+          "tests/test_restful.py"
+        ];
+      });
+    })
+  ];
+
   # System-managed gpg-agent so git-secret + manual gpg both work out of the
   # box on headless servers. Pulls gnupg + pinentry-curses into the system
   # closure, sets GPG_TTY in shell rc, and arranges socket activation per

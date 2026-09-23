@@ -74,6 +74,19 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  nixpkgs.overlays = [
+    (_final: prev: {
+      glances = prev.glances.overridePythonAttrs (old: {
+        # The REST fixture starts uvicorn and the client connects before
+        # it is listening. A sandboxed build then fails with connection
+        # refused on 61234/61235 after the rest of the suite has passed.
+        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
+          "tests/test_restful.py"
+        ];
+      });
+    })
+  ];
+
   # Common environment settings
   environment = {
     # Common system packages
