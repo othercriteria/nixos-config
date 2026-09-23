@@ -6,6 +6,11 @@
 # `nvidia-container-runtime.legacy` keeps the prestart hook those pods
 # already use. nixpkgs rewrites `/sbin/ldconfig` to the store glibc; the
 # CLI path still has to be set because the default is `/usr/bin`.
+#
+# Pods that set NVIDIA_DRIVER_CAPABILITIES=all (the GPU Operator device
+# plugin and validator) make the legacy runtime glob for libcuda.so.*.*
+# under FHS paths such as /usr/lib/x86_64-linux-gnu. NixOS publishes the
+# driver at /run/opengl-driver, so that directory is linked there.
 {
   pkgs,
   lib,
@@ -15,16 +20,15 @@
 {
   environment.systemPackages = [
     pkgs.nvidia-container-toolkit
-    # Containers created before this template was loaded record
-    # /run/current-system/sw/bin/nvidia-container-runtime. containerd
-    # uses that path to exec and to stop them, so the name has to keep
-    # resolving. Point it at the legacy runtime, not the jit-cdi wrapper.
-    (pkgs.runCommand "nvidia-container-runtime-compat" { } ''
-      mkdir -p $out/bin
-      ln -s ${lib.getOutput "tools" pkgs.nvidia-container-toolkit}/bin/nvidia-container-runtime.legacy \
-        $out/bin/nvidia-container-runtime
-    '')
   ];
+
+  system.activationScripts.nvidia-driver-lib-path = {
+    text = ''
+      mkdir -p /usr/lib
+      ln -sfn /run/opengl-driver/lib /usr/lib/x86_64-linux-gnu
+    '';
+    deps = [ ];
+  };
 
   environment.etc."nvidia-container-runtime/config.toml".text = ''
     [nvidia-container-cli]
