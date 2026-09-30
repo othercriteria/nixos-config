@@ -94,11 +94,13 @@
   nixpkgs.overlays = [
     (_final: prev: {
       glances = prev.glances.overridePythonAttrs (old: {
-        # The REST fixture starts uvicorn and the client connects before
+        # The REST fixtures start uvicorn and the client connects before
         # it is listening. A sandboxed build then fails with connection
-        # refused on 61234/61235 after the rest of the suite has passed.
+        # refused (ports in the 6123x range) after the rest of the suite
+        # has passed. test_browser_restful.py showed up in glances 4.5.6.
         disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
           "tests/test_restful.py"
+          "tests/test_browser_restful.py"
         ];
       });
     })
