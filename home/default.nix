@@ -31,6 +31,7 @@
     ./docker.nix
     ./helm.nix
     ./keyboard.nix
+    ./scripts.nix
     ./sway.nix
     ./tmux.nix
     ./zsh.nix
@@ -94,19 +95,13 @@
       };
     };
 
+    # Zsh aliases ls/ll/la/lt/lla to eza. The flags live on the `eza`
+    # alias, which zsh expands again, so `ll` inherits them.
     eza = {
       enable = true;
       enableZshIntegration = true;
       git = true;
       extraOptions = [ "--group-directories-first" ];
-    };
-
-    vscode = {
-      enable = true;
-      profiles.default.extensions = with pkgs.vscode-extensions; [
-        dracula-theme.theme-dracula
-        yzhang.markdown-all-in-one
-      ];
     };
 
     ghostty = {
@@ -198,121 +193,8 @@
     kubectl
     k9s
 
-    # Home Assistant CLI for agent access
-    # Use 'hass' wrapper which auto-loads token from secrets
+    # Raw CLI. `hass` in scripts.nix adds the token and server.
     home-assistant-cli
-    (pkgs.writeShellScriptBin "hass" ''
-      export HASS_SERVER="http://assistant.home.arpa"
-      export HASS_TOKEN="$(cat /etc/nixos/secrets/homeassistant-token 2>/dev/null)"
-      if [ -z "$HASS_TOKEN" ]; then
-        echo "Error: Cannot read Home Assistant token from /etc/nixos/secrets/homeassistant-token" >&2
-        exit 1
-      fi
-      exec ${pkgs.home-assistant-cli}/bin/hass-cli "$@"
-    '')
-
-    # Ollama CLI wrapper - auto-configures for network access
-    # Uses OLLAMA_DEFAULT_MODEL from system config (set in ollama.nix)
-    (pkgs.writeShellScriptBin "oll" ''
-      export OLLAMA_HOST="http://ollama.home.arpa"
-      exec ${pkgs.ollama}/bin/ollama "$@"
-    '')
-
-    # Quick chat helper for interactive use
-    # Usage: ask "your question here"
-    # Override model with ASK_MODEL env var
-    (pkgs.writeShellScriptBin "ask" ''
-      MODEL="''${ASK_MODEL:-$OLLAMA_DEFAULT_MODEL}"
-      if [ -z "$MODEL" ]; then
-        echo "Error: No model specified. Set OLLAMA_DEFAULT_MODEL or ASK_MODEL." >&2
-        exit 1
-      fi
-      export OLLAMA_HOST="http://ollama.home.arpa"
-      exec ${pkgs.ollama}/bin/ollama run "$MODEL" "$@"
-    '')
-
-    # TTS helper - speak text via F5-TTS (HTTP API, batch mode)
-    # Usage: echo "Hello" | catsay
-    #        catsay file.txt
-    #        echo "Hello" | tee /dev/stderr | catsay  # show + speak
-    # For streaming input (tail -f), use tailsay instead
-    (pkgs.writeShellScriptBin "catsay" ''
-      set -euo pipefail
-      TTS_URL="''${TTS_URL:-http://tts.home.arpa}"
-      TTS_VOICE="''${TTS_VOICE:-nature}"
-      STREAM=true
-
-      # Parse flags
-      while [[ $# -gt 0 ]]; do
-        case "$1" in
-          --voice|-v) TTS_VOICE="$2"; shift 2 ;;
-          --no-stream) STREAM=false; shift ;;
-          --help|-h)
-            echo "Usage: catsay [OPTIONS] [FILE]"
-            echo "Speak text via TTS (batch mode with streaming audio output)."
-            echo ""
-            echo "Options:"
-            echo "  -v, --voice NAME   Voice to use (default: nature)"
-            echo "  --no-stream        Wait for full audio before playing"
-            echo ""
-            echo "For streaming input (tail -f), use 'tailsay' instead."
-            echo "Use 'tee /dev/stderr' for simultaneous text display."
-            exit 0 ;;
-          -*) echo "Unknown option: $1" >&2; exit 1 ;;
-          *) INPUT_FILE="$1"; shift ;;
-        esac
-      done
-
-      # Read all input to temp file (avoids shell argument length limits)
-      TMPFILE=$(mktemp)
-      trap "rm -f '$TMPFILE'" EXIT
-
-      if [[ -n "''${INPUT_FILE:-}" ]]; then
-        cat "$INPUT_FILE" > "$TMPFILE"
-      else
-        cat > "$TMPFILE"
-      fi
-
-      # Skip if empty
-      [[ ! -s "$TMPFILE" ]] && exit 0
-
-      # Build JSON payload using jq with file input (no arg length limit)
-      if [[ "$STREAM" == "true" ]]; then
-        ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
-            '{input: ., voice: $voice, stream: true}' "$TMPFILE" \
-          | ${pkgs.curl}/bin/curl -sN "''${TTS_URL}/v1/audio/speech" \
-              -H "Content-Type: application/json" -d @- \
-          | ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit -infbuf -probesize 32 -analyzeduration 0 \
-              -f s16le -ar 24000 -ch_layout mono -i pipe:0 >/dev/null 2>&1
-      else
-        ${pkgs.jq}/bin/jq -Rs --arg voice "$TTS_VOICE" \
-            '{input: ., voice: $voice, response_format: "wav"}' "$TMPFILE" \
-          | ${pkgs.curl}/bin/curl -s "''${TTS_URL}/v1/audio/speech" \
-              -H "Content-Type: application/json" -d @- \
-          | ${pkgs.pulseaudio}/bin/paplay --file-format=wav /dev/stdin 2>/dev/null
-      fi
-    '')
-
-    # tailsay - WebSocket TTS for streaming input (maintains voice context)
-    # Usage: tail -f /var/log/messages | tailsay
-    #        for i in 1 2 3; do echo "Line $i"; sleep 1; done | tailsay
-    # Speaks each line as it arrives, with coherent voice across lines
-    (
-      let
-        tailsayPython = pkgs.writers.writePython3Bin "tailsay-py" {
-          libraries = [ pkgs.python3Packages.websockets ];
-          flakeIgnore = [
-            "E265"
-            "E501"
-            "W503"
-          ];
-        } (builtins.readFile ../assets/wscatsay.py);
-      in
-      pkgs.writeShellScriptBin "tailsay" ''
-        export PATH="${pkgs.ffmpeg}/bin:$PATH"
-        exec ${tailsayPython}/bin/tailsay-py --line-buffered "$@"
-      ''
-    )
 
     amp-cli # Amp (ampcode.com); nixpkgs attr is still amp-cli, binary is `amp`
     claude-code

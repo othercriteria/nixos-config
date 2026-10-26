@@ -10,7 +10,8 @@
   # on the host (provided by airplay.nix on skaia).
 
   services = {
-    # Reduce attack surface by disabling CUPS browsing
+    # cups-browsed defaults to services.avahi.enable. skaia forces Avahi
+    # on for AirPlay (hosts/skaia/airplay.nix); keep discovery off anyway.
     printing.browsed.enable = false;
 
     # Avahi disabled by default here; hosts that need mDNS (e.g., for AirPlay

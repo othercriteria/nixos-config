@@ -99,6 +99,8 @@ Reusable NixOS modules:
 Home Manager user configuration:
 
 - `default.nix`: Main user config (packages, Git, Ghostty, etc.)
+- `scripts.nix`: User commands (`hass`, `oll`, `ask`, `catsay`,
+  `tailsay`) wrapped around scripts in `assets/`
 - `docker.nix`: Docker tooling (persistent `registry-cache` buildx
   builder for registry-backed BuildKit caches)
 - `sway.nix`: Sway window manager configuration (Mako, Wofi,

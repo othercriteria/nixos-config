@@ -8,7 +8,6 @@
     syntaxHighlighting.enable = true;
 
     shellAliases = {
-      ll = "eza -l";
       em = "emacs -nw";
 
       "tmux-join" = "tmux attach -t";

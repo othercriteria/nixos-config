@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   ...
@@ -67,9 +66,12 @@ in
   services.avahi = {
     enable = lib.mkForce true;
     nssmdns4 = true; # Enable mDNS resolution for IPv4
-    publish = {
-      enable = true;
-      userServices = true; # Allow uxplay to publish its service
+    # User-service publishing is how uxplay registers on the Avahi bus.
+    # Address records are what peers use to resolve this host.
+    settings.publish = {
+      "disable-publishing" = false;
+      "disable-user-service-publishing" = false;
+      "publish-addresses" = true;
     };
   };
 
@@ -85,25 +87,17 @@ in
     gst_all_1.gst-plugins-bad
     gst_all_1.gst-plugins-ugly
 
-    # Snapshot tool for capturing frames from AirPlay stream
-    # Usage: airplay-snapshot [output.png]
-    (writeShellScriptBin "airplay-snapshot" ''
-      set -euo pipefail
-      OUT="''${1:-/tmp/airplay-$(date +%s).png}"
-
-      # Find uxplay window geometry from sway tree
-      GEOM=$(${sway}/bin/swaymsg -t get_tree | \
-        ${jq}/bin/jq -r '.. | select(.app_id? == "uxplay") | "\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"' | \
-        head -1)
-
-      if [ -z "$GEOM" ]; then
-        echo "Error: No uxplay window found. Is AirPlay streaming?" >&2
-        exit 1
-      fi
-
-      ${grim}/bin/grim -g "$GEOM" "$OUT"
-      echo "$OUT"
-    '')
+    # Snapshot tool for capturing frames from the AirPlay stream.
+    (writeShellApplication {
+      name = "airplay-snapshot";
+      runtimeInputs = [
+        sway
+        jq
+        grim
+        coreutils
+      ];
+      text = builtins.readFile ../../assets/airplay-snapshot.sh;
+    })
   ];
 
   # Set GStreamer plugin path system-wide so uxplay can find all plugins

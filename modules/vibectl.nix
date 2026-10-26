@@ -17,13 +17,21 @@ let
   # default python3 (3.14), where uv2nix currently fails to build aiohttp.
   python = pkgs.python313;
 
-  # nixpkgs anthropic/openai pull inline-snapshot as a check input; its docs
-  # tests currently fail against black formatting on some interpreters
-  # (seen on 3.12: 3 failed / 1428 passed).
+  # Two check failures on this python313 set:
+  # - inline-snapshot's docs tests fail black formatting on some
+  #   interpreters (seen on 3.12).
+  # - openai 2.53's mTLS example shells out to a client against
+  #   127.0.0.1. Under pytest-xdist in the sandbox one worker exceeds
+  #   the test's own 15s timeout; the other 859 tests passed.
   pythonPackages = pkgs.python313Packages.overrideScope (
     _final: prev: {
       inline-snapshot = prev.inline-snapshot.overridePythonAttrs (_old: {
         doCheck = false;
+      });
+      openai = prev.openai.overridePythonAttrs (old: {
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_mtls_example_presents_full_client_chain"
+        ];
       });
     }
   );
