@@ -29,10 +29,11 @@
       "acpi_rev_override"
     ];
 
-    # LUKS-encrypted root partition
+    # LUKS-encrypted root. LVM (root and swap) sits on the unlocked
+    # mapper. systemd stage 1 opens crypttab entries before LVM; the
+    # old preLVM flag belonged to the removed scripted stage 1.
     initrd.luks.devices.root = {
       device = "/dev/nvme0n1p3";
-      preLVM = true;
     };
   };
 
