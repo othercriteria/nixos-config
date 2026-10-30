@@ -84,19 +84,14 @@ in
   ];
 
   custom = {
-    # Trivia drip-release file server. `seedFixtures` populates a synthetic
-    # round set (including edge cases like dangling symlinks) so the deploy
-    # can be smoke-tested before a real event; turn it off when staging
-    # real content.
-    #
-    # Off between events. The nginx vhost stays defined and
-    # Basic-Auth-gated; TLS/ACME follow this flag so a parked NXDOMAIN
-    # does not fail acme-order-renew-trivia daily. Flip `enable` back
-    # to true (and bump `seedFixtures` per event prep) after the DNS A
-    # record exists; see docs/runbooks/trivia-setup.md.
+    # Trivia drip-release file server. On for the current contest.
+    # `seedFixtures` writes synthetic rounds, including a symlink to
+    # /etc/passwd; leave it false once real files are staged.
+    # TLS/ACME and the ddclient `trivia` label follow `enable`.
+    # See docs/runbooks/trivia-setup.md.
     trivia = {
-      enable = false;
-      seedFixtures = true;
+      enable = true;
+      seedFixtures = false;
     };
 
     # The book page at valueof.info/the-baltic-approaches/. Polls the book

@@ -46,62 +46,122 @@
 </head>
 <body>
   <div class="container">
-    <video id="player" autoplay playsinline muted></video>
+    <video id="player" autoplay playsinline muted controls></video>
     <div id="status" class="status connecting">Connecting...</div>
   </div>
   <script>
     const WHEP_URL = "/rtc/v1/whep/?app=live&stream=main";
     const video = document.getElementById("player");
     const status = document.getElementById("status");
+    let generation = 0;
+
+    function setStatus(kind, text) {
+      status.className = "status " + kind;
+      status.textContent = text;
+    }
+
+    function liveLabel() {
+      return video.muted ? "Live - tap the video for sound" : "Live";
+    }
+
+    // Host candidates are often ready immediately, but the offer must
+    // include them. WHEP here does not trickle. Give up waiting after
+    // 1.5s so a stuck gatherer cannot hang the page.
+    function waitForIce(pc) {
+      if (pc.iceGatheringState === "complete") return Promise.resolve();
+      return new Promise((resolve) => {
+        const timer = setTimeout(resolve, 1500);
+        pc.addEventListener("icegatheringstatechange", () => {
+          if (pc.iceGatheringState === "complete") {
+            clearTimeout(timer);
+            resolve();
+          }
+        });
+      });
+    }
 
     async function connect() {
-      status.className = "status connecting";
-      status.textContent = "Connecting...";
+      const gen = ++generation;
+      const pc = new RTCPeerConnection();
+      let stopped = false;
+      let disconnectTimer = null;
+
+      const giveUp = (message) => {
+        if (stopped || gen !== generation) return;
+        stopped = true;
+        if (disconnectTimer) clearTimeout(disconnectTimer);
+        pc.oniceconnectionstatechange = null;
+        pc.close();
+        setStatus("offline", message);
+        setTimeout(() => {
+          if (gen === generation) connect();
+        }, 3000);
+      };
+
+      pc.ontrack = (event) => {
+        if (stopped || gen !== generation) return;
+        video.srcObject = event.streams[0];
+        setStatus("live", liveLabel());
+      };
+
+      // "disconnected" is often transient. Retrying on it, without
+      // closing the old peer connection, stacked a new connection
+      // every few seconds for as long as the tab stayed open.
+      pc.oniceconnectionstatechange = () => {
+        if (stopped || gen !== generation) return;
+        if (disconnectTimer) {
+          clearTimeout(disconnectTimer);
+          disconnectTimer = null;
+        }
+        const state = pc.iceConnectionState;
+        if (state === "failed") {
+          giveUp("Stream offline - retrying...");
+        } else if (state === "disconnected") {
+          setStatus("offline", "Connection blipped - waiting...");
+          disconnectTimer = setTimeout(() => {
+            if (!stopped && gen === generation &&
+                pc.iceConnectionState === "disconnected") {
+              giveUp("Stream offline - retrying...");
+            }
+          }, 5000);
+        } else if (state === "connected" || state === "completed") {
+          setStatus("live", liveLabel());
+        }
+      };
 
       try {
-        const pc = new RTCPeerConnection();
-
-        pc.ontrack = (e) => {
-          video.srcObject = e.streams[0];
-          status.className = "status live";
-          status.textContent = "Live";
-        };
-
-        pc.oniceconnectionstatechange = () => {
-          if (pc.iceConnectionState === "disconnected" ||
-              pc.iceConnectionState === "failed") {
-            status.className = "status offline";
-            status.textContent = "Stream offline - retrying...";
-            setTimeout(connect, 3000);
-          }
-        };
-
+        setStatus("connecting", "Connecting...");
         pc.addTransceiver("video", { direction: "recvonly" });
         pc.addTransceiver("audio", { direction: "recvonly" });
-
         const offer = await pc.createOffer();
+        if (stopped || gen !== generation) return;
         await pc.setLocalDescription(offer);
-
+        await waitForIce(pc);
+        if (stopped || gen !== generation) {
+          pc.close();
+          return;
+        }
         const res = await fetch(WHEP_URL, {
           method: "POST",
           headers: { "Content-Type": "application/sdp" },
-          body: offer.sdp
+          body: pc.localDescription.sdp
         });
-
         if (!res.ok) throw new Error("WHEP request failed");
-
         const answer = await res.text();
+        if (stopped || gen !== generation) {
+          pc.close();
+          return;
+        }
         await pc.setRemoteDescription({ type: "answer", sdp: answer });
-
       } catch (err) {
-        status.className = "status offline";
-        status.textContent = "Stream offline - retrying...";
-        setTimeout(connect, 3000);
+        giveUp("Stream offline - retrying...");
       }
     }
 
-    // Unmute on click (browser autoplay policy)
-    video.onclick = () => { video.muted = false; };
+    video.addEventListener("click", () => {
+      video.muted = false;
+      if (status.classList.contains("live")) setStatus("live", "Live");
+    });
 
     connect();
   </script>

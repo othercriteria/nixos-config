@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 {
   # TODO: look into https://github.com/ryantm/agenix and sops-nix as
@@ -8,8 +8,11 @@
     usev4 = "webv4, webv4=dynamicdns.park-your-domain.com/getip";
     usev6 = "";
     server = "dynamicdns.park-your-domain.com";
-    # `trivia` is omitted on purpose between events so the name stays
-    # NXDOMAIN. Add it when hosting; TLS/ACME follow custom.trivia.enable.
+    # `trivia` is updated only while the file host is on. Namecheap
+    # dynamic DNS cannot create the A record; add host `trivia` in
+    # the panel first or the update fails with "A record not Found".
+    # Removing the label here does not delete the record. See
+    # docs/runbooks/trivia-setup.md.
     domains = [
       "@"
       "teleport"
@@ -18,7 +21,8 @@
       "stream"
       "assistant"
       "ntfy"
-    ];
+    ]
+    ++ lib.optionals config.custom.trivia.enable [ "trivia" ];
     username = "valueof.info";
     passwordFile = "/etc/nixos/secrets/ddclient-password";
     protocol = "namecheap";

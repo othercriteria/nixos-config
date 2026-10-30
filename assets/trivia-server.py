@@ -9,7 +9,8 @@ must be named::
 
 For example ``2026-06-07T19:00:00__round-1``. The timestamp gates when the
 round becomes visible (the filesystem name is also the schedule). The slug
-appears in URL paths; the timestamp does not.
+appears in URL paths; the timestamp does not. Wall times are interpreted in
+the host's local timezone (``$TRIVIA_TZ`` is a display label only).
 
 The app is deliberately tiny:
 
@@ -26,14 +27,24 @@ Endpoints:
 - ``GET /<slug>/``                   Listing for a revealed round.
 - ``GET /<slug>/<filename>``         Single file inside a revealed round.
 
+If several directories share a slug, the latest timestamp that has already
+passed is the one that is served. An earlier copy does not hide a later
+release, and a not-yet-released copy does not hide one that is already open.
+
 Security considerations live in two places:
 
 1. ``DIR_RE``/``FILENAME_RE`` restrict what counts as a valid round/file
-   name. Anything else is silently ignored at discovery time or returns 404.
-2. ``safe_round_dir`` resolves every candidate path and requires that the
-   resolved location stay under the configured root. ``round_file`` also
-   refuses to serve symlinks. Combined, these block traversal via crafted
-   names and via symlinks dropped into the rounds directory.
+   name. Anything else is skipped at discovery time or returns 404.
+2. ``discover`` resolves every round directory and drops symlinks and paths
+   that escape the root. ``round_file`` also refuses to serve symlinks.
+   Combined, these block traversal via crafted names and via symlinks
+   dropped into the rounds directory.
+
+Listings are ``Cache-Control: no-store`` so a phone that loaded the index
+before a round opened does not keep showing the old page. PDFs, images, and
+audio are served inline. HTML and SVG are attachments with a generic media
+type: those formats execute in the trivia origin, and the browser will
+replay the contestant's Basic Auth credentials on any request they make.
 
 This module is exposed as ``app`` for ``uvicorn``; ``python trivia-server.py``
 also launches uvicorn directly so it can be ``ExecStart``-ed without an
@@ -48,14 +59,15 @@ import re
 from datetime import datetime
 from html import escape
 from pathlib import Path
-from typing import Iterable
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 ROOT = Path(os.environ.get("TRIVIA_ROOT", "/var/lib/trivia/rounds"))
 HOST = os.environ.get("TRIVIA_HOST", "127.0.0.1")
 PORT = int(os.environ.get("TRIVIA_PORT", "8765"))
+TZ_LABEL = os.environ.get("TRIVIA_TZ") or "local time"
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 DIR_RE = re.compile(
@@ -64,11 +76,41 @@ DIR_RE = re.compile(
 )
 FILENAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$")
 
+# Browsers should display these. HTML/SVG/XML are absent on purpose.
+INLINE_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".txt": "text/plain",
+    ".csv": "text/csv",
+}
+
+HTML_HEADERS = {
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": (
+        "default-src 'none'; style-src 'unsafe-inline'; "
+        "img-src 'self'; base-uri 'none'; form-action 'none'"
+    ),
+}
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 log = logging.getLogger("trivia")
+
+# Misnamed rounds are easy to miss at 7pm. Log each name once per process
+# so a typo shows up in the journal without a line per refresh.
+_noted: set[str] = set()
 
 app = FastAPI(
     title="trivia",
@@ -83,61 +125,81 @@ def _now() -> datetime:
     return datetime.now()
 
 
-def discover() -> Iterable[tuple[str, datetime, Path]]:
-    """Yield ``(slug, release_at, directory_path)`` for well-named rounds.
+def _note(name: str, reason: str) -> None:
+    if name in _noted:
+        return
+    _noted.add(name)
+    log.warning("ignoring round entry %s: %s", name, reason)
 
-    Silently skips anything that doesn't match ``DIR_RE`` or whose timestamp
-    component fails ``fromisoformat``. The filesystem is the source of truth;
-    fixture and operator mistakes (typoed names, dangling symlinks) drop out
-    of the listing without raising.
+
+def _format_when(release_at: datetime) -> str:
+    # Directory timestamps are naive local wall times. The label is the
+    # host timezone name so contestants are not left guessing UTC.
+    # Include the calendar date. Weekday and clock alone make a
+    # previous contest look like the coming weekend.
+    return f"{release_at.strftime('%a %b %-d, %-I:%M %p')} {TZ_LABEL}"
+
+
+def discover() -> list[tuple[str, datetime, Path]]:
+    """Return ``(slug, release_at, resolved_directory)`` for safe rounds.
+
+    Skips non-directories, symlink directories, names that fail ``DIR_RE``
+    or ``fromisoformat``, and anything whose resolved path escapes ``ROOT``.
     """
     if not ROOT.is_dir():
-        return
+        return []
+    root_real = ROOT.resolve()
+    found: list[tuple[str, datetime, Path]] = []
     for child in sorted(ROOT.iterdir()):
+        name = child.name
+        if child.is_symlink():
+            if DIR_RE.fullmatch(name):
+                _note(name, "round directory is a symlink")
+            continue
         if not child.is_dir():
             continue
-        m = DIR_RE.match(child.name)
-        if not m:
+        match = DIR_RE.fullmatch(name)
+        if not match:
+            _note(name, "name is not <local-time>__<slug>")
             continue
         try:
-            release_at = datetime.fromisoformat(m.group("ts"))
+            release_at = datetime.fromisoformat(match.group("ts"))
         except ValueError:
+            _note(name, "timestamp is not a real local time")
             continue
-        yield m.group("slug"), release_at, child
+        try:
+            real = child.resolve(strict=True)
+            real.relative_to(root_real)
+        except (OSError, RuntimeError, ValueError):
+            _note(name, "resolved path escapes the rounds directory")
+            continue
+        found.append((match.group("slug"), release_at, real))
+    return found
 
 
 def safe_round_dir(slug: str) -> Path:
-    """Return the resolved directory for ``slug`` iff it's released and safe.
-
-    "Safe" means the resolved real path stays under ``ROOT``. A directory
-    that is itself a symlink pointing outside the root is treated as
-    nonexistent.
-    """
-    root_real = ROOT.resolve()
+    """Resolved directory for the latest released copy of ``slug``."""
     now = _now()
-    for s, release_at, path in discover():
-        if s != slug:
+    best: tuple[datetime, Path] | None = None
+    for found_slug, release_at, path in discover():
+        if found_slug != slug or release_at > now:
             continue
-        if release_at > now:
-            raise HTTPException(status_code=404)
-        try:
-            real = path.resolve(strict=True)
-        except (FileNotFoundError, RuntimeError):
-            raise HTTPException(status_code=404)
-        try:
-            real.relative_to(root_real)
-        except ValueError:
-            log.warning(
-                "rejecting round dir that escapes ROOT: slug=%s path=%s real=%s",
-                slug, path, real,
-            )
-            raise HTTPException(status_code=404)
-        return real
-    raise HTTPException(status_code=404)
+        if best is None or release_at > best[0]:
+            best = (release_at, path)
+    if best is None:
+        raise HTTPException(status_code=404)
+    return best[1]
 
 
-def _page(title: str, body: str) -> str:
-    return (
+def _suffix(filename: str) -> str:
+    dot = filename.rfind(".")
+    if dot <= 0:
+        return ""
+    return filename[dot:].lower()
+
+
+def _page(title: str, body: str) -> HTMLResponse:
+    html = (
         "<!doctype html>"
         "<html lang=\"en\"><head><meta charset=\"utf-8\">"
         f"<title>{escape(title)}</title>"
@@ -152,31 +214,62 @@ def _page(title: str, body: str) -> str:
         "li{margin:0.25rem 0;}"
         "a{color:#0969da;text-decoration:none;}"
         "a:hover{text-decoration:underline;}"
-        "small{color:#57606a;}"
+        "small,p.hint{color:#57606a;}"
         ".empty{color:#57606a;font-style:italic;}"
         "</style></head><body>"
         f"<h1>{escape(title)}</h1>"
         f"{body}"
         "</body></html>"
     )
+    return HTMLResponse(html, headers=HTML_HEADERS)
+
+
+def _schedule(now: datetime) -> tuple[list[tuple[str, datetime]], list[tuple[str, datetime]]]:
+    released: dict[str, datetime] = {}
+    upcoming: dict[str, datetime] = {}
+    for slug, release_at, _path in discover():
+        if release_at <= now:
+            previous = released.get(slug)
+            if previous is None or release_at > previous:
+                released[slug] = release_at
+        else:
+            previous = upcoming.get(slug)
+            if previous is None or release_at < previous:
+                upcoming[slug] = release_at
+    for slug in released:
+        upcoming.pop(slug, None)
+    revealed_rows = sorted(released.items(), key=lambda item: item[1])
+    upcoming_rows = sorted(upcoming.items(), key=lambda item: item[1])
+    return revealed_rows, upcoming_rows
+
+
+@app.exception_handler(StarletteHTTPException)
+async def no_store_errors(_request, exc: StarletteHTTPException) -> JSONResponse:
+    # A cached 404 from before a round opens would outlive the reveal.
+    headers = dict(exc.headers or {})
+    headers["Cache-Control"] = "no-store"
+    return JSONResponse(
+        {"detail": exc.detail},
+        status_code=exc.status_code,
+        headers=headers,
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> str:
+def index() -> HTMLResponse:
     now = _now()
-    rounds = list(discover())
-    rounds.sort(key=lambda r: r[1])
-    revealed = [(s, t) for s, t, _ in rounds if t <= now]
-    upcoming = [(s, t) for s, t, _ in rounds if t > now]
+    revealed, upcoming = _schedule(now)
 
-    parts: list[str] = []
+    parts: list[str] = [
+        '<p class="hint">Refresh this page when a round is due. '
+        "Times are local to the server.</p>"
+    ]
     if revealed:
         parts.append("<h2>Available</h2><ul>")
         for slug, release_at in revealed:
             parts.append(
                 f'<li><a href="/{escape(slug)}/">{escape(slug)}</a> '
-                f"<small>released {escape(release_at.isoformat(timespec='minutes'))}"
-                "</small></li>"
+                f"<small>released {escape(_format_when(release_at))}</small></li>"
             )
         parts.append("</ul>")
     else:
@@ -187,26 +280,28 @@ def index() -> str:
         for slug, release_at in upcoming:
             parts.append(
                 f"<li>{escape(slug)} &mdash; "
-                f"<small>{escape(release_at.isoformat(timespec='minutes'))}</small>"
-                "</li>"
+                f"<small>{escape(_format_when(release_at))}</small></li>"
             )
         parts.append("</ul>")
     return _page("Trivia", "".join(parts))
 
 
 @app.get("/{slug}/", response_class=HTMLResponse)
-def round_index(slug: str) -> str:
+def round_index(slug: str) -> HTMLResponse:
     if not SLUG_RE.fullmatch(slug):
         raise HTTPException(status_code=404)
     base = safe_round_dir(slug)
-    files = sorted(f.name for f in base.iterdir() if f.is_file() and not f.is_symlink())
-    files = [f for f in files if FILENAME_RE.fullmatch(f)]
-    if not files:
-        body = f'<p class="empty">No files in this round.</p><p><a href="/">&larr; back</a></p>'
+    names = sorted(
+        entry.name
+        for entry in base.iterdir()
+        if entry.is_file() and not entry.is_symlink() and FILENAME_RE.fullmatch(entry.name)
+    )
+    if not names:
+        body = '<p class="empty">No files in this round.</p><p><a href="/">&larr; back</a></p>'
     else:
         items = "".join(
-            f'<li><a href="/{escape(slug)}/{escape(f)}">{escape(f)}</a></li>'
-            for f in files
+            f'<li><a href="/{escape(slug)}/{escape(name)}">{escape(name)}</a></li>'
+            for name in names
         )
         body = f"<ul>{items}</ul><p><a href=\"/\">&larr; back</a></p>"
     return _page(slug, body)
@@ -225,7 +320,33 @@ def round_file(slug: str, filename: str) -> FileResponse:
         raise HTTPException(status_code=404)
     if not raw.is_file():
         raise HTTPException(status_code=404)
-    return FileResponse(raw, filename=filename)
+    try:
+        real = raw.resolve(strict=True)
+        real.relative_to(base)
+    except (OSError, RuntimeError, ValueError):
+        log.warning("rejecting file that escapes round dir: slug=%s filename=%s", slug, filename)
+        raise HTTPException(status_code=404)
+
+    headers = {"Cache-Control": "private"}
+    media_type = INLINE_TYPES.get(_suffix(filename))
+    if media_type is None:
+        # HTML, SVG, and anything else we do not explicitly display.
+        # application/octet-stream plus attachment keeps it from running
+        # as a page on this origin.
+        return FileResponse(
+            real,
+            filename=filename,
+            media_type="application/octet-stream",
+            content_disposition_type="attachment",
+            headers=headers,
+        )
+    return FileResponse(
+        real,
+        filename=filename,
+        media_type=media_type,
+        content_disposition_type="inline",
+        headers=headers,
+    )
 
 
 if __name__ == "__main__":

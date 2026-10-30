@@ -31,14 +31,16 @@ in
     recommendedOptimisation = true;
 
     # Rate-limit zones used by trivia.valueof.info. Defined at http{} scope
-    # so they can be applied per-location below. Sized for one trivia
-    # event's worth of contestants; nginx tracks ~16k IPs per MB. Note:
-    # `limit_req_status 429;` is already declared once at http{} scope by
-    # hosts/skaia/homeassistant.nix; nginx forbids it from being repeated,
-    # so we don't redeclare it here. The 429 status applies to all zones.
+    # so they can be applied per-location below. The key is the client IP.
+    # A venue NAT collapses a room of contestants into one address, so the
+    # budget has to cover a round-drop stampede, not one phone. nginx
+    # tracks ~16k IPs per MB. `limit_req_status 429;` is already declared
+    # once at http{} scope by hosts/skaia/homeassistant.nix; nginx forbids
+    # repeating it. `limit_conn_status` is not declared elsewhere.
     appendHttpConfig = ''
-      limit_req_zone $binary_remote_addr zone=trivia_req:10m rate=10r/s;
+      limit_req_zone $binary_remote_addr zone=trivia_req:10m rate=40r/s;
       limit_conn_zone $binary_remote_addr zone=trivia_conn:10m;
+      limit_conn_status 429;
     '';
 
     virtualHosts = {
@@ -212,11 +214,11 @@ in
       # Certificate Transparency logs, so Basic Auth is the real
       # authentication boundary here.
       #
-      # Between events custom.trivia.enable is false (see
-      # hosts/skaia/default.nix). The vhost stays defined so any stray
-      # hit is Basic-Auth 401'd before the absent upstream matters.
-      # TLS/ACME follow enable: the public name is NXDOMAIN when
-      # parked, and Let's Encrypt was failing the order unit daily.
+      # When custom.trivia.enable is false (see hosts/skaia/default.nix)
+      # the vhost stays defined so any stray hit is Basic-Auth 401'd
+      # before the absent upstream matters. TLS/ACME follow enable:
+      # Let's Encrypt was failing the order unit daily while the name
+      # was parked.
       "trivia.valueof.info" = {
         forceSSL = config.custom.trivia.enable;
         enableACME = config.custom.trivia.enable;
@@ -226,11 +228,14 @@ in
           extraConfig = ''
             # Range requests get streamed straight through so MP3 seek
             # and resumable downloads work without buffering in nginx.
+            # gzip would rewrite Content-Length and break Range on the
+            # text types the global gzip filter matches (.txt, .csv).
             proxy_buffering off;
-            proxy_read_timeout 120s;
+            gzip off;
+            proxy_read_timeout 300s;
 
-            limit_req zone=trivia_req burst=30 nodelay;
-            limit_conn trivia_conn 4;
+            limit_req zone=trivia_req burst=200 nodelay;
+            limit_conn trivia_conn 64;
           '';
         };
         extraConfig = ''

@@ -1303,13 +1303,9 @@ via WHEP for low-latency (<2-3s) playback.
    git commit -m "feat: add SRS WHIP bearer token secret"
    ```
 
-1. Ensure the DNS A record exists. If using dynamic DNS (ddclient), add
-   `stream.valueof.info` to the ddclient configuration:
-
-   ```nix
-   # In hosts/skaia/ddclient.nix, add to the domains list:
-   "stream.valueof.info"
-   ```
+1. Ensure the DNS A record exists. ddclient on skaia already publishes
+   the `stream` label. Namecheap wants that host label, not the FQDN
+   `stream.valueof.info`.
 
 1. Verify the router forwards UDP `8000` to `skaia` (see [Router port forwards](#router-port-forwards-for-skaia-ingress)).
 
@@ -1339,9 +1335,10 @@ via WHEP for low-latency (<2-3s) playback.
    - Bearer Token: contents of `/etc/nixos/secrets/srs-whip-bearer-token`
    - Start streaming and check for errors
 
-1. Test WHEP playback from a browser:
-   - Open `https://stream.valueof.info/players/whep.html`
-   - Or use the SRS console at `/console/`
+1. Test WHEP playback from a browser. Open
+   `https://stream.valueof.info/`. The page connects by itself.
+   Tap the video for sound. The SRS demo player and `/console/`
+   are not exposed on this vhost.
 
 **In config:**
 

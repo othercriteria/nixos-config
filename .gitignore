@@ -1,6 +1,10 @@
 # direnv
 .direnv
 
+# Python bytecode from local checks
+__pycache__/
+*.pyc
+
 # nix build output symlinks
 result
 result-*

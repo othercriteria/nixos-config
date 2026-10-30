@@ -34,14 +34,31 @@ let
 
   appScript = pkgs.writeText "trivia-server.py" (builtins.readFile ../assets/trivia-server.py);
 
+  # The trivia user exists only while the service is enabled. Turning it
+  # off deletes the user; turning it back on allocates a new uid. The
+  # rounds tree is left behind owned by the old uid, mode 0750, so the
+  # new user cannot read last event's files. tmpfiles' "d" rule fixes the
+  # two top directories only. GNU chown -R dereferences file symlinks, and
+  # the fixture set contains escape.txt -> /etc/passwd, so this uses -h.
+  ownershipScript = pkgs.writeShellScript "trivia-fix-ownership" ''
+    set -euo pipefail
+    root=/var/lib/trivia
+    if [ ! -d "$root" ]; then
+      exit 0
+    fi
+    chown -hR trivia:trivia "$root"
+    find "$root" -type d -exec chmod 0750 {} +
+    find "$root" -type f -exec chmod 0640 {} +
+  '';
+
   pythonEnv = pkgs.python3.withPackages (ps: [
     ps.fastapi
     ps.uvicorn
   ]);
 
   # Idempotent fixture seeder. Creates a mix of well-formed rounds (some
-  # in the deep past, some upcoming, one revealed +60s after deploy) and
-  # intentionally invalid entries to exercise the parser's reject paths.
+  # in the deep past, one upcoming round-1 created a single time, one far
+  # future) and intentionally invalid entries to exercise reject paths.
   # Operates as the `trivia` user so file ownership matches the service.
   fixtureScript = pkgs.writeShellScript "trivia-seed-fixtures" ''
     set -euo pipefail
@@ -90,10 +107,12 @@ let
       mark "$DIR"
     fi
 
-    # ~60 seconds in the future at deploy time. Lets you watch the drip live.
-    SOON=$(date -d "+60 seconds" '+%Y-%m-%dT%H:%M:%S')
-    DIR="''${SOON}__round-1"
-    if ! seeded "$DIR"; then
+    # ~60 seconds in the future at first seed. The timestamp is part of
+    # the directory name, so minting a new one on every start piles up
+    # directories that all share the slug round-1. One is enough.
+    if ! compgen -G "*__round-1" >/dev/null; then
+      SOON=$(date -d "+60 seconds" '+%Y-%m-%dT%H:%M:%S')
+      DIR="''${SOON}__round-1"
       mkdir -p "$DIR"
       mkpdf "$DIR/questions.pdf" "Round 1 questions"
       mkmp3 "$DIR/audio-cue.mp3"
@@ -212,6 +231,15 @@ in
     };
     users.groups.trivia = { };
 
+    # Runs on every switch and boot, after the trivia user exists, so a
+    # re-enabled service can read rounds left from the previous uid.
+    system.activationScripts.trivia-ownership = {
+      deps = [ "users" ];
+      text = ''
+        ${ownershipScript}
+      '';
+    };
+
     systemd = {
       tmpfiles.rules = [
         "d /var/lib/trivia 0750 trivia trivia - -"
@@ -241,6 +269,9 @@ in
           TRIVIA_HOST = cfg.listenAddress;
           TRIVIA_PORT = toString cfg.listenPort;
           PYTHONDONTWRITEBYTECODE = "1";
+        }
+        // lib.optionalAttrs (config.time.timeZone != null) {
+          TRIVIA_TZ = config.time.timeZone;
         };
         serviceConfig =
           (mkServiceConfig {

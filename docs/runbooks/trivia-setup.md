@@ -8,9 +8,12 @@ round content staging.
 
 ## Prerequisites
 
-- DNS A record for `trivia.valueof.info` pointing to the router WAN IP
-  (required before `custom.trivia.enable = true`; ACME follows that
-  flag and Let's Encrypt NXDOMAINs a parked name)
+- An A record for host `trivia` in the Namecheap panel for
+  `valueof.info`. ddclient can update that record and cannot create
+  it. Namecheap answers `A record not Found` until the host exists.
+  Point it at the current WAN address; ddclient takes over from
+  there while `custom.trivia.enable` is true. ACME follows the same
+  flag and fails while the name is still NXDOMAIN.
 - TCP 80/443 forwarded to `skaia` (see
   [Router port forwards](../COLD-START.md#router-port-forwards-for-skaia-ingress))
 - GPG keys and `make reveal-secrets` working (see
@@ -45,8 +48,9 @@ round content staging.
    To add more users, drop the `c` flag: `htpasswd -m secrets/...`.
 
 1. **Enable the service and TLS.** In `hosts/skaia/default.nix` set
-   `custom.trivia.enable = true`. Nginx `forceSSL` and ACME follow this
-   flag. Do not flip it until the DNS A record exists.
+   `custom.trivia.enable = true`. Nginx `forceSSL`, ACME, and the
+   ddclient label follow this flag. Leave `seedFixtures` false for a
+   real event; the smoke test below is the only reason to turn it on.
 
 1. **Deploy:**
 
@@ -74,11 +78,12 @@ round content staging.
 
    Look for `Server responded with a certificate.` to confirm success.
 
-1. **Smoke-test the deploy.** With `custom.trivia.seedFixtures = true`
-   (current default in `hosts/skaia/default.nix`), the deploy populates
-   `/var/lib/trivia/rounds/` with synthetic rounds — including
-   intentionally invalid entries — so the parser can be exercised
-   end-to-end:
+1. **Smoke-test the deploy.** Set `custom.trivia.seedFixtures = true`
+   and re-apply to populate `/var/lib/trivia/rounds/` with synthetic
+   rounds, including intentionally invalid entries. Skip this when
+   real rounds are already staged. The fixture seeder creates the
+   `round-1` directory once; later applies do not mint another copy
+   of that slug.
 
    ```sh
    # Locally on skaia first
@@ -95,9 +100,10 @@ round content staging.
    curl -i -u trivia:RIGHT https://trivia.valueof.info/has-dotfile/.secret
    ```
 
-   The fixture seeder uses `+60 seconds` for one round, so refreshing
-   the index immediately after deploy will show a "round-1" entry in
-   "Upcoming" that moves to "Available" within a minute.
+   The first seed schedules `round-1` for 60 seconds later, so the
+   index shows it under "Upcoming" and then "Available". Listings are
+   `Cache-Control: no-store`; refresh to see the change. PDFs and
+   audio open in the browser. HTML and SVG download instead.
 
 1. **Check the sandbox.** Land in the OK range (~2–3) for
    `systemd-analyze security`:
@@ -108,10 +114,9 @@ round content staging.
 
 1. **Stage real round content.** Once you're ready for the event:
 
-   - Drop `custom.trivia.seedFixtures = false` (or delete the option)
-     in `hosts/skaia/default.nix`. Re-apply. This stops the fixture
-     seeder from running; existing fixture directories are left alone
-     until you remove them.
+   - Set `custom.trivia.seedFixtures = false` in
+     `hosts/skaia/default.nix` and re-apply. The seeder stops.
+     Existing fixture directories stay until you remove them.
 
    - Clear out the smoke-test rounds (on `skaia`):
 
@@ -131,11 +136,19 @@ round content staging.
 
      Repeat per round. Slugs must match `[a-z0-9][a-z0-9-]*`; filenames
      must match `[A-Za-z0-9][A-Za-z0-9._-]*` (no dotfiles, no spaces).
+     Copy as the `trivia` user. A switch or boot runs
+     `trivia-fix-ownership`, which reassigns the tree to the current
+     uid (`chown -hR`, so a symlink is not followed onto its target).
+     That does not run when you drop a file mid-event.
 
 ## During the event
 
-To slip a round later, rename its directory (no service restart; discovery
-is per-request):
+Contestants refresh the index when a round is due. A cached copy of
+the page will not hide a release: listings are `no-store`.
+
+To slip a round later, rename its directory (no service restart;
+discovery is per-request). If two directories share a slug, the
+latest timestamp that has already passed is the one served.
 
 ```sh
 sudo -u trivia mv \
@@ -145,9 +158,10 @@ sudo -u trivia mv \
 
 ## After the event
 
-Set `custom.trivia.enable = false` and re-apply. Leave `trivia` out of
-ddclient (`hosts/skaia/ddclient.nix`) so the name stays NXDOMAIN. ACME
-is not attempted while disabled, which is how
+Set `custom.trivia.enable = false` and re-apply. That drops the
+`trivia` label from ddclient. Namecheap keeps the A record; delete
+the `trivia` host in the Namecheap panel if the name should be
+NXDOMAIN. ACME is not attempted while disabled, which is how
 `acme-order-renew-trivia.valueof.info` stays off the failed-units list.
 
 ## In config
@@ -159,5 +173,5 @@ is not attempted while disabled, which is how
   zones, htpasswd permission fixup; TLS/ACME follow
   `custom.trivia.enable`
 - `hosts/skaia/default.nix` — toggles `custom.trivia.enable`
-- `hosts/skaia/ddclient.nix` — omit `trivia` between events
+- `hosts/skaia/ddclient.nix` — `trivia` label while `enable` is true
 - `secrets/trivia-htpasswd[.secret]` — Basic Auth credentials
