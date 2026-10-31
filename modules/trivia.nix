@@ -214,6 +214,17 @@ in
         existing rounds are untouched. Turn this off for the actual event.
       '';
     };
+
+    requireAuth = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Require the shared Basic Auth password on the public vhost.
+        Turn this off only for a live contest window. The hostname is
+        in Certificate Transparency logs, so without this flag every
+        released file is world-readable.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {

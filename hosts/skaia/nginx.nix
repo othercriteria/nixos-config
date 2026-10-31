@@ -206,13 +206,10 @@ in
         '';
       };
 
-      # Trivia drip-release file server (public, Basic-Auth gated).
-      # Backing service defined in modules/trivia.nix; see also
-      # docs/runbooks/trivia-setup.md for the htpasswd setup. The
-      # credential is shared with all contestants out-of-band (e.g.
-      # alongside the event invite); the URL is recoverable from
-      # Certificate Transparency logs, so Basic Auth is the real
-      # authentication boundary here.
+      # Trivia drip-release file server. Basic Auth follows
+      # custom.trivia.requireAuth. The hostname is in Certificate
+      # Transparency logs, so with the password off every released
+      # file is world-readable. See docs/runbooks/trivia-setup.md.
       #
       # When custom.trivia.enable is false (see hosts/skaia/default.nix)
       # the vhost stays defined so any stray hit is Basic-Auth 401'd
@@ -222,7 +219,7 @@ in
       "trivia.valueof.info" = {
         forceSSL = config.custom.trivia.enable;
         enableACME = config.custom.trivia.enable;
-        basicAuthFile = triviaHtpasswd;
+        basicAuthFile = if config.custom.trivia.requireAuth then triviaHtpasswd else null;
         locations."/" = {
           proxyPass = "http://127.0.0.1:8765";
           extraConfig = ''

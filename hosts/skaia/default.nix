@@ -84,13 +84,12 @@ in
   ];
 
   custom = {
-    # Trivia drip-release file server. On for the current contest.
-    # `seedFixtures` writes synthetic rounds, including a symlink to
-    # /etc/passwd; leave it false once real files are staged.
-    # TLS/ACME and the ddclient `trivia` label follow `enable`.
-    # See docs/runbooks/trivia-setup.md.
+    # Trivia drip-release file server. Off between events. The nginx
+    # vhost stays defined and Basic-Auth-gated. TLS/ACME and the
+    # ddclient `trivia` label follow `enable`, so a parked name does
+    # not fail certificate renewal. See docs/runbooks/trivia-setup.md.
     trivia = {
-      enable = true;
+      enable = false;
       seedFixtures = false;
     };
 
