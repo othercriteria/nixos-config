@@ -110,11 +110,26 @@
 #   changes needed (voice tensors live in the container image).
 # - Soft dependency on docker-kokoro.service: same pattern as F5.
 #
+# VRAM switch (gpu-voice.target):
+# - faster-whisper and the Kokoro container keep their models resident
+#   until the process exits. F5-TTS unloads itself after idle (tts.nix)
+#   and is not part of this switch. Ollama is not either: the daemon is
+#   small, and `ollama stop <model>` already drops a warm model.
+# - The target is the single owner of the three units below
+#   (faster-whisper, docker-kokoro, the Kokoro Wyoming bridge). It is
+#   wanted by multi-user.target, so boot still brings the stack up.
+#   Each unit is PartOf the target, so stopping the target stops them
+#   and frees the VRAM; starting it loads them again.
+# - User dlk may start, stop, and restart that target without a
+#   password (polkit). `gpu-voice {start|stop|restart|status}` wraps
+#   systemctl. While the target is stopped, HA Assist has no STT and
+#   no Kokoro TTS. F5 is unaffected.
+#
 # Future additions in this file:
 # - openWakeWord server, IFF we decide to do wake-word centrally rather
 #   than on-device. Atom Echo currently does it on-device; not needed.
 
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   wyomingF5Tts = pkgs.writeText "wyoming-f5-tts.py" (
@@ -154,6 +169,31 @@ let
   # initial download of a model and any subsequent --model swaps.
   hfTokenFile = "/etc/nixos/secrets/huggingface-token-2025-12-14";
 
+  # Ordinary-user wrapper around the polkit-authorized target.
+  gpuVoice = pkgs.writeShellScriptBin "gpu-voice" ''
+    set -eu
+    usage() {
+      echo "usage: gpu-voice {start|stop|restart|status}" >&2
+      exit 2
+    }
+    cmd=''${1:-status}
+    case "$cmd" in
+      start|stop|restart)
+        exec systemctl "$cmd" gpu-voice.target
+        ;;
+      status)
+        exec systemctl --no-pager status \
+          gpu-voice.target \
+          wyoming-faster-whisper-default.service \
+          docker-kokoro.service \
+          wyoming-kokoro.service
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  '';
+
   prepWyomingFasterWhisperEnv = pkgs.writeShellScript "wyoming-faster-whisper-prep-env" ''
     set -euo pipefail
     umask 077
@@ -181,17 +221,71 @@ in
     };
   };
 
-  # Pipe HF_TOKEN into the upstream service. systemd reads EnvironmentFile
-  # as root before sandboxing is applied, so the file is mode 0600
-  # root-owned and the service's DynamicUser identity never needs direct
-  # access to it. The '+' prefix on ExecStartPre runs it as root,
-  # bypassing the unit's User=/sandboxing for that step only.
+  # Sole owner of the GPU-resident voice stack. Member units set
+  # wantedBy and PartOf; Wants= on the target would duplicate the
+  # wantedBy symlinks.
+  systemd.targets.gpu-voice = {
+    description = "GPU-resident voice (faster-whisper + Kokoro)";
+    wantedBy = [ "multi-user.target" ];
+  };
+
+  # systemctl start/stop/restart as user dlk, no password. Status is
+  # unprivileged. Propagation via PartOf happens inside pid 1, so the
+  # member units do not need their own rules.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (
+        action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "dlk" &&
+        action.lookup("unit") == "gpu-voice.target"
+      ) {
+        var verb = action.lookup("verb");
+        if (verb == "start" || verb == "stop" || verb == "restart") {
+          return polkit.Result.YES;
+        }
+      }
+    });
+  '';
+
+  environment.systemPackages = [ gpuVoice ];
+
   systemd.services = {
     wyoming-faster-whisper-default = {
+      # The upstream module wants this from multi-user.target. The
+      # voice target is the only pull-in, so a stop survives until
+      # the next start (or the next boot, which starts the target).
+      #
+      # Pipe HF_TOKEN into the upstream service. systemd reads
+      # EnvironmentFile as root before sandboxing is applied, so the
+      # file is mode 0600 root-owned and the service's DynamicUser
+      # identity never needs direct access to it. The '+' prefix on
+      # ExecStartPre runs it as root, bypassing User= and the
+      # sandbox for that step only.
+      wantedBy = lib.mkForce [ "gpu-voice.target" ];
+      unitConfig.PartOf = [ "gpu-voice.target" ];
       serviceConfig = {
         EnvironmentFile = "-/run/wyoming-faster-whisper/env";
         ExecStartPre = [ "+${prepWyomingFasterWhisperEnv}" ];
       };
+    };
+
+    # autoStart is false in kokoro.nix; this is what pulls the
+    # container in. The bridge below is CPU-only, but it is PartOf
+    # the same target so HA is not left pointed at a dead backend.
+    #
+    # `docker run` is the main process. `docker stop` makes it exit
+    # 143 (128+SIGTERM), or 137 (128+SIGKILL) when the container is
+    # still inside CUDA init and misses the stop timeout. systemd
+    # counts those as failures, so a successful `gpu-voice stop`
+    # leaves the unit failed and the system degraded. Real crashes
+    # still restart: they exit non-zero rather than 143/137.
+    docker-kokoro = {
+      wantedBy = [ "gpu-voice.target" ];
+      unitConfig.PartOf = [ "gpu-voice.target" ];
+      serviceConfig.SuccessExitStatus = [
+        "143"
+        "137"
+      ];
     };
 
     wyoming-f5-tts = {
@@ -229,7 +323,8 @@ in
 
     wyoming-kokoro = {
       description = "Wyoming protocol bridge to local Kokoro-FastAPI server";
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = [ "gpu-voice.target" ];
+      unitConfig.PartOf = [ "gpu-voice.target" ];
       after = [
         "network.target"
         "docker-kokoro.service"

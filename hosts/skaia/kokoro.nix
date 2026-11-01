@@ -26,6 +26,10 @@
 # of VRAM at inference time. Comfortably coexists with F5-TTS (~3 GB),
 # qwen2.5:14b-instruct-q8_0 (~12 GB), and qwen3.5:9b-q8_0 (~11 GB
 # weights) on the 24 GB 4090 - everything fits with margin.
+#
+# Lifecycle: autoStart is false. gpu-voice.target in voice.nix is the
+# sole owner, so `gpu-voice stop` can drop this container's VRAM and
+# `gpu-voice start` brings it back. Boot still starts the target.
 
 _:
 
@@ -33,6 +37,9 @@ _:
   virtualisation.oci-containers.backend = "docker";
 
   virtualisation.oci-containers.containers.kokoro = {
+    # Pulled in by gpu-voice.target, not by multi-user.target.
+    autoStart = false;
+
     # Latest published GHCR tag at the time of writing. Upstream does
     # not maintain a floating :latest, so pin explicitly. Bump when we
     # have reason to.
