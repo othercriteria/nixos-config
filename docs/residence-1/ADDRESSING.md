@@ -46,7 +46,13 @@ hosts reside.
     phone was set to Fixed; she was already off-LAN so ARP could not
     fill the rest of the MAC. Copy the full address from the Archer
     reservation. The Aug 2026 lease (.198 / BE-A5-04-15-26-C1)
-    rotated dead on 2026-09-12.
+    rotated dead on 2026-09-12. On 2026-10-26 .155 did not answer
+    ping (silent since 2026-10-25 09:41 EDT).
+  - `macbook-allison` observed 2026-10-26 at 192.168.0.110 (MAC
+    5E-33-B9-D0-27-4A, mDNS `Allisons-MacBook-Pro.local`). Not a
+    DHCP reservation. HA occupancy pings this address
+    (`binary_sensor.allison_macbook`). Private Wi-Fi MAC; if the
+    lease moves, update that ping host on the Yellow.
 - MetalLB address pool (reserved, not in DHCP): 192.168.0.220–192.168.0.239
 - Pinned LoadBalancer IPs:
   - `ingress-nginx` → 192.168.0.220 (via Flux HelmRelease values)
