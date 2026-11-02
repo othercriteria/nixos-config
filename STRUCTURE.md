@@ -24,7 +24,8 @@ Per-host NixOS configurations:
   - Samba, MiniDLNA, thermal management, SRS streaming
   - Home Assistant integration (nginx proxy, MQTT broker, state publisher)
   - Ollama LLM + F5-TTS + Kokoro-FastAPI (OpenAI-compatible APIs,
-    GPU-accelerated)
+    GPU-accelerated). `ollama-background` parks low-priority Ollama
+    clients such as the Waybar weather vibe; `gpu-voice` parks speech
   - Voice assistant server-side: Wyoming faster-whisper STT + Wyoming
     F5-TTS / Kokoro bridges for HA Assist (both TTS engines run in
     parallel for A/B comparison)

@@ -49,6 +49,10 @@ window#waybar {
   color: #666666;
 }
 
+#custom-vibe.paused {
+  color: #555555;
+}
+
 #pulseaudio.muted {
   color: #a06060;
 }

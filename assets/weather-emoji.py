@@ -16,6 +16,15 @@ Reliability decisions (overhauled 2026-05, prompt/cache 2026-08):
   voice conversation agent (see hosts/skaia/ollama.nix). Same q8
   slot as the previous qwen3:8b-q8_0 (~13 GB resident with KV
   cache). A dedicated smaller vibe model would be a second load.
+- Two modes. `show` (the default Waybar exec) reads the last
+  published JSON and never calls Ollama. `--refresh` is the
+  systemd timer on ollama-background.target, and the only mode
+  that fetches METAR or calls the model. `--refresh` returns
+  before any network I/O unless /run/ollama-background/enabled
+  exists, so `ollama-background stop` cannot be raced by a poll.
+  Stopping that target does not unload this model: HA Assist
+  shares it. `ollama stop qwen3.5:9b-q8_0` unloads it, and drops
+  Assist's warm copy too.
 - Native /api/chat with think=false and a JSON schema (Ollama
   guarantees the shape). Thinking + a tiny JSON object still does
   not converge well (verified on Qwen3: 2048 tokens / 24s empty
@@ -24,7 +33,8 @@ Reliability decisions (overhauled 2026-05, prompt/cache 2026-08):
   METAR refreshes hourly; we bucket by 3-hour slices of the day so
   the emoji "vibe" still shifts morning -> afternoon -> evening ->
   night without burning Ollama for every poll. Expired entries are
-  deleted so the cache dir does not grow without bound.
+  deleted so the cache dir does not grow without bound. The timer
+  also publishes the latest Waybar JSON beside that cache.
 - No deterministic fallback. On Ollama outage we render four ?'s.
 
 Output (Waybar JSON shape):
@@ -61,7 +71,18 @@ METAR_USER_AGENT = os.environ.get(
 CACHE_DIR = Path(
     os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))
 ) / "waybar-weather-emoji"
+LATEST_PATH = CACHE_DIR / "latest.json"
 CACHE_TTL_SECS = 3 * 3600  # 3-hour slices double as time-of-day buckets
+
+# Present only while ollama-background.target is active. The gate
+# unit owns the file; stopping the target removes it. Override is
+# for a manual check, not a second switch.
+GATE_PATH = Path(
+    os.environ.get(
+        "OLLAMA_BACKGROUND_GATE",
+        "/run/ollama-background/enabled",
+    )
+)
 
 # Thinking adds ~1-2s of generation; 60s gives plenty of headroom for
 # a cold model reload (the voice agent eviction case).
@@ -108,19 +129,35 @@ EMOJI_PATTERN = re.compile(
 # ----- I/O primitives --------------------------------------------------
 
 
-def emit(text: str, tooltip: str) -> "None":
-    """Print Waybar JSON and exit. ensure_ascii=False to keep emoji bytes."""
-    print(json.dumps({"text": text, "tooltip": tooltip}, ensure_ascii=False))
-    sys.exit(0)
+def payload_for(text: str, tooltip: str) -> dict:
+    return {"text": text, "tooltip": tooltip}
 
 
-def emit_unknown(reason: str, when: datetime, metar: str | None = None) -> "None":
+def unknown_payload(
+    reason: str, when: datetime, metar: str | None = None
+) -> dict:
     when_str = when.strftime("%a %b %-d, %-I:%M %p")
     body = metar if metar else "(no METAR)"
-    emit(
+    return payload_for(
         UNKNOWN_GLYPH * NUM_EMOJIS,
         f"{when_str} — {LOCATION_LABEL}\n\n{body}\n\n[source: {reason}]",
     )
+
+
+def gate_open() -> bool:
+    return GATE_PATH.is_file()
+
+
+def publish(payload: dict) -> None:
+    """Atomically replace the snapshot Waybar reads."""
+    raw = json.dumps(payload, ensure_ascii=False)
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = LATEST_PATH.with_suffix(".json.tmp")
+        tmp.write_text(raw, encoding="utf-8")
+        tmp.replace(LATEST_PATH)
+    except OSError:
+        print("weather-emoji: could not publish snapshot", file=sys.stderr)
 
 
 def fetch_metar() -> str | None:
@@ -244,8 +281,9 @@ def call_ollama(metar: str, when: datetime) -> dict | None:
             # reasoning + a JSON constraint never converges.
             "think": False,
             "format": EMOJI_SCHEMA,
-            # Share the HA-resident weights; do not unload after this
-            # 10-minute poll.
+            # Share the HA-resident weights across the 10-minute
+            # poll. This resets the model's unload timer, so it
+            # only runs while ollama-background.target is up.
             "keep_alive": "30m",
             "options": {
                 "temperature": 0.4,
@@ -321,24 +359,63 @@ def build_tooltip(
     return "\n".join(parts)
 
 
-def main() -> None:
+def show() -> None:
+    """Print the last published vibe. Never touches the network."""
+    paused = not gate_open()
+    data = None
+    try:
+        data = json.loads(LATEST_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = None
+
+    if isinstance(data, dict) and isinstance(data.get("text"), str):
+        tooltip = data.get("tooltip")
+        body = payload_for(
+            data["text"], tooltip if isinstance(tooltip, str) else ""
+        )
+    else:
+        body = unknown_payload("no vibe yet", datetime.now().astimezone())
+
+    if paused:
+        body["class"] = "paused"
+        body["tooltip"] = "ollama-background stopped\n\n" + body["tooltip"]
+    print(json.dumps(body, ensure_ascii=False))
+
+
+def refresh() -> None:
+    """Fetch METAR and, on a cache miss, call Ollama. Publish the result.
+
+    A closed gate is success and does no I/O, so stopping the target
+    mid-timer cannot reload the model.
+    """
+    if not gate_open():
+        print(
+            "ollama-background gate closed; not calling Ollama",
+            file=sys.stderr,
+        )
+        return
+
     when = datetime.now().astimezone()
     cache_prune()
     metar = fetch_metar()
     if not metar:
-        emit_unknown("METAR unavailable", when)
+        publish(unknown_payload("METAR unavailable", when))
+        return
 
     bucket = time_bucket(when)
     key = cache_key(metar, bucket)
 
     cached = cache_load(key)
     if cached and isinstance(cached.get("emojis"), list):
-        emit(
-            shape(cached["emojis"]),
-            build_tooltip(
-                metar, when, f"cache ({bucket})", cached.get("thinking")
-            ),
+        publish(
+            payload_for(
+                shape(cached["emojis"]),
+                build_tooltip(
+                    metar, when, f"cache ({bucket})", cached.get("thinking")
+                ),
+            )
         )
+        return
 
     result = call_ollama(metar, when)
     if result:
@@ -350,12 +427,29 @@ def main() -> None:
                 "ts": time.time(),
             },
         )
-        emit(
-            shape(result["emojis"]),
-            build_tooltip(metar, when, f"ollama ({MODEL})", result["thinking"]),
+        publish(
+            payload_for(
+                shape(result["emojis"]),
+                build_tooltip(
+                    metar, when, f"ollama ({MODEL})", result["thinking"]
+                ),
+            )
         )
+        return
 
-    emit_unknown("LLM call failed", when, metar)
+    publish(unknown_payload("LLM call failed", when, metar))
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args in ([], ["show"]):
+        show()
+        return
+    if args == ["--refresh"]:
+        refresh()
+        return
+    print("usage: weather-emoji.py [show|--refresh]", file=sys.stderr)
+    sys.exit(2)
 
 
 if __name__ == "__main__":

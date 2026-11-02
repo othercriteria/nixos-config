@@ -5,6 +5,12 @@
 
 { config, pkgs, ... }:
 
+let
+  # Store copy, same source the systemd timer runs. Waybar must not
+  # exec /etc/nixos/... here: a stale checkout would ignore `show`
+  # and call Ollama on every poll.
+  weatherEmoji = pkgs.writeText "weather-emoji.py" (builtins.readFile ../assets/weather-emoji.py);
+in
 {
   programs.waybar = {
     enable = true;
@@ -111,17 +117,17 @@
           "interval" = 60;
         };
 
-        # Weather + time-of-day vibe as four emojis. Pulls METAR from
-        # NOAA, asks Ollama (qwen3.5:9b-q8_0, the same model HA Assist
-        # uses for voice) to translate it into a vibe. The script
-        # caches per (METAR, 3-hour-of-day bucket) so most polls return
-        # instantly from disk; the LLM only runs when conditions or
-        # the time bucket change. 10-minute interval is a balance
-        # between art (re-vibe occasionally) and not waking the
-        # voice agent's GPU model unnecessarily.
+        # Weather + time-of-day vibe as four emojis. This exec is
+        # show-only: it reads the snapshot published by
+        # weather-emoji.timer and never calls Ollama. The timer is a
+        # member of ollama-background.target (hosts/skaia/ollama.nix);
+        # `ollama-background stop` parks it and the module goes dim.
+        # One minute is just how fast the bar notices a toggle or a
+        # new snapshot. The model runs at most every 10 minutes, and
+        # only on a cache miss.
         "custom/vibe" = {
-          "exec" = "${pkgs.python3}/bin/python3 /etc/nixos/assets/weather-emoji.py";
-          "interval" = 600;
+          "exec" = "${pkgs.python3}/bin/python3 ${weatherEmoji} show";
+          "interval" = 60;
           "return-type" = "json";
           "tooltip" = true;
         };

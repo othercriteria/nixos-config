@@ -115,6 +115,10 @@
 #   until the process exits. F5-TTS unloads itself after idle (tts.nix)
 #   and is not part of this switch. Ollama is not either: the daemon is
 #   small, and `ollama stop <model>` already drops a warm model.
+#   Low-priority Ollama clients (the weather vibe, and later jobs of
+#   the same kind) are ollama-background.target in ollama.nix.
+#   `ollama-background stop` parks those clients so they stop reloading
+#   a model. It leaves this stack and the daemon alone.
 # - The target is the single owner of the three units below
 #   (faster-whisper, docker-kokoro, the Kokoro Wyoming bridge). It is
 #   wanted by multi-user.target, so boot still brings the stack up.
