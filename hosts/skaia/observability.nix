@@ -410,6 +410,29 @@
         "plugin:proc" = {
           "/sys/class/powercap" = "yes";
         };
+        # freeipmi maps the BMC, logs a PAT warning, then exits with no
+        # charts. Netdata disables it after the fact; don't start it.
+        plugins.freeipmi = "no";
+        # Stock excludes cover /run/containerd and /var/lib/docker. k3s
+        # uses these paths, and they appear and vanish with pods.
+        "plugin:proc:diskspace"."exclude space metrics on paths" = lib.concatStringsSep " " [
+          "/dev"
+          "/dev/shm"
+          "/proc/*"
+          "/sys/*"
+          "/var/run/user/*"
+          "/run/lock"
+          "/run/user/*"
+          "/snap/*"
+          "/var/lib/docker/*"
+          "/var/lib/containers/storage/*"
+          "/run/credentials/*"
+          "/run/containerd/*"
+          "/rpool"
+          "/rpool/*"
+          "/var/lib/kubelet/*"
+          "/run/k3s/*"
+        ];
       };
       # Enable nvidia-smi collector for GPU metrics + streaming config
       configDir = {
