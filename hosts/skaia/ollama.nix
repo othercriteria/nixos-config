@@ -24,7 +24,7 @@
 # - Waybar's weather vibe, on the HA model, via ollama-background.target
 #   (below). HA Assist is not a member of that target.
 
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
   # Default model for interactive use and scripts (ask, MCP, etc.)
@@ -169,7 +169,14 @@ in
       serviceConfig = {
         Type = "oneshot";
         User = "dlk";
-        Environment = [ "HOME=/home/dlk" ];
+        # Waybar reads the snapshot from the session cache
+        # (/fastcache/dlk, environment.sessionVariables.XDG_CACHE_HOME).
+        # A system service does not inherit that, so without this the
+        # snapshot lands in ~/.cache and the bar stays on question marks.
+        Environment = [
+          "HOME=/home/dlk"
+          "XDG_CACHE_HOME=${config.environment.sessionVariables.XDG_CACHE_HOME}"
+        ];
         ExecStart = "${pkgs.python3}/bin/python3 ${weatherEmoji} --refresh";
         TimeoutStartSec = "90s";
       };
