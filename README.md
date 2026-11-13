@@ -60,8 +60,11 @@ Apply configuration to a host:
 make apply-host HOST=skaia
 ```
 
-The `apply-host` target includes a safety check - if the current hostname
-doesn't match `HOST`, you'll be prompted to confirm before applying.
+The `apply-host` target includes a safety check — if the current hostname
+doesn't match `HOST`, you'll be prompted to confirm before applying. It
+then syncs to `/etc/nixos` and runs `nh os switch`, which shows the build
+through nom. The first switch on a host that does not have `nh` yet pulls
+it with `nix shell nixpkgs#nh`.
 
 Build without applying (useful for testing or cross-host builds):
 

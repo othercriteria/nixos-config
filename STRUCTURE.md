@@ -78,6 +78,8 @@ Reusable NixOS modules:
 - `prometheus-base.nix`: Core Prometheus + node exporter module
 - `prometheus-rules.nix`: Shared Prometheus alerting rules
 - `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
+- `glances.nix`: Glances 4.5.9 overlay. 4.5.7 depends on python-jose,
+  marked insecure for CVE-2026-120459. Drop once nixpkgs has 4.5.9
 - `grafana.nix`: Grafana with datasource provisioning
 - `loki.nix`: Loki log aggregation server
 - `ntfy.nix`: ntfy.sh push notification server (Alertmanager webhook,
@@ -159,8 +161,8 @@ Project documentation:
 - `flake.nix`: Main Nix flake entrypoint
 - `flake.lock`: Flake lock file for reproducible builds
 - `Makefile`: Automation for common tasks
-  - `apply-host HOST=x`: Apply config (with hostname safety check)
-  - `build-host HOST=x`: Build without applying
+  - `apply-host HOST=x`: Apply config (hostname check, then nh os switch)
+  - `build-host HOST=x`: Build without applying (nh os build)
   - `reveal-secrets`: Decrypt git-secret files
   - `check-unbound`: Validate Unbound DNS config
   - `test`: Run all integration tests

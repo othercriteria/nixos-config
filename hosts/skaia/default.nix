@@ -115,29 +115,6 @@ in
         # sandboxed builds; keep the package version and skip only checks.
         doCheck = false;
       });
-
-      # codex 0.167.0 links zstd, sqlite, oniguruma, and aws-lc via
-      # pkg-config and does not declare them. nixpkgs commit 16b463698a
-      # ("codex: fix build with sys libs") adds these. Drop this once
-      # the flake is past that commit.
-      codex = prev.codex.overrideAttrs (old: {
-        buildInputs =
-          (old.buildInputs or [ ])
-          ++ (with prev; [
-            aws-lc
-            oniguruma
-            sqlite
-            zstd
-          ]);
-      });
-
-      # strcase 0.0.5 panics at startup unless Go's unicode.Version is
-      # 15. This lock's default Go is 1.27 (Unicode 17), so `tsh version`
-      # dies in installCheck. Upstream pins Teleport 18 to Go 1.26.
-      # Drop this once the flake carries that pin.
-      teleport_18 = prev.teleport_18.override {
-        buildGoModule = prev.buildGo126Module;
-      };
     })
   ];
 

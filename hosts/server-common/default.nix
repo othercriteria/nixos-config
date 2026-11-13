@@ -7,6 +7,7 @@
 
 {
   imports = [
+    ../../modules/glances.nix
     ../../modules/teleport-node.nix
     ../../modules/shutdown-visibility.nix
     ../../modules/host-secrets-manifest.nix
@@ -88,38 +89,26 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  nixpkgs.overlays = [
-    (_final: prev: {
-      # Same Go pin as hosts/skaia/default.nix. Teleport 18's strcase
-      # panics on Go 1.27. Drop once nixpkgs pins buildGo126Module.
-      teleport_18 = prev.teleport_18.override {
-        buildGoModule = prev.buildGo126Module;
-      };
+  programs = {
+    # Same nh setup as hosts/common. `make apply-host` on hive and the
+    # meteors goes through `nh os switch /etc/nixos`.
+    nh = {
+      enable = true;
+      flake = "/etc/nixos";
+    };
 
-      glances = prev.glances.overridePythonAttrs (old: {
-        # The REST fixtures start uvicorn and the client connects before
-        # it is listening. A sandboxed build then fails with connection
-        # refused (ports in the 6123x range) after the rest of the suite
-        # has passed. test_browser_restful.py showed up in glances 4.5.6.
-        # XML-RPC tests in 4.5.7 hit the same sandbox with a 5s read
-        # timeout against 127.0.0.1 instead of connection refused.
-        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
-          "tests/test_restful.py"
-          "tests/test_browser_restful.py"
-          "tests/test_xmlrpc.py"
-        ];
-      });
-    })
-  ];
+    # System-managed gpg-agent so git-secret + manual gpg both work out
+    # of the box on headless servers. Pulls gnupg + pinentry-curses into
+    # the system closure, sets GPG_TTY in shell rc, and arranges socket
+    # activation per user. No SSH support: these hosts handle SSH via
+    # OpenSSH. Pre-existing keys live in ~/.gnupg/ as user state (see
+    # COLD-START sec 0).
+    gnupg.agent = {
+      enable = true;
+      pinentryPackage = pkgs.pinentry-curses;
+    };
 
-  # System-managed gpg-agent so git-secret + manual gpg both work out of the
-  # box on headless servers. Pulls gnupg + pinentry-curses into the system
-  # closure, sets GPG_TTY in shell rc, and arranges socket activation per
-  # user. No SSH support: these hosts handle SSH via OpenSSH.
-  # Pre-existing keys live in ~/.gnupg/ as user state (see COLD-START sec 0).
-  programs.gnupg.agent = {
-    enable = true;
-    pinentryPackage = pkgs.pinentry-curses;
+    zsh.enable = true;
   };
 
   # Essential tools
@@ -149,8 +138,6 @@
     ];
     shell = pkgs.zsh;
   };
-
-  programs.zsh.enable = true;
 
   # Ensure a minimal user zsh config exists to suppress newuser prompt
   system.userActivationScripts.initialZshrcForDlk.text = ''

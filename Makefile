@@ -207,7 +207,7 @@ sync-to-system: reveal-secrets ## Sync changes to /etc/nixos
 		exit 1; \
 	fi
 
-apply-host: sync-to-system ## Apply configuration for specific host
+apply-host: sync-to-system ## Apply configuration for specific host (nh os switch)
 	@if [ -z "$(HOST)" ]; then \
 		echo "Error: HOST variable not set. Usage: make apply-host HOST=skaia"; \
 		exit 1; \
@@ -225,7 +225,12 @@ apply-host: sync-to-system ## Apply configuration for specific host
 			exit 1; \
 		fi; \
 	fi
-	sudo nixos-rebuild switch --flake $(NIXOS_DIR)#$(HOST)
+	@if command -v nh >/dev/null 2>&1; then \
+		nh os switch $(NIXOS_DIR) -H $(HOST); \
+	else \
+		echo "nh is not installed yet; using nixpkgs#nh for this switch."; \
+		nix shell nixpkgs#nh -c nh os switch $(NIXOS_DIR) -H $(HOST); \
+	fi
 
 # Restored targets
 init: init-security ## Initialize repository
@@ -287,7 +292,7 @@ snapshot-gitops: ## Sync public GitOps manifests to flux-snapshot/ (illustrative
 	@rsync -a --delete gitops-veil/public/ flux-snapshot/veil/public/
 	@echo "Snapshot complete. Remember: flux-snapshot/ is illustrative, not authoritative."
 
-build-host: ## Build system closure for HOST without switching (uses workspace flake)
+build-host: ## Build system closure for HOST without switching (nh os build)
 	@if [ -z "$(HOST)" ]; then \
 		echo "Error: HOST variable not set. Usage: make build-host HOST=skaia"; \
 		exit 1; \
@@ -296,7 +301,12 @@ build-host: ## Build system closure for HOST without switching (uses workspace f
 	if [ "$$CURRENT_HOST" != "$(HOST)" ]; then \
 		echo "Note: Building $(HOST) config on $$CURRENT_HOST (cross-host build)"; \
 	fi
-	nixos-rebuild build --flake .#$(HOST)
+	@if command -v nh >/dev/null 2>&1; then \
+		nh os build . -H $(HOST); \
+	else \
+		echo "nh is not installed yet; using nixpkgs#nh for this build."; \
+		nix shell nixpkgs#nh -c nh os build . -H $(HOST); \
+	fi
 
 check-unbound: ## Validate generated unbound.conf with unbound-checkconf (HOST=skaia)
 	@if [ -z "$(HOST)" ]; then HOST=skaia; fi; \

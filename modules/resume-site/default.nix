@@ -52,7 +52,22 @@ let
       revStamp="$state/deployed-rev"
       hashStamp="$state/published-hash"
 
-      rev="$(git ls-remote "${cfg.gitUrl}" "refs/heads/${cfg.branch}" | cut -f1)"
+      # A system switch restarts Unbound while this timer can still
+      # fire. network-online.target is already reached, so the lookup
+      # is retried across that gap before it counts as a failure.
+      rev=""
+      attempt=0
+      while [ "$attempt" -lt 8 ]; do
+        attempt=$((attempt + 1))
+        if rev="$(
+          git ls-remote "${cfg.gitUrl}" "refs/heads/${cfg.branch}" | cut -f1
+        )" && [ -n "$rev" ]; then
+          break
+        fi
+        rev=""
+        echo "could not resolve ${cfg.branch} (attempt $attempt); retrying" >&2
+        sleep 5
+      done
       if [ -z "$rev" ]; then
         echo "could not resolve ${cfg.branch} at ${cfg.gitUrl}" >&2
         exit 1

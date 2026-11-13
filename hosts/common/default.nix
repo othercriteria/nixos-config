@@ -9,6 +9,7 @@
   # Common system configuration
   imports = [
     ../../modules/fonts.nix
+    ../../modules/glances.nix
     ../../modules/greetd.nix
     ../../modules/printing.nix
     ../../modules/protonvpn.nix
@@ -58,6 +59,16 @@
     };
   };
 
+  # nh os switch is what `make apply-host` runs. The flake path is the
+  # synced /etc/nixos tree: secret files are absolute paths there, and a
+  # bare `nh os switch` must not build the git checkout instead. Dry
+  # builds pass the workspace path explicitly (`make build-host`).
+  # nix.gc.automatic is already on, so nh's own cleaner stays off.
+  programs.nh = {
+    enable = true;
+    flake = "/etc/nixos";
+  };
+
   # Shared system settings
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
@@ -77,24 +88,6 @@
     # matches fcitx5-gtk shipping without the GTK 2 module.
     problems.handlers."gtk+".broken = "ignore";
   };
-
-  nixpkgs.overlays = [
-    (_final: prev: {
-      glances = prev.glances.overridePythonAttrs (old: {
-        # The REST fixtures start uvicorn and the client connects before
-        # it is listening. A sandboxed build then fails with connection
-        # refused (ports in the 6123x range) after the rest of the suite
-        # has passed. test_browser_restful.py showed up in glances 4.5.6.
-        # XML-RPC tests in 4.5.7 hit the same sandbox with a 5s read
-        # timeout against 127.0.0.1 instead of connection refused.
-        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
-          "tests/test_restful.py"
-          "tests/test_browser_restful.py"
-          "tests/test_xmlrpc.py"
-        ];
-      });
-    })
-  ];
 
   # Common environment settings
   environment = {

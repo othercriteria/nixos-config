@@ -136,7 +136,11 @@ in
           "-as pipewiresink" # PipeWire audio output
           "-reset 0" # Don't auto-reset on client silence
         ];
-        Restart = "on-failure";
+        # always, not on-failure: a system switch restarts Avahi, and
+        # uxplay then exits 0 with "No DNS-SD Server found". on-failure
+        # leaves the receiver down. The daily RuntimeMaxSec stop is
+        # itself a failure, so the dbus-buffer recycle below still runs.
+        Restart = "always";
         RestartSec = "5s";
         # uxplay does not drain the Avahi/mDNS D-Bus signal stream while
         # idle, so unread messages accumulate in the system bus (~107 MB/day
@@ -144,8 +148,7 @@ in
         # dbus-broker byte quota (512 MB), after which the broker disconnects
         # every new caller from the user ("does not have the resources to
         # receive a reply") and Chromium/Electron apps abort on startup.
-        # Recycle the service daily to drain the buffer; on-failure restart
-        # treats the RuntimeMaxSec timeout as a failure and brings it back.
+        # Recycle the service daily to drain the buffer.
         RuntimeMaxSec = "24h";
       };
 

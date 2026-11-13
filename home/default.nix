@@ -27,6 +27,12 @@
   # config in sway.nix instead.
   systemd.user.startServices = false;
 
+  # System fontconfig in modules/fonts.nix already installs the fonts and
+  # sets the defaults. Home Manager turns its own copy on because
+  # useUserPackages is set, and that conf file points at the whole
+  # home.packages bundle, so one slow package blocks every dotfile.
+  fonts.fontconfig.enable = false;
+
   imports = [
     ./docker.nix
     ./helm.nix

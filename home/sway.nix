@@ -20,6 +20,28 @@ let
     ];
     text = builtins.readFile ../assets/spotify-notify.sh;
   };
+
+  # Sway runs a startup command once. Waybar's pulse module has crashed
+  # when a system switch restarts PipeWire, and nothing brought the bar
+  # back until the next login. A clean exit stays down.
+  waybarSupervise = pkgs.writeShellApplication {
+    name = "waybar-supervise";
+    runtimeInputs = [
+      pkgs.waybar
+      pkgs.coreutils
+    ];
+    text = ''
+      while true; do
+        status=0
+        waybar || status=$?
+        if [ "$status" -eq 0 ]; then
+          exit 0
+        fi
+        echo "waybar exited $status; restarting" >&2
+        sleep 2
+      done
+    '';
+  };
 in
 {
   imports = [
@@ -27,25 +49,23 @@ in
   ];
 
   home = {
-    packages = with pkgs; [
-      blueman # Bluetooth manager
-      grim # screenshots
-      playerctl # media control
-      pavucontrol # audio control
-      slurp # screenshots
-      (pkgs.callPackage ../modules/multibg-wayland.nix { }) # per-workspace wallpapers
-      libnotify # notify-send for screenshot banners
-      wlroots # Wayland compositor
-      wl-clipboard # clipboard manager
-      wofi-emoji # emoji picker
+    packages =
+      with pkgs;
+      [
+        blueman # Bluetooth manager
+        grim # screenshots
+        playerctl # media control
+        pavucontrol # audio control
+        slurp # screenshots
+        (pkgs.callPackage ../modules/multibg-wayland.nix { }) # per-workspace wallpapers
+        libnotify # notify-send for screenshot banners
+        wlroots # Wayland compositor
+        wl-clipboard # clipboard manager
+        wofi-emoji # emoji picker
 
-      # For UI elements
-      font-awesome
-      noto-fonts
-      noto-fonts-color-emoji
-
-      jq
-    ];
+        jq
+      ]
+      ++ [ waybarSupervise ];
 
     pointerCursor = {
       enable = true;
@@ -132,11 +152,10 @@ in
           always = false;
         }
         {
-          # Status bar - started via sway rather than systemd since we use
-          # UWSM for session management (see systemd.enable comment above)
-          # NOTE: 2025-01-10 saw 5 waybar surfaces from 1 process after overnight
-          # run - cause unknown, killing waybar resolved. Monitor for recurrence.
-          command = "waybar";
+          # Status bar. A supervisor rather than a bare exec: see
+          # waybarSupervise. always stays false so a sway reload does not
+          # start a second bar (2025-01-10: five surfaces from one process).
+          command = "${waybarSupervise}/bin/waybar-supervise";
           always = false;
         }
         {
