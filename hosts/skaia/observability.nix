@@ -18,6 +18,27 @@
   ...
 }:
 
+let
+  # nixpkgs 2.12.2 fetches the Cloud dashboard from a 2026-10-25
+  # archive.org snapshot whose contents have since changed, so the
+  # fixed-output hash no longer matches. Commit 706bd2185d (netdata
+  # 2.12.3) repins the same bytes at a 2026-11-09 snapshot. The
+  # dashboard patch itself is unchanged. Drop this once netdata is
+  # newer than 2.12.2.
+  netdataCloudDashboard = pkgs.fetchzip {
+    url = "https://web.archive.org/web/20261109003701if_/https://app.netdata.cloud/agent.tar.gz";
+    hash = "sha256-hA2ynyctynIJXyZFlcTtbm2sIVnMc87x+UMomMX0MvE="; # pragma: allowlist secret
+  };
+  netdataWithCloudUi = (pkgs.netdata.override { withCloudUi = true; }).overrideAttrs (old: {
+    patches =
+      lib.filter (p: !(lib.isDerivation p && p.name == "dashboard-v3-add.patch")) old.patches
+      ++ [
+        (pkgs.replaceVars "${pkgs.path}/pkgs/tools/system/netdata/dashboard-v3-add.patch" {
+          dashboardPath = netdataCloudDashboard;
+        })
+      ];
+  });
+in
 {
   imports = [
     ../../modules/loki.nix
@@ -381,7 +402,7 @@
       enable = true;
       # Cloud UI is the parent dashboard at netdata.home.arpa. The
       # 5-node cap is bypassed by modules/netdata-unlock-nodes.nix.
-      package = pkgs.netdata.override { withCloudUi = true; };
+      package = netdataWithCloudUi;
       config = {
         global = {
           # Bind to LAN interface to receive streams from child nodes

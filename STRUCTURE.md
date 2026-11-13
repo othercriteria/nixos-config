@@ -76,8 +76,6 @@ Reusable NixOS modules:
   modal
 - `teleport-node.nix`: Teleport node agent for remote access
 - `prometheus-base.nix`: Core Prometheus + node exporter module
-- `prometheus-node-exporter-fix.nix`: Workaround for upstream
-  node_exporter socket-activation regression
 - `prometheus-rules.nix`: Shared Prometheus alerting rules
 - `prometheus-zfs-snapshot.nix`: ZFS snapshot service for Prometheus data
 - `grafana.nix`: Grafana with datasource provisioning

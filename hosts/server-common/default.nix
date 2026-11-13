@@ -11,9 +11,6 @@
     ../../modules/shutdown-visibility.nix
     ../../modules/host-secrets-manifest.nix
     ../../modules/netdata-child.nix
-    # Protects hosts that enable services.prometheus.exporters.node
-    # directly (e.g. hive) from the upstream socket-activation regression.
-    ../../modules/prometheus-node-exporter-fix.nix
   ];
 
   # Enable shutdown visibility for better crash diagnostics.
@@ -93,6 +90,12 @@
 
   nixpkgs.overlays = [
     (_final: prev: {
+      # Same Go pin as hosts/skaia/default.nix. Teleport 18's strcase
+      # panics on Go 1.27. Drop once nixpkgs pins buildGo126Module.
+      teleport_18 = prev.teleport_18.override {
+        buildGoModule = prev.buildGo126Module;
+      };
+
       glances = prev.glances.overridePythonAttrs (old: {
         # The REST fixtures start uvicorn and the client connects before
         # it is listening. A sandboxed build then fails with connection

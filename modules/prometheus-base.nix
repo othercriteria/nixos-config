@@ -14,16 +14,6 @@ let
   cfg = config.custom.prometheus;
 in
 {
-  imports = [
-    # Pulls in the systemd `Sockets=` workaround for the NixOS
-    # node_exporter socket-activation regression. See the module for
-    # details. Importing here means every host using `custom.prometheus`
-    # is protected; hosts that enable `services.prometheus.exporters.node`
-    # directly (e.g. hive) get the fix from common/server-common, which
-    # also import this module.
-    ./prometheus-node-exporter-fix.nix
-  ];
-
   options.custom.prometheus = {
     enable = lib.mkEnableOption "Prometheus monitoring";
 

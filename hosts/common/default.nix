@@ -14,10 +14,6 @@
     ../../modules/protonvpn.nix
     ../../modules/shutdown-visibility.nix
     ../../modules/vibectl.nix
-    # Protects desktop hosts that run node_exporter from the upstream
-    # socket-activation regression. Idempotent with prometheus-base.nix's
-    # own import of the same module.
-    ../../modules/prometheus-node-exporter-fix.nix
   ];
 
   custom = {
@@ -72,7 +68,15 @@
     # useXkbConfig = true; # use xkbOptions in tty.
   };
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    # GTK 2 is marked broken ahead of removal before NixOS 27.05
+    # (nixpkgs#410814). Interactive Brokers TWS still links it
+    # (modules/tws.nix), so evaluation has to be allowed. Home Manager
+    # sees meta.broken and skips its GTK 2 input-method cache, which
+    # matches fcitx5-gtk shipping without the GTK 2 module.
+    problems.handlers."gtk+".broken = "ignore";
+  };
 
   nixpkgs.overlays = [
     (_final: prev: {
